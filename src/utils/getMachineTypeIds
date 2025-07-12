@@ -1,0 +1,8 @@
+// src/utils/getMachineTypeIds.ts
+import { categories } from '../data/categories';
+
+export const getMachineTypeIds = (): string[] => {
+  return categories.flatMap(cat =>
+    cat.subcategories?.map(sub => sub.id) || []
+  );
+};

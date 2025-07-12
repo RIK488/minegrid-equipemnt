@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "importMap": {
+    "imports": {
+      "https://deno.land/std@0.177.0/http/server.ts": "https://deno.land/std@0.177.0/http/server.ts"
+    }
+  },
+  "tasks": {
+    "start": "deno run --allow-net --allow-env index.ts"
+  }
+} 

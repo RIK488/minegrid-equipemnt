@@ -1,0 +1,44 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Star, Zap, Shield, Clock } from 'lucide-react';
+export default function PremiumBadge({ premium, className = "" }) {
+    const badges = [];
+    // Badge Boosté
+    if (premium.isBoosted) {
+        badges.push({
+            icon: _jsx(Zap, { className: "h-3 w-3" }),
+            text: 'Boosté',
+            color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            tooltip: `Boosté jusqu'au ${new Date(premium.boostExpiry || '').toLocaleDateString('fr-FR')}`
+        });
+    }
+    // Badge Mis en avant
+    if (premium.isHighlighted) {
+        badges.push({
+            icon: _jsx(Star, { className: "h-3 w-3" }),
+            text: 'Mis en avant',
+            color: 'bg-purple-100 text-purple-800 border-purple-200',
+            tooltip: `Mis en avant jusqu'au ${new Date(premium.highlightExpiry || '').toLocaleDateString('fr-FR')}`
+        });
+    }
+    // Badge Certifié
+    if (premium.isCertified) {
+        badges.push({
+            icon: _jsx(Shield, { className: "h-3 w-3" }),
+            text: 'Certifiée',
+            color: 'bg-green-100 text-green-800 border-green-200',
+            tooltip: `Machine contrôlée le ${new Date(premium.certificationDate || '').toLocaleDateString('fr-FR')}`
+        });
+    }
+    // Badge Urgent
+    if (premium.isUrgent) {
+        badges.push({
+            icon: _jsx(Clock, { className: "h-3 w-3" }),
+            text: 'Urgent',
+            color: 'bg-red-100 text-red-800 border-red-200',
+            tooltip: 'Vente urgente - Prix réduit'
+        });
+    }
+    if (badges.length === 0)
+        return null;
+    return (_jsx("div", { className: `flex flex-wrap gap-1 ${className}`, children: badges.map((badge, index) => (_jsxs("div", { className: `inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${badge.color}`, title: badge.tooltip, children: [badge.icon, badge.text] }, index))) }));
+}

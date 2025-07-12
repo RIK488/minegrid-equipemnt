@@ -1,0 +1,5 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { machines } from '../data/machinesData';
+export default function MachineList() {
+    return (_jsxs("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12", children: [_jsx("h1", { className: "text-2xl font-bold text-gray-900 mb-6", children: "Toutes les machines" }), _jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6", children: machines.map((machine) => (_jsxs("a", { href: `#machines/${machine.id}`, className: "block bg-white rounded-lg shadow hover:shadow-md transition overflow-hidden", children: [_jsx("img", { src: machine.images[0], alt: machine.name, className: "h-48 w-full object-cover" }), _jsxs("div", { className: "p-4 space-y-2", children: [_jsx("h2", { className: "text-lg font-semibold text-gray-800", children: machine.name }), _jsxs("p", { className: "text-sm text-gray-500", children: [machine.brand, " ", machine.model] }), _jsxs("p", { className: "text-primary-600 font-bold text-xl", children: [machine.price.toLocaleString(), " \u20AC"] })] })] }, machine.id))) })] }));
+}

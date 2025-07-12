@@ -1,0 +1,838 @@
+import React, { useState } from 'react';
+import { 
+  Building2, Users, Package, Truck, Wrench, Calendar, FileText, 
+  CheckCircle, ArrowRight, Star, Shield, Zap, Globe, Smartphone, 
+  BarChart3, TrendingUp, Eye, Layout, PieChart, Activity, 
+  DollarSign, Clock, Target, Rocket, ArrowLeft, Settings, 
+  BarChart, LineChart, PieChart as PieChartIcon, MapPin, 
+  AlertTriangle, Plus, Minus, Maximize2, Minimize2
+} from 'lucide-react';
+
+// Configuration des métiers avec leurs widgets
+const metiers = [
+  {
+    id: 'vendeur',
+    name: 'Vendeur d\'engins',
+    icon: Package,
+    description: 'Vente d\'équipements neufs et d\'occasion',
+    color: 'orange',
+    widgets: [
+      {
+        id: 'sales-metrics',
+        type: 'performance',
+        title: 'Score de Performance Commerciale',
+        description: 'Score global sur 100, comparaison avec objectif, rang anonymisé, recommandations IA',
+        icon: Target,
+        dataSource: 'sales_performance'
+      },
+      {
+        id: 'inventory-status',
+        type: 'list',
+        title: 'Plan d\'action stock & revente',
+        description: 'Statut stock dormant, recommandations automatiques, actions rapides, et KPI',
+        icon: Package,
+        dataSource: 'inventory'
+      },
+      {
+        id: 'sales-evolution',
+        type: 'chart',
+        title: 'Évolution des ventes',
+        description: 'Graphique des ventes sur 12 mois avec analyses et prévisions',
+        icon: TrendingUp,
+        dataSource: 'sales_history'
+      },
+      {
+        id: 'leads-pipeline',
+        type: 'pipeline',
+        title: 'Pipeline commercial',
+        description: 'Prospects et opportunités avec taux de conversion',
+        icon: Target,
+        dataSource: 'leads'
+      },
+      {
+        id: 'daily-actions',
+        type: 'daily-actions',
+        title: 'Actions prioritaires du jour',
+        description: 'Tâches urgentes et planification quotidienne',
+        icon: Calendar,
+        dataSource: 'daily_actions'
+      }
+    ]
+  },
+  {
+    id: 'mecanicien',
+    name: 'Mécanicien / Atelier',
+    icon: Wrench,
+    description: 'Maintenance et réparation d\'équipements',
+    color: 'blue',
+    widgets: [
+      {
+        id: 'interventions-today',
+        type: 'metric',
+        title: 'Interventions du jour',
+        description: 'Nombre d\'interventions planifiées et terminées',
+        icon: Clock,
+        dataSource: 'daily_interventions'
+      },
+      {
+        id: 'repair-status',
+        type: 'list',
+        title: 'État des réparations',
+        description: 'Équipements en réparation avec statut et délais',
+        icon: Wrench,
+        dataSource: 'repairs'
+      },
+      {
+        id: 'parts-inventory',
+        type: 'chart',
+        title: 'Stock pièces détachées',
+        description: 'Niveau de stock par catégorie avec alertes',
+        icon: Package,
+        dataSource: 'parts'
+      },
+      {
+        id: 'technician-workload',
+        type: 'chart',
+        title: 'Charge de travail',
+        description: 'Répartition des tâches par technicien',
+        icon: Users,
+        dataSource: 'workload'
+      }
+    ]
+  },
+  {
+    id: 'transporteur',
+    name: 'Transporteur / Logistique',
+    icon: Truck,
+    description: 'Transport et livraison d\'équipements',
+    color: 'green',
+    widgets: [
+      {
+        id: 'active-deliveries',
+        type: 'metric',
+        title: 'Livraisons en cours',
+        description: 'Nombre de livraisons actives et en transit',
+        icon: Truck,
+        dataSource: 'active_deliveries'
+      },
+      {
+        id: 'delivery-map',
+        type: 'map',
+        title: 'Carte des livraisons',
+        description: 'Localisation des véhicules en temps réel',
+        icon: MapPin,
+        dataSource: 'gps_tracking'
+      },
+      {
+        id: 'transport-costs',
+        type: 'chart',
+        title: 'Coûts de transport',
+        description: 'Analyse des coûts par trajet et optimisation',
+        icon: DollarSign,
+        dataSource: 'transport_costs'
+      },
+      {
+        id: 'driver-schedule',
+        type: 'calendar',
+        title: 'Planning chauffeurs',
+        description: 'Planning des équipes et rotations',
+        icon: Calendar,
+        dataSource: 'driver_schedule'
+      }
+    ]
+  },
+  {
+    id: 'financier',
+    name: 'Financier / Comptable',
+    icon: DollarSign,
+    description: 'Gestion financière et comptabilité',
+    color: 'purple',
+    widgets: [
+      {
+        id: 'cashflow',
+        type: 'chart',
+        title: 'Cashflow',
+        description: 'Flux de trésorerie et prévisions',
+        icon: TrendingUp,
+        dataSource: 'cashflow'
+      },
+      {
+        id: 'revenue-analysis',
+        type: 'chart',
+        title: 'Analyse des revenus',
+        description: 'Répartition des revenus par service',
+        icon: PieChartIcon,
+        dataSource: 'revenue_analysis'
+      },
+      {
+        id: 'expense-tracking',
+        type: 'list',
+        title: 'Suivi des dépenses',
+        description: 'Dépenses par catégorie et budget',
+        icon: DollarSign,
+        dataSource: 'expenses'
+      },
+      {
+        id: 'financial-kpis',
+        type: 'metric',
+        title: 'KPIs Financiers',
+        description: 'Indicateurs de performance financière',
+        icon: Target,
+        dataSource: 'financial_kpis'
+      }
+    ]
+  }
+];
+
+// Services communs inclus
+const commonServices = [
+  {
+    icon: Building2,
+    title: 'Vitrine personnalisée',
+    description: 'Site web sur mesure pour votre entreprise'
+  },
+  {
+    icon: FileText,
+    title: 'Publication rapide',
+    description: 'Création et publication d\'annonces simplifiée'
+  },
+  {
+    icon: DollarSign,
+    title: 'Générateur de devis',
+    description: 'Création automatique de devis PDF'
+  },
+  {
+    icon: FileText,
+    title: 'Espace documents',
+    description: 'Gestion centralisée de vos documents'
+  },
+  {
+    icon: Smartphone,
+    title: 'Boîte de réception',
+    description: 'Messages et notifications centralisés'
+  },
+  {
+    icon: BarChart3,
+    title: 'Tableau de bord',
+    description: 'Vue synthétique de vos activités'
+  },
+  {
+    icon: Calendar,
+    title: 'Planning pro',
+    description: 'Gestion de planning et rendez-vous'
+  },
+  {
+    icon: Zap,
+    title: 'Assistant IA',
+    description: 'Génération automatique de contenu'
+  }
+];
+
+const DashboardConfigurator: React.FC = () => {
+  const [activeStep, setActiveStep] = useState(1);
+  const [selectedMetier, setSelectedMetier] = useState('');
+  const [selectedWidgets, setSelectedWidgets] = useState<string[]>([]);
+  const [widgetSizes, setWidgetSizes] = useState<{[key: string]: 'small' | 'medium' | 'large'}>({});
+  const [previewMode, setPreviewMode] = useState(false);
+
+  const selectedMetierData = metiers.find(m => m.id === selectedMetier);
+
+  const handleMetierSelect = (metierId: string) => {
+    setSelectedMetier(metierId);
+    const metier = metiers.find(m => m.id === metierId);
+    if (metier) {
+      // Sélectionner tous les widgets par défaut
+      const defaultWidgets = metier.widgets.map(w => w.id);
+      setSelectedWidgets(defaultWidgets);
+      
+      // Définir des tailles par défaut
+      const defaultSizes: {[key: string]: 'small' | 'medium' | 'large'} = {};
+      metier.widgets.forEach((widget, index) => {
+        defaultSizes[widget.id] = index === 0 ? 'large' : 'medium';
+      });
+      setWidgetSizes(defaultSizes);
+    }
+  };
+
+  const handleWidgetToggle = (widgetId: string) => {
+    setSelectedWidgets(prev => 
+      prev.includes(widgetId) 
+        ? prev.filter(id => id !== widgetId)
+        : [...prev, widgetId]
+    );
+  };
+
+  const handleWidgetSizeChange = (widgetId: string, size: 'small' | 'medium' | 'large') => {
+    setWidgetSizes(prev => ({ ...prev, [widgetId]: size }));
+  };
+
+  const generateLayout = () => {
+    const enabledWidgets = selectedMetierData?.widgets.filter(w => selectedWidgets.includes(w.id)) || [];
+    const layout: any[] = [];
+    
+    let x = 0;
+    let y = 0;
+    let maxY = 0;
+
+    enabledWidgets.forEach((widget, index) => {
+      const size = widgetSizes[widget.id] || 'medium';
+      let w = 4; // small
+      if (size === 'medium') w = 6;
+      if (size === 'large') w = 12;
+
+      if (x + w > 12) {
+        x = 0;
+        y = maxY;
+      }
+
+      layout.push({
+        i: widget.id,
+        x,
+        y,
+        w,
+        h: size === 'small' ? 2 : size === 'medium' ? 4 : 6
+      });
+
+      x += w;
+      maxY = Math.max(maxY, y + (size === 'small' ? 2 : size === 'medium' ? 4 : 6));
+    });
+
+    return layout;
+  };
+
+  const handleGenerateDashboard = () => {
+    const layout = generateLayout();
+    const enabledWidgets = selectedMetierData?.widgets.filter(w => selectedWidgets.includes(w.id)) || [];
+    
+    const config = {
+      metier: selectedMetier,
+      widgets: enabledWidgets.map(widget => ({
+        ...widget,
+        enabled: true,
+        size: widgetSizes[widget.id] || 'medium',
+        position: layout.find(l => l.i === widget.id)?.position || 0
+      })),
+      layout: {
+        lg: layout
+      },
+      theme: 'light',
+      refreshInterval: 30,
+      notifications: true,
+      createdAt: new Date().toISOString()
+    };
+
+    // Sauvegarder la configuration
+    localStorage.setItem(`enterpriseDashboardConfig_${selectedMetier}`, JSON.stringify(config));
+    
+    // Rediriger vers le tableau de bord
+    window.location.hash = '#dashboard-entreprise-display';
+  };
+
+  const nextStep = () => setActiveStep(prev => Math.min(prev + 1, 4));
+  const prevStep = () => setActiveStep(prev => Math.max(prev - 1, 1));
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Configurateur Tableau de Bord Entreprise
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Créez votre tableau de bord personnalisé adapté à votre métier et vos besoins spécifiques
+          </p>
+        </div>
+
+        {/* Indicateur d'étapes */}
+        <div className="flex justify-center mb-8">
+          <div className="flex items-center space-x-4">
+            {[1, 2, 3, 4].map((step) => (
+              <div key={step} className="flex items-center">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+                  activeStep >= step 
+                    ? 'bg-orange-600 text-white' 
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {step}
+                </div>
+                {step < 4 && (
+                  <div className={`w-16 h-1 mx-2 ${
+                    activeStep > step ? 'bg-orange-600' : 'bg-gray-200'
+                  }`} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Contenu des étapes */}
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          {/* Étape 1: Sélection du métier */}
+          {activeStep === 1 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Services communs inclus
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {commonServices.map((service, index) => {
+                  const Icon = service.icon;
+                  return (
+                    <div key={index} className="text-center p-4 border border-gray-200 rounded-lg hover:border-orange-300 transition-colors">
+                      <Icon className="h-8 w-8 text-orange-600 mx-auto mb-3" />
+                      <h3 className="font-semibold text-gray-900 mb-2">{service.title}</h3>
+                      <p className="text-sm text-gray-600">{service.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Sélectionnez votre métier principal
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {metiers.map((metier) => {
+                  const Icon = metier.icon;
+                  return (
+                    <div
+                      key={metier.id}
+                      onClick={() => handleMetierSelect(metier.id)}
+                      className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                        selectedMetier === metier.id
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-300'
+                      }`}
+                    >
+                      <Icon className="h-12 w-12 text-orange-600 mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{metier.name}</h3>
+                      <p className="text-gray-600 mb-4">{metier.description}</p>
+                      <div className="space-y-2">
+                        {metier.widgets.map((widget, index) => (
+                          <div key={index} className="flex items-center text-sm text-gray-600">
+                            <CheckCircle className="h-4 w-4 text-orange-500 mr-2" />
+                            {widget.title}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-8 flex justify-end">
+                <button
+                  onClick={nextStep}
+                  disabled={!selectedMetier}
+                  className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  Continuer
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Étape 2: Configuration des widgets */}
+          {activeStep === 2 && selectedMetierData && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Configurez votre tableau de bord
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Sélectionnez et personnalisez les widgets pour votre métier : {selectedMetierData.name}
+              </p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Widgets disponibles */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Widgets disponibles</h3>
+                  <div className="space-y-4">
+                    {selectedMetierData.widgets.map((widget) => {
+                      const Icon = widget.icon;
+                      const isEnabled = selectedWidgets.includes(widget.id);
+                      const currentSize = widgetSizes[widget.id] || 'medium';
+                      
+                      return (
+                        <div key={widget.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                              <Icon className="h-6 w-6 text-orange-600 mr-3" />
+                              <div>
+                                <h4 className="font-semibold text-gray-900">{widget.title}</h4>
+                                <p className="text-sm text-gray-600">{widget.description}</p>
+                              </div>
+                            </div>
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={isEnabled}
+                                onChange={() => handleWidgetToggle(widget.id)}
+                                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                              />
+                            </label>
+                          </div>
+                          
+                          {isEnabled && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Taille du widget
+                              </label>
+                              <div className="flex space-x-2">
+                                {['small', 'medium', 'large'].map((size) => (
+                                  <button
+                                    key={size}
+                                    onClick={() => handleWidgetSizeChange(widget.id, size as 'small' | 'medium' | 'large')}
+                                    className={`px-3 py-1 text-xs rounded ${
+                                      currentSize === size
+                                        ? 'bg-orange-600 text-white'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    }`}
+                                  >
+                                    {size === 'small' ? 'Petit' : size === 'medium' ? 'Moyen' : 'Grand'}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Prévisualisation */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Prévisualisation</h3>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">
+                        {selectedWidgets.length} widget{selectedWidgets.length > 1 ? 's' : ''} sélectionné{selectedWidgets.length > 1 ? 's' : ''}
+                      </span>
+                      <button
+                        onClick={() => setPreviewMode(!previewMode)}
+                        className="flex items-center text-sm text-orange-600 hover:text-orange-700"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        {previewMode ? 'Vue simple' : 'Vue détaillée'}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg border border-gray-200 p-4 min-h-[400px]">
+                    {selectedWidgets.length === 0 ? (
+                      <div className="text-center text-gray-500 py-8">
+                        <Layout className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p className="mb-2">Aucun widget sélectionné</p>
+                        <p className="text-sm">Sélectionnez des widgets dans la liste à gauche pour les voir ici</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Grille de prévisualisation */}
+                        <div className={`grid gap-4 ${
+                          previewMode ? 'grid-cols-1' : 'grid-cols-2'
+                        }`}>
+                          {selectedMetierData.widgets
+                            .filter(w => selectedWidgets.includes(w.id))
+                            .map((widget) => {
+                              const Icon = widget.icon;
+                              const size = widgetSizes[widget.id] || 'medium';
+                              
+                              // Calculer la classe de taille pour la grille
+                              let sizeClass = 'col-span-1';
+                              if (size === 'large') {
+                                sizeClass = previewMode ? 'col-span-1' : 'col-span-2';
+                              } else if (size === 'small') {
+                                sizeClass = 'col-span-1';
+                              } else {
+                                sizeClass = 'col-span-1';
+                              }
+                              
+                              return (
+                                <div 
+                                  key={widget.id} 
+                                  className={`${sizeClass} bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200 shadow-sm hover:shadow-md transition-shadow`}
+                                >
+                                  <div className="flex items-center mb-3">
+                                    <Icon className="h-5 w-5 text-orange-600 mr-2" />
+                                    <h4 className="text-sm font-semibold text-orange-900">{widget.title}</h4>
+                                  </div>
+                                  
+                                  {previewMode && (
+                                    <div className="text-xs text-orange-700 mb-2">
+                                      {widget.description}
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full">
+                                      {size === 'small' ? 'Petit' : size === 'medium' ? 'Moyen' : 'Grand'}
+                                    </div>
+                                    
+                                    {previewMode && (
+                                      <div className="flex items-center space-x-1">
+                                        <span className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full">
+                                          {widget.type}
+                                        </span>
+                                        <span className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full">
+                                          {widget.dataSource}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Indicateur de taille visuel */}
+                                  <div className="mt-3 flex items-center space-x-1">
+                                    <div className={`h-2 rounded-full ${
+                                      size === 'small' ? 'w-8 bg-orange-300' : 
+                                      size === 'medium' ? 'w-16 bg-orange-400' : 
+                                      'w-24 bg-orange-500'
+                                    }`}></div>
+                                    <span className="text-xs text-orange-600">
+                                      {size === 'small' ? 'Compact' : size === 'medium' ? 'Standard' : 'Étendu'}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                        
+                        {/* Informations sur la configuration */}
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <span className="font-medium text-gray-700">Métier:</span>
+                              <span className="ml-1 text-gray-600">{selectedMetierData.name}</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Widgets:</span>
+                              <span className="ml-1 text-gray-600">{selectedWidgets.length}</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Tailles:</span>
+                              <span className="ml-1 text-gray-600">
+                                {Object.values(widgetSizes).filter(s => s === 'small').length} petit(s), 
+                                {Object.values(widgetSizes).filter(s => s === 'medium').length} moyen(s), 
+                                {Object.values(widgetSizes).filter(s => s === 'large').length} grand(s)
+                              </span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Types:</span>
+                              <span className="ml-1 text-gray-600">
+                                {Array.from(new Set(selectedMetierData.widgets
+                                  .filter(w => selectedWidgets.includes(w.id))
+                                  .map(w => w.type))).join(', ')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-between">
+                <button
+                  onClick={prevStep}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Retour
+                </button>
+                <button
+                  onClick={nextStep}
+                  className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center"
+                >
+                  Continuer
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Étape 3: Modules supplémentaires */}
+          {activeStep === 3 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Modules supplémentaires
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Sélectionnez les modules supplémentaires qui vous intéressent. 
+                Chaque module ajoutera des widgets spécifiques à votre tableau de bord :
+              </p>
+              
+              <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 mb-8">
+                <h3 className="text-lg font-semibold text-blue-900 mb-4">
+                  Modules disponibles
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {metiers.map((metier) => (
+                    <div key={metier.id} className="bg-white p-4 rounded border border-blue-200">
+                      <div className="flex items-center mb-3">
+                        <metier.icon className="h-6 w-6 text-blue-600 mr-2" />
+                        <h4 className="font-semibold text-blue-900">{metier.name}</h4>
+                      </div>
+                      <p className="text-sm text-blue-700 mb-3">{metier.description}</p>
+                      <div className="space-y-1">
+                        {metier.widgets.slice(0, 3).map((widget, index) => (
+                          <div key={index} className="flex items-center text-xs text-blue-600">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {widget.title}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <button
+                  onClick={prevStep}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Retour
+                </button>
+                <button
+                  onClick={nextStep}
+                  className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center"
+                >
+                  Continuer
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Étape 4: Génération */}
+          {activeStep === 4 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Votre tableau de bord personnalisé est prêt !
+              </h2>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* Résumé de la configuration */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Résumé de votre configuration</h3>
+                  <div className="space-y-4">
+                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                      <h4 className="font-semibold text-orange-900 mb-2">Métier sélectionné</h4>
+                      <p className="text-orange-800">{selectedMetierData?.name}</p>
+                    </div>
+                    
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h4 className="font-semibold text-blue-900 mb-2">Widgets du métier principal</h4>
+                      <div className="space-y-1">
+                        {selectedMetierData?.widgets
+                          .filter(w => selectedWidgets.includes(w.id))
+                          .map((widget) => (
+                            <div key={widget.id} className="flex items-center text-sm text-blue-800">
+                              <CheckCircle className="h-4 w-4 mr-2 text-blue-600" />
+                              {widget.title} ({widgetSizes[widget.id] === 'small' ? 'Petit' : 
+                                              widgetSizes[widget.id] === 'medium' ? 'Moyen' : 'Grand'})
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <h4 className="font-semibold text-purple-900 mb-2">Total des widgets</h4>
+                      <div className="text-2xl font-bold text-purple-800">
+                        {selectedWidgets.length} widgets
+                      </div>
+                      <p className="text-sm text-purple-700 mt-1">
+                        Votre tableau de bord sera composé de widgets métriques, graphiques, listes et calendriers
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Aperçu final */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Aperçu de votre tableau de bord</h3>
+                  <div className="bg-white rounded-lg border border-gray-200 p-4 min-h-[400px]">
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedMetierData?.widgets
+                        .filter(w => selectedWidgets.includes(w.id))
+                        .map((widget) => {
+                          const Icon = widget.icon;
+                          const sizeClass = widgetSizes[widget.id] === 'small' ? 'col-span-1' : 
+                                          widgetSizes[widget.id] === 'large' ? 'col-span-2' : 'col-span-1';
+                          
+                          return (
+                            <div key={widget.id} className={`${sizeClass} bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200 shadow-sm`}>
+                              <div className="flex items-center mb-3">
+                                <Icon className="h-5 w-5 text-orange-600 mr-2" />
+                                <h4 className="text-sm font-semibold text-orange-900">{widget.title}</h4>
+                              </div>
+                              <div className="text-xs text-orange-700 mb-2">{widget.description}</div>
+                              <div className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full inline-block">
+                                {widgetSizes[widget.id] === 'small' ? 'Widget compact' :
+                                 widgetSizes[widget.id] === 'medium' ? 'Widget standard' : 'Widget étendu'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={prevStep}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Retour
+                </button>
+                
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 mb-2">
+                    Votre tableau de bord sera généré avec tous les widgets sélectionnés
+                  </p>
+                  <button
+                    onClick={handleGenerateDashboard}
+                    className="px-8 py-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center mx-auto"
+                  >
+                    <Rocket className="h-5 w-5 mr-2" />
+                    Générer mon tableau de bord
+                  </button>
+                </div>
+                
+                <div className="w-24"></div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Section avantages */}
+        <div className="mt-16 bg-white py-12">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+              Pourquoi choisir notre configurateur ?
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <Star className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Tableau de bord sur mesure</h3>
+                <p className="text-gray-600">Adapté à votre métier et vos processus spécifiques</p>
+              </div>
+              <div className="text-center">
+                <Zap className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Configuration intuitive</h3>
+                <p className="text-gray-600">Interface simple pour personnaliser vos widgets et métriques</p>
+              </div>
+              <div className="text-center">
+                <Shield className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Mise en place rapide</h3>
+                <p className="text-gray-600">Votre tableau de bord opérationnel en quelques minutes</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardConfigurator; 
