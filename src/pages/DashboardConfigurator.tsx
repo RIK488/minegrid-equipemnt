@@ -12,176 +12,132 @@ import {
 const metiers = [
   {
     id: 'vendeur',
-    name: 'Vendeur d\'engins',
+    name: "Vendeur d'engins",
     icon: Package,
-    description: 'Vente d\'équipements neufs et d\'occasion',
-    color: 'orange',
+    description: "Vente d'équipements neufs et d'occasion",
+    features: [
+      'Gestion de stock',
+      'Fiches techniques auto',
+      'Statistiques de vente',
+      'Bons de commande',
+    ],
     widgets: [
-      {
-        id: 'sales-metrics',
-        type: 'performance',
-        title: 'Score de Performance Commerciale',
-        description: 'Score global sur 100, comparaison avec objectif, rang anonymisé, recommandations IA',
-        icon: Target,
-        dataSource: 'sales_performance'
-      },
-      {
-        id: 'inventory-status',
-        type: 'list',
-        title: 'Plan d\'action stock & revente',
-        description: 'Statut stock dormant, recommandations automatiques, actions rapides, et KPI',
-        icon: Package,
-        dataSource: 'inventory'
-      },
-      {
-        id: 'sales-evolution',
-        type: 'chart',
-        title: 'Évolution des ventes',
-        description: 'Graphique des ventes sur 12 mois avec analyses et prévisions',
-        icon: TrendingUp,
-        dataSource: 'sales_history'
-      },
-      {
-        id: 'leads-pipeline',
-        type: 'pipeline',
-        title: 'Pipeline commercial',
-        description: 'Prospects et opportunités avec taux de conversion',
-        icon: Target,
-        dataSource: 'leads'
-      },
-      {
-        id: 'daily-actions',
-        type: 'daily-actions',
-        title: 'Actions prioritaires du jour',
-        description: 'Tâches urgentes et planification quotidienne',
-        icon: Calendar,
-        dataSource: 'daily_actions'
-      }
-    ]
+      { id: 'stock', title: 'Gestion de stock', icon: Package, description: 'Suivi du stock en temps réel', type: 'list', dataSource: 'stock' },
+      { id: 'stats', title: 'Statistiques de vente', icon: BarChart3, description: 'Analyse des ventes', type: 'chart', dataSource: 'sales' },
+    ],
+  },
+  {
+    id: 'loueur',
+    name: "Loueur d'engins",
+    icon: Calendar,
+    description: "Location d'équipements avec planning",
+    features: [
+      'Calendrier de réservation',
+      'Contrats automatisés',
+      'Suivi utilisation',
+      'Paiement en ligne',
+    ],
+    widgets: [
+      { id: 'calendar', title: 'Calendrier', icon: Calendar, description: 'Gestion des réservations', type: 'calendar', dataSource: 'bookings' },
+      { id: 'contracts', title: 'Contrats', icon: FileText, description: 'Contrats automatisés', type: 'list', dataSource: 'contracts' },
+    ],
   },
   {
     id: 'mecanicien',
     name: 'Mécanicien / Atelier',
     icon: Wrench,
-    description: 'Maintenance et réparation d\'équipements',
-    color: 'blue',
+    description: 'Maintenance et réparation d’équipements',
+    features: [
+      'Planning interventions',
+      'Bons d’intervention',
+      'Diagnostic IA',
+      'Suivi SAV',
+    ],
     widgets: [
-      {
-        id: 'interventions-today',
-        type: 'metric',
-        title: 'Interventions du jour',
-        description: 'Nombre d\'interventions planifiées et terminées',
-        icon: Clock,
-        dataSource: 'daily_interventions'
-      },
-      {
-        id: 'repair-status',
-        type: 'list',
-        title: 'État des réparations',
-        description: 'Équipements en réparation avec statut et délais',
-        icon: Wrench,
-        dataSource: 'repairs'
-      },
-      {
-        id: 'parts-inventory',
-        type: 'chart',
-        title: 'Stock pièces détachées',
-        description: 'Niveau de stock par catégorie avec alertes',
-        icon: Package,
-        dataSource: 'parts'
-      },
-      {
-        id: 'technician-workload',
-        type: 'chart',
-        title: 'Charge de travail',
-        description: 'Répartition des tâches par technicien',
-        icon: Users,
-        dataSource: 'workload'
-      }
-    ]
+      { id: 'planning', title: 'Planning interventions', icon: Calendar, description: 'Planification des interventions', type: 'calendar', dataSource: 'interventions' },
+      { id: 'diagnostic', title: 'Diagnostic IA', icon: Zap, description: 'Diagnostic assisté par IA', type: 'metric', dataSource: 'diagnostic' },
+    ],
   },
   {
     id: 'transporteur',
     name: 'Transporteur / Logistique',
     icon: Truck,
-    description: 'Transport et livraison d\'équipements',
-    color: 'green',
+    description: 'Transport et livraison d’équipements',
+    features: [
+      'Simulateur coûts',
+      'Planification livraisons',
+      'Documents douaniers',
+      'Suivi GPS',
+    ],
     widgets: [
-      {
-        id: 'active-deliveries',
-        type: 'metric',
-        title: 'Livraisons en cours',
-        description: 'Nombre de livraisons actives et en transit',
-        icon: Truck,
-        dataSource: 'active_deliveries'
-      },
-      {
-        id: 'delivery-map',
-        type: 'map',
-        title: 'Carte des livraisons',
-        description: 'Localisation des véhicules en temps réel',
-        icon: MapPin,
-        dataSource: 'gps_tracking'
-      },
-      {
-        id: 'transport-costs',
-        type: 'chart',
-        title: 'Coûts de transport',
-        description: 'Analyse des coûts par trajet et optimisation',
-        icon: DollarSign,
-        dataSource: 'transport_costs'
-      },
-      {
-        id: 'driver-schedule',
-        type: 'calendar',
-        title: 'Planning chauffeurs',
-        description: 'Planning des équipes et rotations',
-        icon: Calendar,
-        dataSource: 'driver_schedule'
-      }
-    ]
+      { id: 'simulator', title: 'Simulateur coûts', icon: DollarSign, description: 'Simulation des coûts de transport', type: 'metric', dataSource: 'costs' },
+      { id: 'gps', title: 'Suivi GPS', icon: MapPin, description: 'Localisation en temps réel', type: 'map', dataSource: 'gps' },
+    ],
   },
   {
-    id: 'financier',
-    name: 'Financier / Comptable',
-    icon: DollarSign,
-    description: 'Gestion financière et comptabilité',
-    color: 'purple',
+    id: 'transitaire',
+    name: 'Transitaire / Freight Forwarder',
+    icon: Globe,
+    description: 'Gestion des opérations douanières et logistiques internationales',
+    features: [
+      'Gestion douane',
+      'Suivi conteneurs',
+      'Documents d’import/export',
+      'Calcul coûts logistiques',
+    ],
     widgets: [
-      {
-        id: 'cashflow',
-        type: 'chart',
-        title: 'Cashflow',
-        description: 'Flux de trésorerie et prévisions',
-        icon: TrendingUp,
-        dataSource: 'cashflow'
-      },
-      {
-        id: 'revenue-analysis',
-        type: 'chart',
-        title: 'Analyse des revenus',
-        description: 'Répartition des revenus par service',
-        icon: PieChartIcon,
-        dataSource: 'revenue_analysis'
-      },
-      {
-        id: 'expense-tracking',
-        type: 'list',
-        title: 'Suivi des dépenses',
-        description: 'Dépenses par catégorie et budget',
-        icon: DollarSign,
-        dataSource: 'expenses'
-      },
-      {
-        id: 'financial-kpis',
-        type: 'metric',
-        title: 'KPIs Financiers',
-        description: 'Indicateurs de performance financière',
-        icon: Target,
-        dataSource: 'financial_kpis'
-      }
-    ]
-  }
+      { id: 'customs', title: 'Gestion douane', icon: Shield, description: 'Gestion des formalités douanières', type: 'list', dataSource: 'customs' },
+      { id: 'containers', title: 'Suivi conteneurs', icon: Truck, description: 'Suivi des conteneurs', type: 'metric', dataSource: 'containers' },
+    ],
+  },
+  {
+    id: 'logisticien',
+    name: 'Logisticien / Supply Chain',
+    icon: BarChart3,
+    description: 'Optimisation de la chaîne logistique',
+    features: [
+      'Planification stock',
+      'Optimisation routes',
+      'Gestion entrepôts',
+      'Analytics logistiques',
+    ],
+    widgets: [
+      { id: 'stock-planning', title: 'Planification stock', icon: Package, description: 'Planification des stocks', type: 'list', dataSource: 'stock' },
+      { id: 'analytics', title: 'Analytics logistiques', icon: BarChart3, description: 'Analyse logistique', type: 'chart', dataSource: 'analytics' },
+    ],
+  },
+  {
+    id: 'multiservices',
+    name: 'Prestataire multiservices',
+    icon: Users,
+    description: 'Services variés et sous-traitance',
+    features: [
+      'Catalogue services',
+      'Système commandes',
+      'Réseau partenaires',
+      'Suivi interventions',
+    ],
+    widgets: [
+      { id: 'catalog', title: 'Catalogue services', icon: FileText, description: 'Catalogue des services proposés', type: 'list', dataSource: 'catalog' },
+      { id: 'partners', title: 'Réseau partenaires', icon: Users, description: 'Gestion des partenaires', type: 'list', dataSource: 'partners' },
+    ],
+  },
+  {
+    id: 'investisseur',
+    name: 'Investisseur',
+    icon: DollarSign,
+    description: 'Investissement et financement',
+    features: [
+      'Analyse des opportunités',
+      'Évaluation des projets',
+      'Gestion des investissements',
+      'Suivi des rendements',
+    ],
+    widgets: [
+      { id: 'opportunities', title: 'Analyse des opportunités', icon: Star, description: 'Analyse des opportunités d’investissement', type: 'metric', dataSource: 'opportunities' },
+      { id: 'returns', title: 'Suivi des rendements', icon: TrendingUp, description: 'Suivi des rendements financiers', type: 'chart', dataSource: 'returns' },
+    ],
+  },
 ];
 
 // Services communs inclus
