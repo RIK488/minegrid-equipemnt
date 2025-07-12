@@ -150,12 +150,81 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   // 1. Chargement initial
   useEffect(() => {
     const saved = localStorage.getItem('enterpriseDashboardConfig_vendeur');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setConfig(parsed);
-      setLayout(parsed.layout || { lg: [] });
+    let parsed = saved ? JSON.parse(saved) : null;
+    let shouldUpdate = false;
+
+    // Si pas de config ou config invalide, créer une nouvelle config complète
+    if (!parsed || !parsed.widgets || !Array.isArray(parsed.widgets)) {
+      parsed = {
+        widgets: [],
+        layout: { lg: [] },
+        widgetSizes: {}
+      };
+      shouldUpdate = true;
     }
+
+    // Garantir que le widget stock-status (qui est maintenant le pipeline commercial) est présent
+    const stockWidget = VendeurWidgets.widgets.find(w => w.id === 'stock-status');
+    if (stockWidget && !parsed.widgets.some((w: any) => w.id === 'stock-status')) {
+      console.log('🔧 Ajout du widget stock-status (pipeline commercial) à la config dynamique');
+      parsed.widgets.push(stockWidget);
+      shouldUpdate = true;
+    }
+
+    // Garantir que le layout contient bien le widget stock-status
+    if (!parsed.layout) {
+      parsed.layout = { lg: [] };
+      shouldUpdate = true;
+    }
+    
+    if (!parsed.layout.lg) {
+      parsed.layout.lg = [];
+      shouldUpdate = true;
+    }
+
+    if (stockWidget && !parsed.layout.lg.some((l: any) => l.i === 'stock-status')) {
+      console.log('🔧 Ajout du widget stock-status (pipeline commercial) au layout');
+      // Calculer la position pour éviter les conflits
+      const maxY = parsed.layout.lg.length > 0 ? Math.max(...parsed.layout.lg.map((l: any) => l.y + l.h)) : 0;
+      parsed.layout.lg.push({ 
+        i: 'stock-status', 
+        x: 0, 
+        y: maxY, 
+        w: 4, 
+        h: 6 
+      });
+      shouldUpdate = true;
+    }
+
+    if (shouldUpdate) {
+      console.log('💾 Sauvegarde de la config mise à jour');
+      localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(parsed));
+    }
+
+    setConfig(parsed);
+    setLayout(parsed.layout || { lg: [] });
   }, []);
+
+  // Effet de débogage pour vérifier la configuration
+  useEffect(() => {
+    if (config) {
+      console.log('🔍 Configuration actuelle:', config);
+      console.log('🔍 Widgets présents:', config.widgets?.map((w: any) => w.id));
+      console.log('🔍 Layout:', config.layout?.lg?.map((l: any) => l.i));
+      
+      const hasStock = config.widgets?.some((w: any) => w.id === 'stock-status');
+      const hasStockInLayout = config.layout?.lg?.some((l: any) => l.i === 'stock-status');
+      
+      console.log('🔍 Widget stock-status (pipeline commercial) dans config:', hasStock);
+      console.log('🔍 Widget stock-status (pipeline commercial) dans layout:', hasStockInLayout);
+      
+      if (!hasStock || !hasStockInLayout) {
+        console.warn('⚠️ Widget stock-status (pipeline commercial) manquant dans la configuration!');
+      } else {
+        console.log('✅ Widget stock-status (pipeline commercial) correctement configuré');
+      }
+    }
+  }, [config]);
 
   // 2. Application stricte du layout et des widgets
   // On utilise EXCLUSIVEMENT le layout enregistré dans la config utilisateur
@@ -210,7 +279,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     // Positionne le widget à la fin, colonne 0, ligne suivante
     const newLayout = [
       ...layout.lg,
-      { i: widgetId, x: 0, y: layout.lg.length, w: 4, h: 2 }
+      { i: widgetId, x: 0, y: layout.lg.length, w: 4, h: widgetId === 'stock-status' ? 6 : 2 }
     ];
     const newConfig = { ...config, widgets: newWidgets, layout: { ...config.layout, lg: newLayout } };
     setConfig(newConfig);
@@ -333,6 +402,8 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     console.log('Widget action:', action, data);
     // Gérer les actions des widgets ici
   };
+
+
 
   // Fonction pour alterner la taille du widget
   const getNextWidgetWidth = (currentW: number) => {

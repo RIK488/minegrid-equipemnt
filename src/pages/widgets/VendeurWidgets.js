@@ -41,19 +41,19 @@ export const VendeurWidgets = {
     },
     {
       id: 'stock-status',
-      type: 'list',
-      title: 'Plan d\'action stock & revente',
-      description: 'Statut stock dormant, recommandations automatiques, actions rapides',
-      icon: Package,
-      dataSource: 'stock-status',
+      type: 'pipeline',
+      title: 'Pipeline Commercial',
+      description: 'Assistant prospection active avec alertes de relance, score de probabilité, actions intelligentes',
+      icon: Users,
+      dataSource: 'sales-pipeline',
       features: {
-        periodSelector: false,
+        periodSelector: true,
         export: true,
         analytics: true,
         alerts: true,
-        stockAnalytics: true,
-        recommendations: true,
-        quickActions: true
+        autoReminders: true,
+        probabilityScoring: true,
+        smartActions: true
       }
     },
     {

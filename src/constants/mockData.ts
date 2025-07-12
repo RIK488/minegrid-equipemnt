@@ -155,28 +155,124 @@ export const listData: { [key: string]: ListItem[] } = {
   ],
   'sales-pipeline': [
     {
-      id: 1,
-      title: 'Prospect - Mines du Sud SA',
-      description: 'Intérêt pour CAT 950GC - Score: 85% - Action: appel de suivi',
-      status: 'En cours',
+      id: '1',
+      title: 'Excavatrice CAT 320',
+      status: 'Qualifié',
       priority: 'high',
-      timestamp: '2024-01-22T10:30:00Z'
+      value: 850000,
+      probability: 85,
+      nextAction: 'Envoi devis détaillé',
+      lastContact: '2024-01-20',
+      assignedTo: 'Ahmed Benali',
+      stage: 'Devis',
+      company: 'Entreprise BTP Maroc',
+      email: 'contact@btp-maroc.ma',
+      phone: '+212 5 22 34 56 78'
     },
     {
-      id: 2,
-      title: 'Prospect - Bati Plus Construction',
-      description: 'Devis JCB 3CX envoyé - Score: 65% - Action: relance',
-      status: 'En attente',
+      id: '2',
+      title: 'Chargeuse JCB 3CX',
+      status: 'En négociation',
+      priority: 'high',
+      value: 420000,
+      probability: 70,
+      nextAction: 'Réunion technique',
+      lastContact: '2024-01-19',
+      assignedTo: 'Fatima Zahra',
+      stage: 'Négociation',
+      company: 'Construction Atlas',
+      email: 'achat@atlas-construction.ma',
+      phone: '+212 5 24 12 34 56'
+    },
+    {
+      id: '3',
+      title: 'Bulldozer Komatsu D65',
+      status: 'Prospection',
       priority: 'medium',
-      timestamp: '2024-01-22T14:15:00Z'
+      value: 1200000,
+      probability: 40,
+      nextAction: 'Premier contact',
+      lastContact: '2024-01-15',
+      assignedTo: 'Karim Alami',
+      stage: 'Prospection',
+      company: 'Mines du Sud',
+      email: 'direction@mines-sud.ma',
+      phone: '+212 5 28 98 76 54'
     },
     {
-      id: 3,
-      title: 'Prospect - Carrière Agadir',
-      description: 'Premier contact - Score: 45% - Action: présentation',
-      status: 'Nouveau',
+      id: '4',
+      title: 'Pelle mécanique Volvo EC220',
+      status: 'Conclu',
       priority: 'low',
-      timestamp: '2024-01-22T16:45:00Z'
+      value: 680000,
+      probability: 100,
+      nextAction: 'Livraison prévue',
+      lastContact: '2024-01-18',
+      assignedTo: 'Ahmed Benali',
+      stage: 'Conclu',
+      company: 'Travaux Publics Plus',
+      email: 'commande@tpp.ma',
+      phone: '+212 5 26 45 67 89'
+    },
+    {
+      id: '5',
+      title: 'Camion benne Mercedes',
+      status: 'Perdu',
+      priority: 'low',
+      value: 280000,
+      probability: 0,
+      nextAction: 'Archiver le dossier',
+      lastContact: '2024-01-10',
+      assignedTo: 'Fatima Zahra',
+      stage: 'Perdu',
+      company: 'Transport Express',
+      email: 'info@transport-express.ma',
+      phone: '+212 5 22 11 22 33'
+    },
+    {
+      id: '6',
+      title: 'Groupe électrogène Perkins',
+      status: 'Qualifié',
+      priority: 'medium',
+      value: 180000,
+      probability: 60,
+      nextAction: 'Démonstration produit',
+      lastContact: '2024-01-16',
+      assignedTo: 'Karim Alami',
+      stage: 'Devis',
+      company: 'Énergie Solutions',
+      email: 'technique@energie-solutions.ma',
+      phone: '+212 5 25 67 89 01'
+    },
+    {
+      id: '7',
+      title: 'Compresseur d\'air Atlas Copco',
+      status: 'En négociation',
+      priority: 'high',
+      value: 320000,
+      probability: 75,
+      nextAction: 'Négociation prix',
+      lastContact: '2024-01-17',
+      assignedTo: 'Ahmed Benali',
+      stage: 'Négociation',
+      company: 'Industries Modernes',
+      email: 'achats@industries-modernes.ma',
+      phone: '+212 5 23 45 67 89'
+    },
+    {
+      id: '8',
+      title: 'Bétonnière mobile',
+      status: 'Prospection',
+      priority: 'medium',
+      value: 95000,
+      probability: 30,
+      nextAction: 'Présentation catalogue',
+      lastContact: '2024-01-12',
+      assignedTo: 'Fatima Zahra',
+      stage: 'Prospection',
+      company: 'Béton Pro',
+      email: 'contact@beton-pro.ma',
+      phone: '+212 5 27 89 01 23'
     }
   ],
   'equipment-catalog': [
@@ -791,6 +887,10 @@ export const getWidgetData = (widgetId: string, dataSource?: string) => {
 
   // Listes
   if (listData[widgetId]) {
+    // Cas spécial : stock-status utilise les données du pipeline commercial
+    if (widgetId === 'stock-status') {
+      return listData['sales-pipeline'];
+    }
     return listData[widgetId];
   }
 
