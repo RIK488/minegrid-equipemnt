@@ -433,6 +433,12 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         {renderCommonServices()}
+        <button
+          className="mb-4 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+          onClick={() => setShowAddWidgetModal(true)}
+        >
+          + Ajouter des widgets
+        </button>
         {/* Ajout direct du widget pipeline commercial */}
         <div className="mb-8">
           <SalesPipelineWidget data={{ leads: listData['sales-pipeline'] }} />
