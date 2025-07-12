@@ -415,13 +415,13 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
                   {action.status === 'pending' && (
                     <>
                       <button
-                        onClick={() => handleActionClick(action, 'start')}
+                        onClick={() => { handleActionClick(action, 'start'); alert('Action démarrée : ' + action.title); }}
                         className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                       >
                         Démarrer
                       </button>
                       <button
-                        onClick={() => handleActionClick(action, 'contact')}
+                        onClick={() => { handleActionClick(action, 'contact'); alert('Contact : ' + (action.contact?.name || '')); }}
                         className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                       >
                         Contacter
@@ -439,7 +439,7 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
                   )}
                   
                   <button
-                    onClick={() => handleActionClick(action, 'reschedule')}
+                    onClick={() => { handleActionClick(action, 'reschedule'); alert('Action reprogrammée : ' + action.title); }}
                     className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                   >
                     Reprogrammer
@@ -455,18 +455,10 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
       <div className="border-t border-gray-200 pt-4 mt-6">
         <h4 className="text-sm font-semibold text-gray-900 mb-3">Actions Rapides</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors">
-            Nouvelle tâche
-          </button>
-          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors">
-            Relance auto
-          </button>
-          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors">
-            Planifier
-          </button>
-          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors">
-            Rapport IA
-          </button>
+          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" onClick={() => alert('Nouvelle tâche')}>Nouvelle tâche</button>
+          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" onClick={() => alert('Relance auto')}>Relance auto</button>
+          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" onClick={() => alert('Planifier')}>Planifier</button>
+          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" onClick={() => alert('Rapport IA')}>Rapport IA</button>
         </div>
       </div>
     </div>
