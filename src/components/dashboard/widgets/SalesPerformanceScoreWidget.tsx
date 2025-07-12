@@ -132,6 +132,11 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
     }
   };
 
+  // Fonction pour gérer l'action du bouton Agir
+  const handleRecommendationAction = (recommendation: any) => {
+    alert(`Action recommandée : ${recommendation.action}`);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       
@@ -251,7 +256,12 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
                 <div className="text-sm font-medium text-gray-900">{rec.action}</div>
                 <div className="text-xs text-gray-500">Impact: {rec.impact}</div>
               </div>
-              <button className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 transition-colors">Agir</button>
+              <button
+                className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 transition-colors"
+                onClick={() => handleRecommendationAction(rec)}
+              >
+                Agir
+              </button>
             </div>
           ))}
         </div>
