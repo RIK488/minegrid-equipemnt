@@ -513,11 +513,6 @@ const DashboardConfigurator: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  {/* DEBUG TEMPORAIRE */}
-                  <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                    <div><b>selectedWidgets:</b> {JSON.stringify(selectedWidgets)}</div>
-                    <div><b>widgets du métier:</b> {JSON.stringify(selectedMetierData.widgets.map(w => w.id))}</div>
-                  </div>
                   
                   <div className="bg-white rounded-lg border border-gray-200 p-4 min-h-[400px]">
                     {selectedWidgets.length === 0 ? (
@@ -598,37 +593,6 @@ const DashboardConfigurator: React.FC = () => {
                                 </div>
                               );
                             })}
-                        </div>
-                        
-                        {/* Informations sur la configuration */}
-                        <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <div className="grid grid-cols-2 gap-4 text-xs">
-                            <div>
-                              <span className="font-medium text-gray-700">Métier:</span>
-                              <span className="ml-1 text-gray-600">{selectedMetierData.name}</span>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Widgets:</span>
-                              <span className="ml-1 text-gray-600">{selectedWidgets.length}</span>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Tailles:</span>
-                              <span className="ml-1 text-gray-600">
-                                {Object.values(widgetSizes).filter(s => s === '1/3').length} 1/3, 
-                                {Object.values(widgetSizes).filter(s => s === '1/2').length} 1/2, 
-                                {Object.values(widgetSizes).filter(s => s === '2/3').length} 2/3, 
-                                {Object.values(widgetSizes).filter(s => s === '1/1').length} 1/1
-                              </span>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Types:</span>
-                              <span className="ml-1 text-gray-600">
-                                {Array.from(new Set(selectedMetierData.widgets
-                                  .filter(w => selectedWidgets.includes(w.id))
-                                  .map(w => w.type))).join(', ')}
-                              </span>
-                            </div>
-                          </div>
                         </div>
                       </div>
                     )}
