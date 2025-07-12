@@ -164,7 +164,7 @@ const DailyActionsWidget: React.FC<DailyActionsWidgetProps> = ({ widget, data, w
                         e.stopPropagation();
                         handleAction('contact', action);
                       }}
-                      className="text-orange-600 hover:text-orange-700"
+                      className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                       title="Contacter"
                     >
                       <Phone className="h-3 w-3" />
@@ -174,7 +174,7 @@ const DailyActionsWidget: React.FC<DailyActionsWidgetProps> = ({ widget, data, w
                         e.stopPropagation();
                         handleAction('complete', action);
                       }}
-                      className="text-green-600 hover:text-green-700"
+                      className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                       title="Marquer comme terminé"
                     >
                       <CheckCircle className="h-3 w-3" />
@@ -189,7 +189,7 @@ const DailyActionsWidget: React.FC<DailyActionsWidgetProps> = ({ widget, data, w
         {/* Bouton "Voir plus" */}
         {filteredActions.length > maxItems && (
           <div className="text-center pt-2">
-            <button className="text-orange-600 hover:text-orange-700 text-sm font-medium">
+            <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors">
               Voir toutes les {filteredActions.length} actions
             </button>
           </div>
@@ -401,14 +401,14 @@ const DailyActionsWidget: React.FC<DailyActionsWidgetProps> = ({ widget, data, w
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     onClick={() => handleAction('contact', selectedAction)}
-                    className="px-4 py-2 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors flex items-center justify-center"
+                    className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors flex items-center justify-center"
                   >
                     <Phone className="h-4 w-4 mr-2" />
                     Contacter
                   </button>
                   <button 
                     onClick={() => handleAction('complete', selectedAction)}
-                    className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors flex items-center justify-center"
+                    className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors flex items-center justify-center"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Terminer

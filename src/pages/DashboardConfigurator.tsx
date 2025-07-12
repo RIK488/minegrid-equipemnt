@@ -262,18 +262,23 @@ const commonServices = [
   }
 ];
 
+// Conversion taille → largeur (12 colonnes)
+function getWidthFromSize(size: '1/3' | '1/2' | '2/3' | '1/1') {
+  if (size === '1/3') return 4;
+  if (size === '1/2') return 6;
+  if (size === '2/3') return 8;
+  if (size === '1/1') return 12;
+  return 4; // défaut
+}
+
 // Fonction pour générer un layout compact automatiquement
-function generateCompactLayout(selectedWidgets, widgetSizes) {
+function generateCompactLayout(selectedWidgets: string[], widgetSizes: {[key: string]: '1/3' | '1/2' | '2/3' | '1/1'}) {
   const layout = [];
   let x = 0;
   let y = 0;
   let rowHeight = 2;
   selectedWidgets.forEach((id, idx) => {
-    let w = 4;
-    const size = widgetSizes[id] || '1/3';
-    if (size === '1/2') w = 6;
-    if (size === '2/3') w = 8;
-    if (size === '1/1') w = 12;
+    let w = getWidthFromSize(widgetSizes[id] || '1/3');
     if (x + w > 12) {
       x = 0;
       y += rowHeight;
@@ -328,33 +333,33 @@ const DashboardConfigurator: React.FC = () => {
     setWidgetSizes(prev => ({ ...prev, [widgetId]: size }));
   };
 
-  // Adapter le layout pour utiliser la largeur choisie
+  // Adapter le layout pour 12 colonnes
   const generateLayout = () => {
     const enabledWidgets = selectedMetierData?.widgets.filter(w => selectedWidgets.includes(w.id)) || [];
-    const layout: any[] = [];
+    const layout = [];
     let x = 0;
     let y = 0;
-    let maxY = 0;
+    let rowHeight = 4;
+    let currentRowMaxY = y;
+
     enabledWidgets.forEach((widget, index) => {
-      const size = widgetSizes[widget.id] || '1/3';
-      let w = 4;
-      if (size === '1/2') w = 6;
-      if (size === '2/3') w = 8;
-      if (size === '1/1') w = 12;
+      const size = widgetSizes[widget.id] || (widget as any).size || '1/3';
+      let w = getWidthFromSize(size);
       if (x + w > 12) {
         x = 0;
-        y = maxY;
+        y = currentRowMaxY;
       }
       layout.push({
         i: widget.id,
         x,
         y,
         w,
-        h: 4,
+        h: rowHeight,
       });
       x += w;
-      maxY = Math.max(maxY, y + 4);
+      currentRowMaxY = Math.max(currentRowMaxY, y + rowHeight);
     });
+    console.log('Layout généré pour sauvegarde:', layout);
     return layout;
   };
 
@@ -373,6 +378,7 @@ const DashboardConfigurator: React.FC = () => {
       layout: {
         lg: layout
       },
+      widgetSizes, // <-- Ajout du mapping des tailles
       theme: 'light',
       refreshInterval: 30,
       notifications: true,

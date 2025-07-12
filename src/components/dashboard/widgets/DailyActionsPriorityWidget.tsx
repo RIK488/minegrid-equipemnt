@@ -416,13 +416,13 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
                     <>
                       <button
                         onClick={() => handleActionClick(action, 'start')}
-                        className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors"
+                        className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                       >
                         Démarrer
                       </button>
                       <button
                         onClick={() => handleActionClick(action, 'contact')}
-                        className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-lg hover:bg-green-200 transition-colors"
+                        className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                       >
                         Contacter
                       </button>
@@ -432,7 +432,7 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
                   {action.status === 'in-progress' && (
                     <button
                       onClick={() => handleActionClick(action, 'complete')}
-                      className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-lg hover:bg-green-200 transition-colors"
+                      className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                     >
                       Terminer
                     </button>
@@ -440,7 +440,7 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
                   
                   <button
                     onClick={() => handleActionClick(action, 'reschedule')}
-                    className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-200 transition-colors"
+                    className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                   >
                     Reprogrammer
                   </button>
@@ -455,16 +455,16 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
       <div className="border-t border-gray-200 pt-4 mt-6">
         <h4 className="text-sm font-semibold text-gray-900 mb-3">Actions Rapides</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <button className="text-xs bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 transition-colors">
+          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors">
             Nouvelle tâche
           </button>
-          <button className="text-xs bg-green-100 text-green-700 px-3 py-2 rounded-lg hover:bg-green-200 transition-colors">
+          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors">
             Relance auto
           </button>
-          <button className="text-xs bg-purple-100 text-purple-700 px-3 py-2 rounded-lg hover:bg-purple-200 transition-colors">
+          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors">
             Planifier
           </button>
-          <button className="text-xs bg-orange-100 text-orange-700 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors">
+          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors">
             Rapport IA
           </button>
         </div>

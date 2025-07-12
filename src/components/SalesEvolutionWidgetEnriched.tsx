@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { Megaphone, PlusCircle, Pencil, Brain } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -409,19 +410,19 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setShowDetails(true)}
-          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+          className="px-3 py-1 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors"
         >
           Analyse complète
         </button>
         <button
           onClick={() => setShowForecast(true)}
-          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+          className="px-3 py-1 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors"
         >
           Prévision IA
         </button>
         <button
           onClick={() => setShowBenchmark(true)}
-          className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+          className="px-3 py-1 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors"
         >
           Benchmark secteur
         </button>
@@ -433,27 +434,31 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => handleQuickAction('publish_promo')}
-            className="px-3 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm"
+            className="px-3 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors flex items-center"
           >
-            📢 Publier promo
+            <Megaphone className="w-4 h-4 mr-2" />
+            Publier promo
           </button>
           <button
             onClick={() => handleQuickAction('add_equipment')}
-            className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+            className="px-3 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors flex items-center"
           >
-            ➕ Ajouter équipement
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Ajouter équipement
           </button>
           <button
             onClick={() => handleQuickAction('correct_month')}
-            className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+            className="px-3 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors flex items-center"
           >
-            ✏️ Corriger ce mois
+            <Pencil className="w-4 h-4 mr-2" />
+            Corriger ce mois
           </button>
           <button
             onClick={() => handleQuickAction('ai_forecast')}
-            className="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 text-sm"
+            className="px-3 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors flex items-center"
           >
-            🤖 Prévision IA
+            <Brain className="w-4 h-4 mr-2" />
+            Prévision IA
           </button>
         </div>
       </div>

@@ -35,24 +35,15 @@ const WIDGETS_VENDEUR_IDS = [
 ];
 
 // Fonction utilitaire pour garantir un layout complet et ordonné
-function getOrderedAndCompleteLayout(widgets, layout) {
-  const widgetOrder = widgets.map((w: any) => w.id);
-  const layoutById = Object.fromEntries((layout || []).map((l: any) => [l.i, l]));
-  return widgetOrder.map((id: string, idx: number) => {
-    if (layoutById[id]) return layoutById[id];
-    // Génère une position/taille par défaut si manquante
-    return {
-      i: id,
-      x: (idx * 4) % 12,
-      y: Math.floor(idx / 3) * 2,
-      w: 4,
-      h: 2,
-    };
-  });
+function getOrderedAndCompleteLayout(widgets, layout, widgetSizes) {
+  // On recalcule TOUJOURS le layout avec les tailles à jour
+  return generatePreviewLayout(widgets, widgetSizes);
 }
 
+// Conversion taille → largeur (12 colonnes)
 function getWidthFromSize(size) {
   if (size === '1/3') return 4;
+  if (size === '1/2') return 6;
   if (size === '2/3') return 8;
   if (size === '1/1') return 12;
   return 4; // défaut
@@ -137,18 +128,15 @@ function generateLayoutFromPreview(widgets, widgetSizes) {
   return layout;
 }
 
-// Fonction utilitaire pour générer le layout comme dans le configurateur
+// Fonction utilitaire pour générer le layout comme dans le configurateur, en respectant la taille 'size' de chaque widget
 function generatePreviewLayout(widgets, widgetSizes) {
   const layout = [];
   let x = 0;
   let y = 0;
   let maxY = 0;
   widgets.forEach((widget, index) => {
-    const size = widgetSizes?.[widget.id] || '1/3';
-    let w = 4;
-    if (size === '1/2') w = 6;
-    if (size === '2/3') w = 8;
-    if (size === '1/1') w = 12;
+    const size = widgetSizes?.[widget.id] || widget.size || '1/3';
+    let w = getWidthFromSize(size);
     if (x + w > 12) {
       x = 0;
       y = maxY;
@@ -219,6 +207,14 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     parsed.widgets = (parsed.widgets || []).filter(w => validIds.includes(w.id));
     parsed.layout.lg = (parsed.layout.lg || []).filter(l => validIds.includes(l.i));
 
+    // Injection de la taille depuis widgetSizes si absente
+    if (parsed.widgetSizes) {
+      parsed.widgets = parsed.widgets.map(w => ({
+        ...w,
+        size: w.size || parsed.widgetSizes[w.id] || '1/3'
+      }));
+    }
+
     setConfig(parsed);
     setLayout(parsed.layout || { lg: [] });
   }, []);
@@ -251,6 +247,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       console.log('🔍 Configuration actuelle:', config);
       console.log('🔍 Widgets présents:', config.widgets?.map((w: any) => w.id));
       console.log('🔍 Layout:', config.layout?.lg?.map((l: any) => l.i));
+      console.log('🔍 WidgetSizes:', config.widgetSizes);
       
       console.log('🔍 Configuration chargée avec succès');
     }
@@ -272,49 +269,56 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       const isValid = validIds.every(id => widgetIds.includes(id)) && widgetIds.length === validIds.length;
       if (!isValid) {
         localStorage.removeItem('enterpriseDashboardConfig_vendeur');
-        // Générer une nouvelle config par défaut immédiatement
+        // Récupère le mapping des tailles depuis la config précédente si présent
+        const previousWidgetSizes = parsed && parsed.widgetSizes ? parsed.widgetSizes : {};
+        // Crée les widgets par défaut en injectant la taille si connue
         const defaultWidgets = [
           {
             id: 'sales-performance-score',
             type: 'performance',
             title: 'Score de Performance Commerciale',
             enabled: true,
-            position: 0
+            position: 0,
+            size: previousWidgetSizes['sales-performance-score'] || '1/3'
           },
           {
             id: 'sales-evolution',
             type: 'chart',
             title: 'Évolution des ventes enrichie',
             enabled: true,
-            position: 1
+            position: 1,
+            size: previousWidgetSizes['sales-evolution'] || '1/3'
           },
           {
             id: 'stock-status',
             type: 'list',
             title: 'Plan d\'action stock & revente',
             enabled: true,
-            position: 2
+            position: 2,
+            size: previousWidgetSizes['stock-status'] || '1/3'
           },
           {
             id: 'sales-pipeline',
             type: 'list',
             title: 'Pipeline commercial',
             enabled: true,
-            position: 3
+            position: 3,
+            size: previousWidgetSizes['sales-pipeline'] || '1/3'
           },
           {
             id: 'daily-actions',
             type: 'daily-actions',
             title: 'Actions Commerciales Prioritaires',
             enabled: true,
-            position: 4
+            position: 4,
+            size: previousWidgetSizes['daily-actions'] || '1/3'
           }
         ];
-        const defaultLayout = generatePreviewLayout(defaultWidgets, {});
+        const defaultLayout = generatePreviewLayout(defaultWidgets, previousWidgetSizes);
         const newConfig = {
           widgets: defaultWidgets,
           layout: { lg: defaultLayout },
-          widgetSizes: {},
+          widgetSizes: previousWidgetSizes,
           theme: 'light',
           refreshInterval: 30,
           notifications: true
@@ -331,7 +335,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   // On utilise EXCLUSIVEMENT le layout enregistré dans la config utilisateur
   const widgetsToDisplay = config?.widgets || [];
   const widgetsById = Object.fromEntries(widgetsToDisplay.map((w: any) => [w.id, w]));
-  const orderedLayouts = getOrderedAndCompleteLayout(widgetsToDisplay, config?.layout?.lg);
+  const orderedLayouts = config?.layout?.lg || [];
 
   // 3. À chaque action (drag, resize, suppression, ajout, changement de taille)
   const onLayoutChange = (newLayout: any[], allLayouts?: any) => {
@@ -354,9 +358,15 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       return l;
     });
     const updatedLayouts = { ...layout, lg: newLayout };
+    
+    // Mise à jour du widgetSizes dans la config
+    const newSize = getNextWidgetWidth(layout.lg.find((l: any) => l.i === widgetId)?.w || 3) === 7 ? '2/3' : 
+                   getNextWidgetWidth(layout.lg.find((l: any) => l.i === widgetId)?.w || 3) === 10 ? '1/1' : '1/3';
+    
     setLayout(updatedLayouts);
     if (config) {
-      const newConfig = { ...config, layout: updatedLayouts };
+      const newWidgetSizes = { ...config.widgetSizes, [widgetId]: newSize };
+      const newConfig = { ...config, layout: updatedLayouts, widgetSizes: newWidgetSizes };
       setConfig(newConfig);
       localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
     }
@@ -428,14 +438,19 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       const current = prevLayout.lg.find((l: any) => l.i === widgetId);
       if (!current) return prevLayout;
       let nextW;
-      if (current.w < 8) nextW = 8;
-      else if (current.w < 12) nextW = 12;
-      else nextW = 4;
+      if (current.w < 5) nextW = 7;
+      else if (current.w < 10) nextW = 10;
+      else nextW = 3;
       const newLayout = prevLayout.lg.map((l: any) => l.i === widgetId ? { ...l, w: nextW } : l);
       const updatedLayouts = { ...prevLayout, lg: newLayout };
+      
+      // Mise à jour du widgetSizes dans la config
+      const newSize = nextW === 7 ? '2/3' : nextW === 10 ? '1/1' : '1/3';
+      
       setConfig(prevConfig => {
         if (!prevConfig) return prevConfig;
-        const newConfig = { ...prevConfig, layout: updatedLayouts };
+        const newWidgetSizes = { ...prevConfig.widgetSizes, [widgetId]: newSize };
+        const newConfig = { ...prevConfig, layout: updatedLayouts, widgetSizes: newWidgetSizes };
         localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
         return newConfig;
       });
@@ -508,10 +523,10 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
 
   // Fonction pour alterner la taille du widget
   const getNextWidgetWidth = (currentW: number) => {
-    // Cycle: 4 (1/3) -> 8 (2/3) -> 12 (plein écran) -> 4 ...
-    if (currentW < 6) return 8;
-    if (currentW < 10) return 12;
-    return 4;
+    // Cycle: 3 (1/3) -> 7 (2/3) -> 10 (plein écran) -> 3 ...
+    if (currentW < 5) return 7;
+    if (currentW < 10) return 10;
+    return 3;
   };
 
 
@@ -520,14 +535,15 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   const handleResetWidgetSize = (widgetId: string) => {
     const newLayout = layout.lg.map((l: any) => {
       if (l.i === widgetId) {
-        return { ...l, w: 4 };
+        return { ...l, w: 3 };
       }
       return l;
     });
     const updatedLayouts = { ...layout, lg: newLayout };
     setLayout(updatedLayouts);
     if (config) {
-      const newConfig = { ...config, layout: updatedLayouts };
+      const newWidgetSizes = { ...config.widgetSizes, [widgetId]: '1/3' };
+      const newConfig = { ...config, layout: updatedLayouts, widgetSizes: newWidgetSizes };
       setConfig(newConfig);
       localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
     }
@@ -555,44 +571,43 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
           const widget = widgetsById[l.i];
           if (!widget) return null;
           return (
-            <div key={widget.id} data-grid={l} className="bg-white border rounded-lg flex flex-col h-full group relative">
-              {/* Boutons d'action en haut à droite */}
-              <div className="absolute top-2 right-2 z-10 flex space-x-1 opacity-80 group-hover:opacity-100">
-                <button
-                  className="p-1 bg-white rounded-full shadow hover:bg-orange-100 transition-colors"
-                  title="Changer la largeur"
-                  onClick={() => handleCycleWidgetWidth(widget.id)}
-                >
-                  <Layout className="w-4 h-4 text-orange-600" />
-                </button>
-                <button
-                  className="p-1 bg-white rounded-full shadow hover:bg-orange-100 transition-colors"
-                  title="Agrandir/Réduire la hauteur"
-                  onClick={() => handleCycleWidgetHeight(widget.id)}
-                >
-                  {l.h < 6 ? <Maximize2 className="w-4 h-4 text-orange-600" /> : <Minimize2 className="w-4 h-4 text-orange-600" />}
-                </button>
-                <button
-                  className="p-1 bg-white rounded-full shadow hover:bg-blue-100 transition-colors"
-                  title="Réinitialiser la taille"
-                  onClick={() => handleResetWidgetSize(widget.id)}
-                >
-                  <Layout className="w-4 h-4 text-blue-600" />
-                </button>
-                <button
-                  className="p-1 bg-white rounded-full shadow hover:bg-red-100 transition-colors"
-                  title="Supprimer"
-                  onClick={() => handleRemoveWidget(widget.id)}
-                >
-                  <X className="w-4 h-4 text-red-600" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4">
-                <WidgetRenderer
-                  widget={widget}
-                  widgetSize="medium"
-                  onAction={handleWidgetAction}
-                />
+            <div key={widget.id} data-grid={l} className="bg-orange-50 border border-orange-200 rounded-lg flex flex-col h-full group relative">
+              <div className="h-full flex flex-col">
+                {/* Header du widget */}
+                <div className="flex justify-between items-center p-4 pb-2 border-b">
+                  <h3 className="text-lg font-bold text-gray-900">{widget.id === 'stock-status' ? "Plan d’action Stock & Revente" : widget.title}</h3>
+                  <div className="flex space-x-1">
+                    <button
+                      className="p-1 bg-white rounded-full shadow hover:bg-orange-100 transition-colors"
+                      title="Agrandir/Réduire la hauteur"
+                      onClick={() => handleCycleWidgetHeight(widget.id)}
+                    >
+                      {l.h < 6 ? <Maximize2 className="w-4 h-4 text-orange-600" /> : <Minimize2 className="w-4 h-4 text-orange-600" />}
+                    </button>
+                    <button
+                      className="p-1 bg-white rounded-full shadow hover:bg-blue-100 transition-colors"
+                      title="Réinitialiser la taille"
+                      onClick={() => handleResetWidgetSize(widget.id)}
+                    >
+                      <Layout className="w-4 h-4 text-blue-600" />
+                    </button>
+                    <button
+                      className="p-1 bg-white rounded-full shadow hover:bg-red-100 transition-colors"
+                      title="Supprimer"
+                      onClick={() => handleRemoveWidget(widget.id)}
+                    >
+                      <X className="w-4 h-4 text-red-600" />
+                    </button>
+                  </div>
+                </div>
+                {/* Contenu scrollable */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-6" style={{ maxHeight: '100%' }}>
+                  <WidgetRenderer
+                    widget={widget}
+                    widgetSize="medium"
+                    onAction={handleWidgetAction}
+                  />
+                </div>
               </div>
             </div>
           );

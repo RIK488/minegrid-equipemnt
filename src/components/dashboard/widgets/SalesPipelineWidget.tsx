@@ -395,7 +395,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
               className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                 viewMode === 'list' 
                   ? 'bg-orange-600 text-white' 
-                  : 'text-orange-700 hover:bg-orange-200'
+                  : 'bg-orange-100 text-orange-800 border border-orange-300 hover:bg-orange-200'
               }`}
             >
               Liste
@@ -405,7 +405,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
               className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                 viewMode === 'kanban' 
                   ? 'bg-orange-600 text-white' 
-                  : 'text-orange-700 hover:bg-orange-200'
+                  : 'bg-orange-100 text-orange-800 border border-orange-300 hover:bg-orange-200'
               }`}
             >
               Kanban
@@ -435,19 +435,19 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
       {/* Statistiques globales */}
       <div className="grid grid-cols-4 gap-3">
         <div className="text-center p-3 bg-orange-100 rounded-lg border border-orange-200">
-          <div className="text-2xl font-bold text-orange-700">{pipelineStats.total}</div>
+          <div className="text-base font-medium text-orange-700">{pipelineStats.total}</div>
           <div className="text-xs text-orange-600">Total Leads</div>
         </div>
         <div className="text-center p-3 bg-orange-100 rounded-lg border border-orange-200">
-          <div className="text-2xl font-bold text-orange-700">{formatCurrency(pipelineStats.totalValue)}</div>
+          <div className="text-base font-medium text-orange-700">{formatCurrency(pipelineStats.totalValue)}</div>
           <div className="text-xs text-orange-600">Valeur Totale</div>
         </div>
         <div className="text-center p-3 bg-orange-100 rounded-lg border border-orange-200">
-          <div className="text-2xl font-bold text-orange-700">{formatCurrency(pipelineStats.weightedValue)}</div>
+          <div className="text-base font-medium text-orange-700">{formatCurrency(pipelineStats.weightedValue)}</div>
           <div className="text-xs text-orange-600">Valeur Pondérée</div>
         </div>
         <div className="text-center p-3 bg-orange-100 rounded-lg border border-orange-200">
-          <div className="text-2xl font-bold text-orange-700">{Math.round(calculateConversionRates.global)}%</div>
+          <div className="text-base font-medium text-orange-700">{Math.round(calculateConversionRates.global)}%</div>
           <div className="text-xs text-orange-600">Taux Conversion</div>
         </div>
       </div>
@@ -482,7 +482,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
                     </div>
                     <button
                       onClick={() => handleAIInsightAction(insight)}
-                      className="text-xs bg-white px-2 py-1 rounded border hover:bg-gray-50"
+                      className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors"
                     >
                       {insight.action}
                     </button>
@@ -594,18 +594,14 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleViewDetails(lead)}
-                      className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+                      className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors"
                     >
                       Voir détails
                     </button>
                     <button
                       onClick={() => handleNextStage(lead)}
                       disabled={lead.stage === 'Conclu' || lead.stage === 'Perdu'}
-                      className={`text-xs px-2 py-1 rounded ${
-                        lead.stage === 'Conclu' || lead.stage === 'Perdu'
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-green-100 text-green-700 hover:bg-green-200'
-                      }`}
+                      className={`text-xs px-2 py-1 rounded ${lead.stage === 'Conclu' || lead.stage === 'Perdu' ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-orange-100 text-orange-800 border border-orange-300 hover:bg-orange-200'}`}
                       title={lead.stage === 'Conclu' || lead.stage === 'Perdu' ? 'Lead finalisé' : 'Passer à l\'étape suivante'}
                     >
                       {lead.stage === 'Conclu' || lead.stage === 'Perdu' ? 'Finalisé' : 'Suivant'}
@@ -644,7 +640,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
                   {stageLeads.map((lead) => (
                     <div key={lead.id} className="bg-white rounded-lg p-3 border border-orange-200 hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleViewDetails(lead)}>
                       <h5 className="font-semibold text-sm text-gray-900 mb-1">{lead.title}</h5>
-                      <div className="text-lg font-bold text-orange-700 mb-1">{formatCurrency(lead.value)}</div>
+                      <div className="text-[10px] font-normal text-orange-700 mb-1">{formatCurrency(lead.value)}</div>
                       <div className="flex items-center justify-between text-xs">
                         <span className={`px-2 py-1 rounded-full ${getPriorityColor(lead.priority)}`}>
                           {lead.priority === 'high' ? 'Haute' : lead.priority === 'medium' ? 'Moyenne' : 'Basse'}
@@ -698,18 +694,14 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => handleViewDetails(lead)}
-                      className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+                      className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors"
                     >
                       Détails
                     </button>
                     <button
                       onClick={() => handleNextStage(lead)}
                       disabled={lead.stage === 'Conclu' || lead.stage === 'Perdu'}
-                      className={`text-xs px-2 py-1 rounded ${
-                        lead.stage === 'Conclu' || lead.stage === 'Perdu'
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-green-100 text-green-700 hover:bg-green-200'
-                      }`}
+                      className={`text-xs px-2 py-1 rounded ${lead.stage === 'Conclu' || lead.stage === 'Perdu' ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-orange-100 text-orange-800 border border-orange-300 hover:bg-orange-200'}`}
                       title={lead.stage === 'Conclu' || lead.stage === 'Perdu' ? 'Lead finalisé' : 'Passer à l\'étape suivante'}
                     >
                       {lead.stage === 'Conclu' || lead.stage === 'Perdu' ? 'Finalisé' : 'Suivant'}
@@ -799,30 +791,26 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => handleEditLead(selectedLead)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                  className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded-lg hover:bg-orange-200 text-sm"
                 >
                   Modifier
                 </button>
                 <button
                   onClick={handleAddNote}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                  className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded-lg hover:bg-orange-200 text-sm"
                 >
                   Ajouter une note
                 </button>
                 <button
                   onClick={handleScheduleCall}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                  className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded-lg hover:bg-orange-200 text-sm"
                 >
                   Programmer un appel
                 </button>
                 <button
                   onClick={() => handleNextStage(selectedLead)}
                   disabled={selectedLead.stage === 'Conclu' || selectedLead.stage === 'Perdu'}
-                  className={`px-4 py-2 rounded-lg text-sm ${
-                    selectedLead.stage === 'Conclu' || selectedLead.stage === 'Perdu'
-                      ? 'bg-gray-400 text-white cursor-not-allowed'
-                      : 'bg-orange-600 text-white hover:bg-orange-700'
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm ${selectedLead.stage === 'Conclu' || selectedLead.stage === 'Perdu' ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-orange-100 text-orange-800 border border-orange-300 hover:bg-orange-200'}`}
                 >
                   {selectedLead.stage === 'Conclu' || selectedLead.stage === 'Perdu' ? 'Déjà finalisé' : 'Passer à l\'étape suivante'}
                 </button>

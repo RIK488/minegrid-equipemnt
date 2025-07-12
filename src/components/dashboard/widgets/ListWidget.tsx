@@ -182,7 +182,7 @@ const ListWidget: React.FC<ListWidgetProps> = ({ widget, data, widgetSize = 'med
         {/* Bouton "Voir plus" */}
         {filteredData.length > maxItems && (
           <div className="text-center pt-2">
-            <button className="text-orange-600 hover:text-orange-700 text-sm font-medium">
+            <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors">
               Voir tous les {filteredData.length} éléments
             </button>
           </div>
@@ -316,13 +316,13 @@ const ListWidget: React.FC<ListWidgetProps> = ({ widget, data, widgetSize = 'med
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     onClick={() => handleAction('edit', selectedItem)}
-                    className="px-4 py-2 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors"
+                    className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors"
                   >
                     Modifier
                   </button>
                   <button 
                     onClick={() => handleAction('delete', selectedItem)}
-                    className="px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                    className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors"
                   >
                     Supprimer
                   </button>

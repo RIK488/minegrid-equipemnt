@@ -257,7 +257,7 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
                 <div className="text-xs text-gray-500">Impact: {rec.impact}</div>
               </div>
               <button
-                className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 transition-colors"
+                className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors"
                 onClick={() => handleRecommendationAction(rec)}
               >
                 Agir
@@ -271,7 +271,7 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
       <div className="mt-4 pt-4 border-t">
         <div className="flex items-center justify-between text-sm mb-2">
           <span className="text-gray-600">Progression vers l'objectif</span>
-          <span className="font-medium text-gray-900">{data.score}%</span>
+          <span className="font-medium text-regray-900">{data.score}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div className={`h-2 rounded-full transition-all duration-1000 ${getScoreBarColor(data.score)}`} style={{ width: `${data.score}%` }}></div>

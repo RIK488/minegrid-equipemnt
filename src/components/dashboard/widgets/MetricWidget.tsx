@@ -395,10 +395,10 @@ const MetricWidget: React.FC<MetricWidgetProps> = ({ widget, data, widgetSize = 
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Actions</h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <button className="px-4 py-2 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors">
+                  <button className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors">
                     Exporter rapport
                   </button>
-                  <button className="px-4 py-2 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors">
+                  <button className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors">
                     Planifier actions
                   </button>
                 </div>

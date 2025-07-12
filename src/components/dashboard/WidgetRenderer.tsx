@@ -33,6 +33,25 @@ interface WidgetRendererProps {
   onAction?: (action: string, data: any) => void;
 }
 
+// Déterminer la taille du texte en fonction de la taille du widget et du type d'élément
+function getFontSizeFromWidgetSize(size: string, type: 'title' | 'value' = 'title') {
+  if (type === 'value') {
+    if (size === '1/3') return 'text-[clamp(1rem,2vw,1.2rem)]';
+    if (size === '1/2') return 'text-[clamp(1.1rem,2.5vw,1.5rem)]';
+    if (size === '2/3') return 'text-[clamp(1.3rem,3vw,2rem)]';
+    if (size === '1/1') return 'text-[clamp(1.5rem,4vw,2.5rem)]';
+  } else {
+    if (size === '1/3') return 'text-sm md:text-base';
+    if (size === '1/2') return 'text-base md:text-lg';
+    if (size === '2/3') return 'text-lg md:text-xl';
+    if (size === '1/1') return 'text-xl md:text-2xl';
+  }
+  return 'text-base';
+}
+
+// Classe CSS pour l'ellipsis (à ajouter dans le global CSS si besoin)
+// .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 const WidgetRenderer: React.FC<WidgetRendererProps> = ({ 
   widget, 
   widgetSize = 'medium',
@@ -40,6 +59,9 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 }) => {
   // Récupérer les données pour ce widget
   const rawData = getWidgetData(widget.id, widget.dataSource);
+
+  // Déterminer la taille du texte à appliquer
+  const fontSizeClass = getFontSizeFromWidgetSize(widget.size || widgetSize);
 
   // Fonctions de transformation des données pour les widgets avancés
   const getSalesPerformanceData = () => {
@@ -302,11 +324,15 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     case 'list':
       if (widget.id === 'sales-pipeline') {
         // Affiche le pipeline commercial
-        return <SalesPipelineWidget data={{ leads: getSalesPipelineData() }} />;
+        return (
+          <div className="flex-1 overflow-y-auto min-h-0 p-4" style={{ maxHeight: '100%' }}>
+            <SalesPipelineWidget data={{ leads: getSalesPipelineData() }} />
+          </div>
+        );
       }
       if (widget.id === 'stock-status') {
-        // Désactive l'affichage du widget Plan d'action stock & revente
-        return null;
+        // Affiche le widget Plan d'action Stock & Revente
+        return <StockStatusWidget />;
       }
       return (
         <ListWidget 
@@ -321,7 +347,11 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
       // Cas spécial pour le widget "Pipeline commercial"
       if (widget.id === 'stock-status') {
         // Adapter le mapping pour la version avancée : passer un objet avec la clé 'leads'
-        return <SalesPipelineWidget data={{ leads: getSalesPipelineData() }} />;
+        return (
+          <div className="flex-1 overflow-y-auto min-h-0 p-4" style={{ maxHeight: '100%' }}>
+            <SalesPipelineWidget data={{ leads: getSalesPipelineData() }} />
+          </div>
+        );
       }
       return (
         <ListWidget 

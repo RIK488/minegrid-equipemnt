@@ -90,7 +90,7 @@ const StockStatusWidget: React.FC = () => {
             className="bg-white border border-orange-100 rounded-lg p-4 flex flex-col gap-2 shadow-sm relative"
           >
             {eq.alert && (
-              <span className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow font-semibold tracking-tight">Visibilité faible</span>
+              <span className="absolute top-2 right-2 bg-orange-500 text-white text-[8px] font-normal px-1 py-0.5 rounded-full shadow tracking-tight">Visibilité faible</span>
             )}
             <div className="font-semibold text-orange-700 flex items-center gap-2">
               {eq.name}
@@ -108,10 +108,10 @@ const StockStatusWidget: React.FC = () => {
               💡 <span>{eq.aiTip}</span>
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
-              <button className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors" onClick={() => alert(`Modifier ${eq.name}`)}>Modifier</button>
-              <button className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors" onClick={() => alert(`Ajouter une photo à ${eq.name}`)}>Ajouter photo</button>
-              <button className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 transition-colors font-semibold" onClick={() => alert(`Booster ${eq.name}`)}>Booster</button>
-              <button className="text-xs bg-orange-500 text-white px-2 py-1 rounded hover:bg-orange-600 transition-colors font-semibold" onClick={() => alert(`Créer une offre flash pour ${eq.name}`)}>Créer offre flash</button>
+              <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors font-semibold" onClick={() => alert(`Modifier ${eq.name}`)}>Modifier</button>
+              <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors font-semibold" onClick={() => alert(`Ajouter une photo à ${eq.name}`)}>Ajouter photo</button>
+              <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors font-semibold" onClick={() => alert(`Booster ${eq.name}`)}>Booster</button>
+              <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors font-semibold" onClick={() => alert(`Créer une offre flash pour ${eq.name}`)}>Créer offre flash</button>
             </div>
           </div>
         ))}
