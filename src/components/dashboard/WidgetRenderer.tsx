@@ -43,51 +43,67 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 
   // Fonctions de transformation des données pour les widgets avancés
   const getSalesPerformanceData = () => {
+    // Données par défaut complètes
+    const defaultData = {
+      score: 75,
+      target: 85,
+      rank: 3,
+      totalVendors: 12,
+      sales: 0,
+      salesTarget: 3000000,
+      growth: 0,
+      growthTarget: 15,
+      prospects: 25,
+      activeProspects: 18,
+      responseTime: 2.5,
+      responseTarget: 1.5,
+      activityLevel: 'modéré',
+      activityRecommendation: 'Analyser les opportunités d\'amélioration',
+      recommendations: [
+        {
+          type: 'process',
+          action: 'Optimiser le temps de réponse',
+          impact: 'Réduire le temps de réponse aux prospects de 2.5h à 1.5h',
+          priority: 'high' as const
+        },
+        {
+          type: 'prospection',
+          action: 'Augmenter le nombre de prospects',
+          impact: 'Passer de 25 à 35 prospects actifs',
+          priority: 'medium' as const
+        }
+      ],
+      trends: {
+        sales: 'up' as const,
+        growth: 'up' as const,
+        prospects: 'stable' as const,
+        responseTime: 'down' as const
+      },
+      metrics: {
+        sales: { value: 0, target: 3000000, trend: 'up' as const },
+        growth: { value: 0, target: 15, trend: 'up' as const },
+        prospects: { value: 18, target: 25, trend: 'stable' as const },
+        responseTime: { value: 2.5, target: 1.5, trend: 'down' as const }
+      }
+    };
+
+    // Si rawData existe et a la propriété revenue, on l'utilise
     if (rawData && typeof rawData === 'object' && 'revenue' in rawData) {
       return {
-        score: 75,
-        target: 85,
-        rank: 3,
-        totalVendors: 12,
+        ...defaultData,
         sales: rawData.revenue || 0,
-        salesTarget: 3000000,
         growth: rawData.growth || 0,
-        growthTarget: 15,
-        prospects: 25,
-        activeProspects: 18,
-        responseTime: 2.5,
-        responseTarget: 1.5,
-        activityLevel: 'modéré',
-        activityRecommendation: 'Analyser les opportunités d\'amélioration',
-        recommendations: [
-          {
-            type: 'process',
-            action: 'Optimiser le temps de réponse',
-            impact: 'Réduire le temps de réponse aux prospects de 2.5h à 1.5h',
-            priority: 'high' as const
-          },
-          {
-            type: 'prospection',
-            action: 'Augmenter le nombre de prospects',
-            impact: 'Passer de 25 à 35 prospects actifs',
-            priority: 'medium' as const
-          }
-        ],
-        trends: {
-          sales: 'up' as const,
-          growth: 'up' as const,
-          prospects: 'stable' as const,
-          responseTime: 'down' as const
-        },
         metrics: {
+          ...defaultData.metrics,
           sales: { value: rawData.revenue || 0, target: 3000000, trend: 'up' as const },
-          growth: { value: rawData.growth || 0, target: 15, trend: 'up' as const },
-          prospects: { value: 18, target: 25, trend: 'stable' as const },
-          responseTime: { value: 2.5, target: 1.5, trend: 'down' as const }
+          growth: { value: rawData.growth || 0, target: 15, trend: 'up' as const }
         }
       };
     }
-    return null;
+
+    // Sinon, on retourne les données par défaut
+    console.log("📊 Utilisation des données par défaut pour SalesPerformanceScoreWidget");
+    return defaultData;
   };
 
   const getSalesPipelineData = () => {
@@ -260,7 +276,7 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
   switch (widget.type) {
     // Widgets avancés avec IA - Priorité haute
     case 'performance':
-      if (widget.id === 'sales-metrics') {
+      if (widget.id === 'sales-performance-score') {
         return <SalesPerformanceScoreWidget data={getSalesPerformanceData()} />;
       }
       return (
