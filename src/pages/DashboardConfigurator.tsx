@@ -22,8 +22,46 @@ const metiers = [
       'Bons de commande',
     ],
     widgets: [
-      { id: 'stock', title: 'Gestion de stock', icon: Package, description: 'Suivi du stock en temps réel', type: 'list', dataSource: 'stock' },
-      { id: 'stats', title: 'Statistiques de vente', icon: BarChart3, description: 'Analyse des ventes', type: 'chart', dataSource: 'sales' },
+      {
+        id: 'sales-metrics',
+        title: 'Score de Performance Commerciale',
+        icon: Target,
+        description: 'Score global sur 100, comparaison avec objectif, rang anonymisé, recommandations IA',
+        type: 'metric',
+        dataSource: 'sales_performance',
+      },
+      {
+        id: 'inventory-status',
+        title: "Plan d'action stock & revente",
+        icon: Package,
+        description: 'Statut stock dormant, recommandations automatiques, actions rapides, et KPI',
+        type: 'list',
+        dataSource: 'inventory',
+      },
+      {
+        id: 'sales-evolution',
+        title: 'Évolution des ventes',
+        icon: TrendingUp,
+        description: 'Analyse des tendances, prévisions et export',
+        type: 'chart',
+        dataSource: 'sales_history',
+      },
+      {
+        id: 'leads-pipeline',
+        title: 'Pipeline commercial',
+        icon: BarChart3,
+        description: 'Prospects et opportunités',
+        type: 'pipeline',
+        dataSource: 'leads',
+      },
+      {
+        id: 'daily-actions',
+        title: 'Actions Commerciales Prioritaires',
+        icon: Calendar,
+        description: 'Actions du jour triées par impact/priorité avec contacts rapides et actions interactives',
+        type: 'daily-actions',
+        dataSource: 'daily_actions',
+      },
     ],
   },
   {
@@ -188,7 +226,14 @@ const DashboardConfigurator: React.FC = () => {
   const [activeStep, setActiveStep] = useState(1);
   const [selectedMetier, setSelectedMetier] = useState('');
   const [selectedWidgets, setSelectedWidgets] = useState<string[]>([]);
-  const [widgetSizes, setWidgetSizes] = useState<{[key: string]: 'small' | 'medium' | 'large'}>({});
+  // Remplacer les tailles par défaut
+  const WIDGET_WIDTHS = [
+    { label: '1/3', value: '1/3', w: 4 },
+    { label: '1/2', value: '1/2', w: 6 },
+    { label: '2/3', value: '2/3', w: 8 },
+    { label: '1/1', value: '1/1', w: 12 },
+  ];
+  const [widgetSizes, setWidgetSizes] = useState<{[key: string]: '1/3' | '1/2' | '2/3' | '1/1'}>({});
   const [previewMode, setPreviewMode] = useState(false);
 
   const selectedMetierData = metiers.find(m => m.id === selectedMetier);
@@ -197,14 +242,11 @@ const DashboardConfigurator: React.FC = () => {
     setSelectedMetier(metierId);
     const metier = metiers.find(m => m.id === metierId);
     if (metier) {
-      // Sélectionner tous les widgets par défaut
       const defaultWidgets = metier.widgets.map(w => w.id);
       setSelectedWidgets(defaultWidgets);
-      
-      // Définir des tailles par défaut
-      const defaultSizes: {[key: string]: 'small' | 'medium' | 'large'} = {};
+      const defaultSizes: {[key: string]: '1/3' | '1/2' | '2/3' | '1/1'} = {};
       metier.widgets.forEach((widget, index) => {
-        defaultSizes[widget.id] = index === 0 ? 'large' : 'medium';
+        defaultSizes[widget.id] = '1/3';
       });
       setWidgetSizes(defaultSizes);
     }
@@ -218,41 +260,38 @@ const DashboardConfigurator: React.FC = () => {
     );
   };
 
-  const handleWidgetSizeChange = (widgetId: string, size: 'small' | 'medium' | 'large') => {
+  // Adapter la gestion du changement de taille
+  const handleWidgetSizeChange = (widgetId: string, size: '1/3' | '1/2' | '2/3' | '1/1') => {
     setWidgetSizes(prev => ({ ...prev, [widgetId]: size }));
   };
 
+  // Adapter le layout pour utiliser la largeur choisie
   const generateLayout = () => {
     const enabledWidgets = selectedMetierData?.widgets.filter(w => selectedWidgets.includes(w.id)) || [];
     const layout: any[] = [];
-    
     let x = 0;
     let y = 0;
     let maxY = 0;
-
     enabledWidgets.forEach((widget, index) => {
-      const size = widgetSizes[widget.id] || 'medium';
-      let w = 4; // small
-      if (size === 'medium') w = 6;
-      if (size === 'large') w = 12;
-
+      const size = widgetSizes[widget.id] || '1/3';
+      let w = 4;
+      if (size === '1/2') w = 6;
+      if (size === '2/3') w = 8;
+      if (size === '1/1') w = 12;
       if (x + w > 12) {
         x = 0;
         y = maxY;
       }
-
       layout.push({
         i: widget.id,
         x,
         y,
         w,
-        h: size === 'small' ? 2 : size === 'medium' ? 4 : 6
+        h: 4,
       });
-
       x += w;
-      maxY = Math.max(maxY, y + (size === 'small' ? 2 : size === 'medium' ? 4 : 6));
+      maxY = Math.max(maxY, y + 4);
     });
-
     return layout;
   };
 
@@ -406,7 +445,7 @@ const DashboardConfigurator: React.FC = () => {
                     {selectedMetierData.widgets.map((widget) => {
                       const Icon = widget.icon;
                       const isEnabled = selectedWidgets.includes(widget.id);
-                      const currentSize = widgetSizes[widget.id] || 'medium';
+                      const currentSize = widgetSizes[widget.id] || '1/3';
                       
                       return (
                         <div key={widget.id} className="border border-gray-200 rounded-lg p-4">
@@ -433,18 +472,19 @@ const DashboardConfigurator: React.FC = () => {
                               <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Taille du widget
                               </label>
+                              {/* Choix de la largeur */}
                               <div className="flex space-x-2">
-                                {['small', 'medium', 'large'].map((size) => (
+                                {WIDGET_WIDTHS.map(({ label, value }) => (
                                   <button
-                                    key={size}
-                                    onClick={() => handleWidgetSizeChange(widget.id, size as 'small' | 'medium' | 'large')}
+                                    key={value}
+                                    onClick={() => handleWidgetSizeChange(widget.id, value as any)}
                                     className={`px-3 py-1 text-xs rounded ${
-                                      currentSize === size
+                                      (widgetSizes[widget.id] || '1/3') === value
                                         ? 'bg-orange-600 text-white'
                                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                     }`}
                                   >
-                                    {size === 'small' ? 'Petit' : size === 'medium' ? 'Moyen' : 'Grand'}
+                                    {label}
                                   </button>
                                 ))}
                               </div>
@@ -473,6 +513,11 @@ const DashboardConfigurator: React.FC = () => {
                       </button>
                     </div>
                   </div>
+                  {/* DEBUG TEMPORAIRE */}
+                  <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                    <div><b>selectedWidgets:</b> {JSON.stringify(selectedWidgets)}</div>
+                    <div><b>widgets du métier:</b> {JSON.stringify(selectedMetierData.widgets.map(w => w.id))}</div>
+                  </div>
                   
                   <div className="bg-white rounded-lg border border-gray-200 p-4 min-h-[400px]">
                     {selectedWidgets.length === 0 ? (
@@ -491,16 +536,18 @@ const DashboardConfigurator: React.FC = () => {
                             .filter(w => selectedWidgets.includes(w.id))
                             .map((widget) => {
                               const Icon = widget.icon;
-                              const size = widgetSizes[widget.id] || 'medium';
+                              const size = widgetSizes[widget.id] || '1/3';
                               
                               // Calculer la classe de taille pour la grille
                               let sizeClass = 'col-span-1';
-                              if (size === 'large') {
-                                sizeClass = previewMode ? 'col-span-1' : 'col-span-2';
-                              } else if (size === 'small') {
-                                sizeClass = 'col-span-1';
-                              } else {
-                                sizeClass = 'col-span-1';
+                              if (size === '1/1') {
+                                sizeClass = previewMode ? 'col-span-1' : 'col-span-12';
+                              } else if (size === '1/3') {
+                                sizeClass = 'col-span-4';
+                              } else if (size === '1/2') {
+                                sizeClass = 'col-span-6';
+                              } else if (size === '2/3') {
+                                sizeClass = 'col-span-8';
                               }
                               
                               return (
@@ -521,7 +568,7 @@ const DashboardConfigurator: React.FC = () => {
                                   
                                   <div className="flex items-center justify-between">
                                     <div className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full">
-                                      {size === 'small' ? 'Petit' : size === 'medium' ? 'Moyen' : 'Grand'}
+                                      {size === '1/3' ? '1/3' : size === '1/2' ? '1/2' : size === '2/3' ? '2/3' : '1/1'}
                                     </div>
                                     
                                     {previewMode && (
@@ -539,12 +586,13 @@ const DashboardConfigurator: React.FC = () => {
                                   {/* Indicateur de taille visuel */}
                                   <div className="mt-3 flex items-center space-x-1">
                                     <div className={`h-2 rounded-full ${
-                                      size === 'small' ? 'w-8 bg-orange-300' : 
-                                      size === 'medium' ? 'w-16 bg-orange-400' : 
-                                      'w-24 bg-orange-500'
+                                      size === '1/3' ? 'w-8 bg-orange-300' : 
+                                      size === '1/2' ? 'w-16 bg-orange-400' : 
+                                      size === '2/3' ? 'w-24 bg-orange-500' : 
+                                      'w-32 bg-orange-600'
                                     }`}></div>
                                     <span className="text-xs text-orange-600">
-                                      {size === 'small' ? 'Compact' : size === 'medium' ? 'Standard' : 'Étendu'}
+                                      {size === '1/3' ? 'Compact' : size === '1/2' ? 'Standard' : size === '2/3' ? 'Étendu' : 'Complet'}
                                     </span>
                                   </div>
                                 </div>
@@ -566,9 +614,10 @@ const DashboardConfigurator: React.FC = () => {
                             <div>
                               <span className="font-medium text-gray-700">Tailles:</span>
                               <span className="ml-1 text-gray-600">
-                                {Object.values(widgetSizes).filter(s => s === 'small').length} petit(s), 
-                                {Object.values(widgetSizes).filter(s => s === 'medium').length} moyen(s), 
-                                {Object.values(widgetSizes).filter(s => s === 'large').length} grand(s)
+                                {Object.values(widgetSizes).filter(s => s === '1/3').length} 1/3, 
+                                {Object.values(widgetSizes).filter(s => s === '1/2').length} 1/2, 
+                                {Object.values(widgetSizes).filter(s => s === '2/3').length} 2/3, 
+                                {Object.values(widgetSizes).filter(s => s === '1/1').length} 1/1
                               </span>
                             </div>
                             <div>
@@ -684,8 +733,9 @@ const DashboardConfigurator: React.FC = () => {
                           .map((widget) => (
                             <div key={widget.id} className="flex items-center text-sm text-blue-800">
                               <CheckCircle className="h-4 w-4 mr-2 text-blue-600" />
-                              {widget.title} ({widgetSizes[widget.id] === 'small' ? 'Petit' : 
-                                              widgetSizes[widget.id] === 'medium' ? 'Moyen' : 'Grand'})
+                              {widget.title} ({widgetSizes[widget.id] === '1/3' ? '1/3' : 
+                                              widgetSizes[widget.id] === '1/2' ? '1/2' : 
+                                              widgetSizes[widget.id] === '2/3' ? '2/3' : '1/1'})
                             </div>
                           ))}
                       </div>
@@ -712,8 +762,9 @@ const DashboardConfigurator: React.FC = () => {
                         .filter(w => selectedWidgets.includes(w.id))
                         .map((widget) => {
                           const Icon = widget.icon;
-                          const sizeClass = widgetSizes[widget.id] === 'small' ? 'col-span-1' : 
-                                          widgetSizes[widget.id] === 'large' ? 'col-span-2' : 'col-span-1';
+                          const sizeClass = widgetSizes[widget.id] === '1/3' ? 'col-span-4' : 
+                                          widgetSizes[widget.id] === '1/2' ? 'col-span-6' : 
+                                          widgetSizes[widget.id] === '2/3' ? 'col-span-8' : 'col-span-12';
                           
                           return (
                             <div key={widget.id} className={`${sizeClass} bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200 shadow-sm`}>
@@ -723,8 +774,9 @@ const DashboardConfigurator: React.FC = () => {
                               </div>
                               <div className="text-xs text-orange-700 mb-2">{widget.description}</div>
                               <div className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full inline-block">
-                                {widgetSizes[widget.id] === 'small' ? 'Widget compact' :
-                                 widgetSizes[widget.id] === 'medium' ? 'Widget standard' : 'Widget étendu'}
+                                {widgetSizes[widget.id] === '1/3' ? 'Widget 1/3' :
+                                 widgetSizes[widget.id] === '1/2' ? 'Widget 1/2' : 
+                                 widgetSizes[widget.id] === '2/3' ? 'Widget 2/3' : 'Widget 1/1'}
                               </div>
                             </div>
                           );
