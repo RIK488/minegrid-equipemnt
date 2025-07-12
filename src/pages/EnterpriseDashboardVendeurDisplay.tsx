@@ -10,6 +10,7 @@ import 'react-resizable/css/styles.css';
 import { VendeurWidgets } from './widgets/VendeurWidgets';
 import { useRef } from 'react';
 import WidgetRenderer from '../components/dashboard/WidgetRenderer';
+import { listData } from '../constants/mockData';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -137,6 +138,8 @@ function generateLayoutFromPreview(widgets, widgetSizes) {
 }
 
 const EnterpriseDashboardVendeurDisplay: React.FC = () => {
+  // Suppression automatique de la config locale pour forcer la régénération
+  // (Suppression du useEffect qui efface la config)
   const [config, setConfig] = useState<any>(null);
   const [layout, setLayout] = useState<{ [key: string]: any[] }>({ lg: [] });
   const [showAddWidgetModal, setShowAddWidgetModal] = useState(false);
@@ -430,12 +433,10 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         {renderCommonServices()}
-        <button
-          className="mb-4 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
-          onClick={() => setShowAddWidgetModal(true)}
-        >
-          + Ajouter des widgets
-        </button>
+        {/* Ajout direct du widget pipeline commercial */}
+        <div className="mb-8">
+          <SalesPipelineWidget data={{ leads: listData['sales-pipeline'] }} />
+        </div>
         {showAddWidgetModal && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">

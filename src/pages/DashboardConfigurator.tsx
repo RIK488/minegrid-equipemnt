@@ -30,41 +30,77 @@ const metiers = [
         id: 'sales-metrics',
         title: 'Score de Performance Commerciale',
         icon: Target,
-        description: 'Score global sur 100, comparaison avec objectif, rang anonymisé, recommandations IA',
+        description: 'Score global sur 100, comparaison avec objectif, rang anonymisé, recommandations IA et suivi de la performance commerciale.',
         type: 'metric',
         dataSource: 'sales_performance',
+        features: [
+          'Score sur 100',
+          'Comparaison avec objectif',
+          'Classement anonymisé',
+          'Recommandations IA personnalisées',
+          'Suivi de la progression mensuelle'
+        ]
       },
       {
         id: 'inventory-status',
         title: "Plan d'action stock & revente",
         icon: Package,
-        description: 'Statut stock dormant, recommandations automatiques, actions rapides, et KPI',
+        description: 'Statut du stock dormant, recommandations automatiques, actions rapides, alertes sur les invendus et planification des actions de revente.',
         type: 'list',
         dataSource: 'inventory',
+        features: [
+          'Détection du stock dormant',
+          'Alertes sur les invendus',
+          'Recommandations automatiques de revente',
+          'Actions rapides (publier, relancer, archiver)',
+          'KPI stock et taux de rotation'
+        ]
       },
       {
         id: 'sales-evolution',
         title: 'Évolution des ventes',
         icon: TrendingUp,
-        description: 'Analyse des tendances, prévisions et export',
+        description: 'Graphique des ventes sur 12 mois, analyse des tendances, prévisions, export des données et comparaison avec l’année précédente.',
         type: 'chart',
         dataSource: 'sales_history',
+        features: [
+          'Graphique dynamique sur 12 mois',
+          'Analyse des tendances',
+          'Prévisions automatiques',
+          'Export des données',
+          'Comparaison année précédente'
+        ]
       },
       {
         id: 'leads-pipeline',
         title: 'Pipeline commercial',
         icon: BarChart3,
-        description: 'Prospects et opportunités',
+        description: 'Suivi des prospects et opportunités à chaque étape du cycle de vente. Statistiques, taux de conversion, alertes IA, relances et priorisation.',
         type: 'pipeline',
         dataSource: 'leads',
+        features: [
+          'Statistiques par étape (prospection, devis, négociation, conclu, perdu)',
+          'Taux de conversion global et par étape',
+          'Détection IA des blocages et opportunités',
+          'Relances automatiques et actions rapides',
+          'Vue liste, kanban, timeline',
+          'Tri et filtrage avancés'
+        ]
       },
       {
         id: 'daily-actions',
         title: 'Actions Commerciales Prioritaires',
         icon: Calendar,
-        description: 'Actions du jour triées par impact/priorité avec contacts rapides et actions interactives',
+        description: 'Liste des actions du jour triées par impact/priorité, contacts rapides, relances, rappels et planification des tâches commerciales.',
         type: 'daily-actions',
         dataSource: 'daily_actions',
+        features: [
+          'Actions urgentes et prioritaires',
+          'Contacts rapides (téléphone, email)',
+          'Relances automatiques',
+          'Rappels et notifications',
+          'Planification des tâches commerciales'
+        ]
       },
     ],
   },
@@ -261,6 +297,7 @@ const DashboardConfigurator: React.FC = () => {
   ];
   const [widgetSizes, setWidgetSizes] = useState<{[key: string]: '1/3' | '1/2' | '2/3' | '1/1'}>({});
   const [previewMode, setPreviewMode] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
   const selectedMetierData = metiers.find(m => m.id === selectedMetier);
 
@@ -347,6 +384,30 @@ const DashboardConfigurator: React.FC = () => {
     
     // Rediriger vers le tableau de bord
     window.location.hash = '#dashboard-entreprise-display';
+  };
+
+  const handleSaveConfig = () => {
+    const layout = generateCompactLayout(selectedWidgets, widgetSizes);
+    const enabledWidgets = selectedMetierData?.widgets.filter(w => selectedWidgets.includes(w.id)) || [];
+    const config = {
+      metier: selectedMetier,
+      widgets: enabledWidgets.map(widget => ({
+        ...widget,
+        enabled: true,
+        size: widgetSizes[widget.id] || '1/3',
+        position: layout.find(l => l.i === widget.id)?.position || 0
+      })),
+      layout: {
+        lg: layout
+      },
+      theme: 'light',
+      refreshInterval: 30,
+      notifications: true,
+      createdAt: new Date().toISOString()
+    };
+    localStorage.setItem(`enterpriseDashboardConfig_${selectedMetier}`, JSON.stringify(config));
+    setSaveMessage('Configuration sauvegardée !');
+    setTimeout(() => setSaveMessage(''), 2000);
   };
 
   // Adapter la logique de navigation
@@ -626,11 +687,14 @@ const DashboardConfigurator: React.FC = () => {
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-bold text-gray-900">Votre tableau de bord personnalisé est prêt !</h2>
                 <button
-                  onClick={handleGenerateDashboard}
+                  onClick={handleSaveConfig}
                   className="px-5 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm"
                 >
                   Sauvegarder la configuration
                 </button>
+                {saveMessage && (
+                  <span className="ml-4 text-green-600 text-sm font-semibold">{saveMessage}</span>
+                )}
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 {/* Résumé sobre à gauche */}
