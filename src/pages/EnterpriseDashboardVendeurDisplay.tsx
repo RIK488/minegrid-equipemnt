@@ -137,6 +137,35 @@ function generateLayoutFromPreview(widgets, widgetSizes) {
   return layout;
 }
 
+// Fonction utilitaire pour générer le layout comme dans le configurateur
+function generatePreviewLayout(widgets, widgetSizes) {
+  const layout = [];
+  let x = 0;
+  let y = 0;
+  let maxY = 0;
+  widgets.forEach((widget, index) => {
+    const size = widgetSizes?.[widget.id] || '1/3';
+    let w = 4;
+    if (size === '1/2') w = 6;
+    if (size === '2/3') w = 8;
+    if (size === '1/1') w = 12;
+    if (x + w > 12) {
+      x = 0;
+      y = maxY;
+    }
+    layout.push({
+      i: widget.id,
+      x,
+      y,
+      w,
+      h: 4,
+    });
+    x += w;
+    maxY = Math.max(maxY, y + 4);
+  });
+  return layout;
+}
+
 const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   // Suppression automatique de la config locale pour forcer la régénération
   // (Suppression du useEffect qui efface la config)
@@ -179,7 +208,14 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(parsed));
     }
 
-    const validIds = ['sales-metrics', 'sales-evolution', 'stock-status', 'sales-pipeline', 'daily-actions', 'sales-analytics'];
+    // Harmonisation des IDs : on utilise uniquement 'sales-performance-score' (plus de 'sales-metrics')
+    const validIds = [
+      'sales-performance-score',
+      'sales-evolution',
+      'stock-status',
+      'sales-pipeline',
+      'daily-actions'
+    ];
     parsed.widgets = (parsed.widgets || []).filter(w => validIds.includes(w.id));
     parsed.layout.lg = (parsed.layout.lg || []).filter(l => validIds.includes(l.i));
 
@@ -219,6 +255,77 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       console.log('🔍 Configuration chargée avec succès');
     }
   }, [config]);
+
+  // Effacement automatique de la config locale si elle ne correspond pas aux 5 widgets attendus
+  useEffect(() => {
+    const validIds = [
+      'sales-performance-score',
+      'sales-evolution',
+      'stock-status',
+      'sales-pipeline',
+      'daily-actions'
+    ];
+    const saved = localStorage.getItem('enterpriseDashboardConfig_vendeur');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const widgetIds = (parsed.widgets || []).map((w: any) => w.id);
+      const isValid = validIds.every(id => widgetIds.includes(id)) && widgetIds.length === validIds.length;
+      if (!isValid) {
+        localStorage.removeItem('enterpriseDashboardConfig_vendeur');
+        // Générer une nouvelle config par défaut immédiatement
+        const defaultWidgets = [
+          {
+            id: 'sales-performance-score',
+            type: 'performance',
+            title: 'Score de Performance Commerciale',
+            enabled: true,
+            position: 0
+          },
+          {
+            id: 'sales-evolution',
+            type: 'chart',
+            title: 'Évolution des ventes enrichie',
+            enabled: true,
+            position: 1
+          },
+          {
+            id: 'stock-status',
+            type: 'list',
+            title: 'Plan d\'action stock & revente',
+            enabled: true,
+            position: 2
+          },
+          {
+            id: 'sales-pipeline',
+            type: 'list',
+            title: 'Pipeline commercial',
+            enabled: true,
+            position: 3
+          },
+          {
+            id: 'daily-actions',
+            type: 'daily-actions',
+            title: 'Actions Commerciales Prioritaires',
+            enabled: true,
+            position: 4
+          }
+        ];
+        const defaultLayout = generatePreviewLayout(defaultWidgets, {});
+        const newConfig = {
+          widgets: defaultWidgets,
+          layout: { lg: defaultLayout },
+          widgetSizes: {},
+          theme: 'light',
+          refreshInterval: 30,
+          notifications: true
+        };
+        localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+        setConfig(newConfig);
+        setLayout({ lg: defaultLayout });
+        return;
+      }
+    }
+  }, []);
 
   // 2. Application stricte du layout et des widgets
   // On utilise EXCLUSIVEMENT le layout enregistré dans la config utilisateur
