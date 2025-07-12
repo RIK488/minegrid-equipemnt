@@ -323,7 +323,8 @@ const DashboardConfigurator: React.FC = () => {
     window.location.hash = '#dashboard-entreprise-display';
   };
 
-  const nextStep = () => setActiveStep(prev => Math.min(prev + 1, 4));
+  // Adapter la logique de navigation
+  const nextStep = () => setActiveStep(prev => Math.min(prev + 1, 3));
   const prevStep = () => setActiveStep(prev => Math.max(prev - 1, 1));
 
   return (
@@ -342,7 +343,7 @@ const DashboardConfigurator: React.FC = () => {
         {/* Indicateur d'étapes */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-4">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                   activeStep >= step 
@@ -351,7 +352,7 @@ const DashboardConfigurator: React.FC = () => {
                 }`}>
                   {step}
                 </div>
-                {step < 4 && (
+                {step < 3 && (
                   <div className={`w-16 h-1 mx-2 ${
                     activeStep > step ? 'bg-orange-600' : 'bg-gray-200'
                   }`} />
@@ -618,129 +619,94 @@ const DashboardConfigurator: React.FC = () => {
             </div>
           )}
 
-          {/* Étape 3: Modules supplémentaires */}
+          {/* Étape 3: Finalisation */}
           {activeStep === 3 && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                Modules supplémentaires
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Sélectionnez les modules supplémentaires qui vous intéressent. 
-                Chaque module ajoutera des widgets spécifiques à votre tableau de bord :
-              </p>
-              
-              <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 mb-8">
-                <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                  Modules disponibles
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {metiers.map((metier) => (
-                    <div key={metier.id} className="bg-white p-4 rounded border border-blue-200">
-                      <div className="flex items-center mb-3">
-                        <metier.icon className="h-6 w-6 text-blue-600 mr-2" />
-                        <h4 className="font-semibold text-blue-900">{metier.name}</h4>
-                      </div>
-                      <p className="text-sm text-blue-700 mb-3">{metier.description}</p>
-                      <div className="space-y-1">
-                        {metier.widgets.slice(0, 3).map((widget, index) => (
-                          <div key={index} className="flex items-center text-xs text-blue-600">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            {widget.title}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-900">Votre tableau de bord personnalisé est prêt !</h2>
                 <button
-                  onClick={prevStep}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  onClick={handleGenerateDashboard}
+                  className="px-5 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm"
                 >
-                  Retour
-                </button>
-                <button
-                  onClick={nextStep}
-                  className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center"
-                >
-                  Continuer
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                  Sauvegarder la configuration
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* Étape 4: Génération */}
-          {activeStep === 4 && (
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                Votre tableau de bord personnalisé est prêt !
-              </h2>
-              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                {/* Résumé de la configuration */}
+                {/* Résumé sobre à gauche */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Résumé de votre configuration</h3>
-                  <div className="space-y-4">
-                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                      <h4 className="font-semibold text-orange-900 mb-2">Métier sélectionné</h4>
-                      <p className="text-orange-800">{selectedMetierData?.name}</p>
-                    </div>
-                    
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-blue-900 mb-2">Widgets du métier principal</h4>
-                      <div className="space-y-1">
-                        {selectedMetierData?.widgets
-                          .filter(w => selectedWidgets.includes(w.id))
-                          .map((widget) => (
-                            <div key={widget.id} className="flex items-center text-sm text-blue-800">
-                              <CheckCircle className="h-4 w-4 mr-2 text-blue-600" />
-                              {widget.title} ({widgetSizes[widget.id] === '1/3' ? '1/3' : 
-                                              widgetSizes[widget.id] === '1/2' ? '1/2' : 
-                                              widgetSizes[widget.id] === '2/3' ? '2/3' : '1/1'})
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                    
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <h4 className="font-semibold text-purple-900 mb-2">Total des widgets</h4>
-                      <div className="text-2xl font-bold text-purple-800">
-                        {selectedWidgets.length} widgets
-                      </div>
-                      <p className="text-sm text-purple-700 mt-1">
-                        Votre tableau de bord sera composé de widgets métriques, graphiques, listes et calendriers
-                      </p>
-                    </div>
+                  <div className="border rounded-lg p-4 mb-4">
+                    <h3 className="font-semibold text-gray-900 mb-2">Métier sélectionné</h3>
+                    <div className="text-gray-700">{selectedMetierData?.name}</div>
+                  </div>
+                  <div className="border rounded-lg p-4 mb-4">
+                    <h3 className="font-semibold text-gray-900 mb-2">Widgets du métier principal</h3>
+                    <ul className="space-y-1">
+                      {selectedMetierData?.widgets
+                        .filter(w => selectedWidgets.includes(w.id))
+                        .map((widget) => (
+                          <li key={widget.id} className="flex items-center text-sm text-gray-800">
+                            <CheckCircle className="h-4 w-4 mr-2 text-orange-600" />
+                            {widget.title} ({widgetSizes[widget.id] === '1/3' ? '1/3' : 
+                                            widgetSizes[widget.id] === '1/2' ? '1/2' : 
+                                            widgetSizes[widget.id] === '2/3' ? '2/3' : '1/1'})
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                  <div className="border rounded-lg p-4 mb-4">
+                    <h3 className="font-semibold text-gray-900 mb-2">Total des widgets</h3>
+                    <div className="text-lg font-bold text-orange-700">{selectedWidgets.length} widgets</div>
+                  </div>
+                  <div className="mt-4 text-gray-700 text-sm">
+                    Votre tableau de bord sera généré avec tous les widgets sélectionnés.<br />
+                    Il sera composé de widgets métriques, graphiques, listes et calendriers.
                   </div>
                 </div>
-
-                {/* Aperçu final */}
+                {/* Preview dynamique à droite (identique à l'étape 2) */}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Aperçu de votre tableau de bord</h3>
                   <div className="bg-white rounded-lg border border-gray-200 p-4 min-h-[400px]">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className={`grid gap-4 ${selectedWidgets.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                       {selectedMetierData?.widgets
                         .filter(w => selectedWidgets.includes(w.id))
                         .map((widget) => {
                           const Icon = widget.icon;
-                          const sizeClass = widgetSizes[widget.id] === '1/3' ? 'col-span-4' : 
-                                          widgetSizes[widget.id] === '1/2' ? 'col-span-6' : 
-                                          widgetSizes[widget.id] === '2/3' ? 'col-span-8' : 'col-span-12';
-                          
+                          const size = widgetSizes[widget.id] || '1/3';
+                          let sizeClass = 'col-span-1';
+                          if (size === '1/1') {
+                            sizeClass = 'col-span-12';
+                          } else if (size === '1/3') {
+                            sizeClass = 'col-span-4';
+                          } else if (size === '1/2') {
+                            sizeClass = 'col-span-6';
+                          } else if (size === '2/3') {
+                            sizeClass = 'col-span-8';
+                          }
                           return (
-                            <div key={widget.id} className={`${sizeClass} bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200 shadow-sm`}>
+                            <div 
+                              key={widget.id} 
+                              className={`${sizeClass} bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200 shadow-sm`}
+                            >
                               <div className="flex items-center mb-3">
                                 <Icon className="h-5 w-5 text-orange-600 mr-2" />
                                 <h4 className="text-sm font-semibold text-orange-900">{widget.title}</h4>
                               </div>
                               <div className="text-xs text-orange-700 mb-2">{widget.description}</div>
-                              <div className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full inline-block">
-                                {widgetSizes[widget.id] === '1/3' ? 'Widget 1/3' :
-                                 widgetSizes[widget.id] === '1/2' ? 'Widget 1/2' : 
-                                 widgetSizes[widget.id] === '2/3' ? 'Widget 2/3' : 'Widget 1/1'}
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full">
+                                  {size === '1/3' ? '1/3' : size === '1/2' ? '1/2' : size === '2/3' ? '2/3' : '1/1'}
+                                </div>
+                              </div>
+                              <div className="mt-3 flex items-center space-x-1">
+                                <div className={`h-2 rounded-full ${
+                                  size === '1/3' ? 'w-8 bg-orange-300' : 
+                                  size === '1/2' ? 'w-16 bg-orange-400' : 
+                                  size === '2/3' ? 'w-24 bg-orange-500' : 
+                                  'w-32 bg-orange-600'
+                                }`}></div>
+                                <span className="text-xs text-orange-600">
+                                  {size === '1/3' ? 'Compact' : size === '1/2' ? 'Standard' : size === '2/3' ? 'Étendu' : 'Complet'}
+                                </span>
                               </div>
                             </div>
                           );
@@ -749,29 +715,14 @@ const DashboardConfigurator: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="flex justify-between items-center">
+              <div className="flex justify-end mt-8">
                 <button
-                  onClick={prevStep}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  onClick={handleGenerateDashboard}
+                  className="px-8 py-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center mx-auto"
                 >
-                  Retour
+                  <Rocket className="h-5 w-5 mr-2" />
+                  Générer mon tableau de bord
                 </button>
-                
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-2">
-                    Votre tableau de bord sera généré avec tous les widgets sélectionnés
-                  </p>
-                  <button
-                    onClick={handleGenerateDashboard}
-                    className="px-8 py-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center mx-auto"
-                  >
-                    <Rocket className="h-5 w-5 mr-2" />
-                    Générer mon tableau de bord
-                  </button>
-                </div>
-                
-                <div className="w-24"></div>
               </div>
             </div>
           )}
