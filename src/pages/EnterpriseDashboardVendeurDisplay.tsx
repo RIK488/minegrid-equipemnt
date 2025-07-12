@@ -30,7 +30,6 @@ const WIDGETS_VENDEUR_IDS = [
   'sales-metrics',
   'stock-status',
   'sales-evolution',
-  'sales-pipeline',
   'daily-actions',
 ];
 
@@ -163,15 +162,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       shouldUpdate = true;
     }
 
-    // Garantir que le widget stock-status (qui est maintenant le pipeline commercial) est présent
-    const stockWidget = VendeurWidgets.widgets.find(w => w.id === 'stock-status');
-    if (stockWidget && !parsed.widgets.some((w: any) => w.id === 'stock-status')) {
-      console.log('🔧 Ajout du widget stock-status (pipeline commercial) à la config dynamique');
-      parsed.widgets.push(stockWidget);
-      shouldUpdate = true;
-    }
-
-    // Garantir que le layout contient bien le widget stock-status
+    // Garantir que le layout existe
     if (!parsed.layout) {
       parsed.layout = { lg: [] };
       shouldUpdate = true;
@@ -179,20 +170,6 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     
     if (!parsed.layout.lg) {
       parsed.layout.lg = [];
-      shouldUpdate = true;
-    }
-
-    if (stockWidget && !parsed.layout.lg.some((l: any) => l.i === 'stock-status')) {
-      console.log('🔧 Ajout du widget stock-status (pipeline commercial) au layout');
-      // Calculer la position pour éviter les conflits
-      const maxY = parsed.layout.lg.length > 0 ? Math.max(...parsed.layout.lg.map((l: any) => l.y + l.h)) : 0;
-      parsed.layout.lg.push({ 
-        i: 'stock-status', 
-        x: 0, 
-        y: maxY, 
-        w: 4, 
-        h: 6 
-      });
       shouldUpdate = true;
     }
 
@@ -212,17 +189,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       console.log('🔍 Widgets présents:', config.widgets?.map((w: any) => w.id));
       console.log('🔍 Layout:', config.layout?.lg?.map((l: any) => l.i));
       
-      const hasStock = config.widgets?.some((w: any) => w.id === 'stock-status');
-      const hasStockInLayout = config.layout?.lg?.some((l: any) => l.i === 'stock-status');
-      
-      console.log('🔍 Widget stock-status (pipeline commercial) dans config:', hasStock);
-      console.log('🔍 Widget stock-status (pipeline commercial) dans layout:', hasStockInLayout);
-      
-      if (!hasStock || !hasStockInLayout) {
-        console.warn('⚠️ Widget stock-status (pipeline commercial) manquant dans la configuration!');
-      } else {
-        console.log('✅ Widget stock-status (pipeline commercial) correctement configuré');
-      }
+      console.log('🔍 Configuration chargée avec succès');
     }
   }, [config]);
 

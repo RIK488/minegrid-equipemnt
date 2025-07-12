@@ -56,23 +56,7 @@ export const VendeurWidgets = {
         smartActions: true
       }
     },
-    {
-      id: 'sales-pipeline',
-      type: 'pipeline',
-      title: 'Assistant Prospection Active',
-      description: 'Alertes de relance, score de probabilité, actions intelligentes',
-      icon: Users,
-      dataSource: 'sales-pipeline',
-      features: {
-        periodSelector: true,
-        export: true,
-        analytics: true,
-        alerts: true,
-        autoReminders: true,
-        probabilityScoring: true,
-        smartActions: true
-      }
-    },
+
     {
       id: 'daily-actions',
       type: 'daily-actions',

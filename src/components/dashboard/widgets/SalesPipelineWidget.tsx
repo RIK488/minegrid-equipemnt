@@ -12,14 +12,11 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
   const [showLeadDetails, setShowLeadDetails] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
+  // Correction : initialiser leadsData une seule fois
   const [leadsData, setLeadsData] = useState<any[]>(data.leads || []);
   const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'timeline'>('list');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [showConversionRates, setShowConversionRates] = useState(false);
-
-  useEffect(() => {
-    setLeadsData(data.leads || []);
-  }, [data]);
 
   function getDaysSinceLastContact(dateString: string) {
     const lastContact = new Date(dateString);

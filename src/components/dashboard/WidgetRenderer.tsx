@@ -299,7 +299,7 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 
     case 'pipeline':
       // Cas spécial pour le widget "Pipeline commercial"
-      if (widget.id === 'sales-pipeline' || widget.id === 'stock-status') {
+      if (widget.id === 'stock-status') {
         // Adapter le mapping pour la version avancée : passer un objet avec la clé 'leads'
         return <SalesPipelineWidget data={{ leads: getSalesPipelineData() }} />;
       }
