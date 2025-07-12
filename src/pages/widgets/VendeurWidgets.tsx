@@ -77,7 +77,7 @@ export const VendeurWidgets: VendeurWidgetsConfig = {
   description: 'Vente d\'équipements et matériels avec IA et recommandations avancées',
   widgets: [
     {
-      id: 'sales-metrics',
+      id: 'sales-performance-score',
       type: 'performance',
       title: 'Score de Performance Commerciale',
       description: 'Score global sur 100, comparaison avec objectif, rang anonymisé, recommandations IA',
@@ -135,7 +135,7 @@ export const VendeurWidgets: VendeurWidgetsConfig = {
     {
       id: 'sales-pipeline',
       type: 'list',
-      title: 'Assistant Prospection Active',
+      title: 'Pipeline commercial', // Correction du titre
       description: 'Alertes de relance, score de probabilité, actions intelligentes',
       icon: Users,
       dataSource: 'sales-pipeline',

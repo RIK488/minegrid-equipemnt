@@ -284,9 +284,13 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
       );
 
     case 'list':
-      if (widget.id === 'stock-status') {
-        // Utiliser le widget pipeline commercial pour le stock-status
+      if (widget.id === 'sales-pipeline') {
+        // Affiche le pipeline commercial
         return <SalesPipelineWidget data={{ leads: getSalesPipelineData() }} />;
+      }
+      if (widget.id === 'stock-status') {
+        // Désactive l'affichage du widget Plan d'action stock & revente
+        return null;
       }
       return (
         <ListWidget 

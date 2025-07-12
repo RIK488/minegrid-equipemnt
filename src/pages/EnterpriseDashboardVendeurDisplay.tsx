@@ -27,10 +27,11 @@ const serviceLinks = [
 ];
 
 const WIDGETS_VENDEUR_IDS = [
-  'sales-metrics',
-  'stock-status',
+  'sales-performance-score',
   'sales-evolution',
-  'daily-actions',
+  'stock-status',
+  'sales-pipeline',
+  'daily-actions'
 ];
 
 // Fonction utilitaire pour garantir un layout complet et ordonné
@@ -178,8 +179,34 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(parsed));
     }
 
+    const validIds = ['sales-metrics', 'sales-evolution', 'stock-status', 'sales-pipeline', 'daily-actions', 'sales-analytics'];
+    parsed.widgets = (parsed.widgets || []).filter(w => validIds.includes(w.id));
+    parsed.layout.lg = (parsed.layout.lg || []).filter(l => validIds.includes(l.i));
+
     setConfig(parsed);
     setLayout(parsed.layout || { lg: [] });
+  }, []);
+
+  // Correction automatique du titre du widget pipeline commercial dans la config locale
+  useEffect(() => {
+    const saved = localStorage.getItem('enterpriseDashboardConfig_vendeur');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      let updated = false;
+      if (parsed.widgets) {
+        parsed.widgets = parsed.widgets.map(w => {
+          if (w.id === 'stock-status' && w.title !== 'Pipeline Commercial') {
+            updated = true;
+            return { ...w, title: 'Pipeline Commercial' };
+          }
+          return w;
+        });
+      }
+      if (updated) {
+        localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(parsed));
+        window.location.reload();
+      }
+    }
   }, []);
 
   // Effet de débogage pour vérifier la configuration
@@ -477,14 +504,14 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
         >
           + Ajouter des widgets
         </button>
-        {/* Ajout direct du widget pipeline commercial */}
-        <div className="mb-8">
-          <SalesPipelineWidget data={{ leads: listData['sales-pipeline'] }} />
-        </div>
         {showAddWidgetModal && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
               <h2 className="text-lg font-bold mb-4">Ajouter un widget vendeur</h2>
+              <div className="mb-2 text-xs text-gray-500">
+                Widgets disponibles: {VendeurWidgets.widgets.length} | 
+                Widgets filtrés: {VendeurWidgets.widgets.filter(widget => WIDGETS_VENDEUR_IDS.includes(widget.id)).length}
+              </div>
               <ul>
                 {VendeurWidgets.widgets
                   .filter(widget => WIDGETS_VENDEUR_IDS.includes(widget.id))
@@ -492,7 +519,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
                     const isInstalled = config.widgets.some((cw: any) => cw.id === widget.id);
                     return (
                       <li key={widget.id} className="mb-2 flex justify-between items-center">
-                        <span>{widget.title}</span>
+                        <span>{widget.title} ({widget.id})</span>
                         {isInstalled ? (
                           <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Installé</span>
                         ) : addStatus[widget.id] === 'added' ? (

@@ -7,7 +7,7 @@ export const VendeurWidgets = {
   description: 'Vente d\'équipements et matériels avec IA et recommandations avancées',
   widgets: [
     {
-      id: 'sales-metrics',
+      id: 'sales-performance-score', // Correction de l'ID
       type: 'performance',
       title: 'Score de Performance Commerciale',
       description: 'Score global sur 100, comparaison avec objectif, rang anonymisé, recommandations IA',
@@ -43,7 +43,7 @@ export const VendeurWidgets = {
       id: 'stock-status',
       type: 'pipeline',
       title: 'Pipeline Commercial',
-      description: 'Assistant prospection active avec alertes de relance, score de probabilité, actions intelligentes',
+      description: 'Assistant pipeline commercial dynamique avec toutes les fonctionnalités avancées',
       icon: Users,
       dataSource: 'sales-pipeline',
       features: {
@@ -72,34 +72,6 @@ export const VendeurWidgets = {
         aiGenerated: true,
         dynamicContent: true,
         stickyDisplay: true
-      }
-    },
-    {
-      id: 'monthly-sales',
-      type: 'metric',
-      title: 'Ventes du mois (Legacy)',
-      description: 'Chiffre d\'affaires, nombre de ventes, export, etc.',
-      icon: DollarSign,
-      dataSource: 'monthly-sales',
-      features: {
-        periodSelector: true,
-        export: true,
-        analytics: true,
-        alerts: false
-      }
-    },
-    {
-      id: 'upcoming-rentals',
-      type: 'calendar',
-      title: 'Locations à venir',
-      description: 'Planning des locations et réservations',
-      icon: Calendar,
-      dataSource: 'upcoming-rentals',
-      features: {
-        periodSelector: true,
-        export: true,
-        analytics: false,
-        alerts: true
       }
     },
     {
