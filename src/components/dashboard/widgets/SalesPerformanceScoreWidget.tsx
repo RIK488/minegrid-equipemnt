@@ -134,8 +134,6 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      {/* TEST VERSION ACTIVE */}
-      <div className="text-red-500 font-bold mb-4">TEST VERSION ACTIVE</div>
       
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
