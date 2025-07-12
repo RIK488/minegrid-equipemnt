@@ -7,6 +7,10 @@ import {
   BarChart, LineChart, PieChart as PieChartIcon, MapPin, 
   AlertTriangle, Plus, Minus, Maximize2, Minimize2
 } from 'lucide-react';
+import { WidthProvider, Responsive } from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
+const ResponsiveGridLayout = WidthProvider(Responsive);
 
 // Configuration des métiers avec leurs widgets
 const metiers = [
@@ -497,7 +501,7 @@ const DashboardConfigurator: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Prévisualisation */}
+                {/* Preview interactive */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900">Prévisualisation</h3>
@@ -514,89 +518,71 @@ const DashboardConfigurator: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  
-                  <div className="bg-white rounded-lg border border-gray-200 p-4 min-h-[400px]">
-                    {selectedWidgets.length === 0 ? (
-                      <div className="text-center text-gray-500 py-8">
-                        <Layout className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p className="mb-2">Aucun widget sélectionné</p>
-                        <p className="text-sm">Sélectionnez des widgets dans la liste à gauche pour les voir ici</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {/* Grille de prévisualisation */}
-                        <div className={`grid gap-4 ${
-                          previewMode ? 'grid-cols-1' : 'grid-cols-2'
-                        }`}>
-                          {selectedMetierData.widgets
-                            .filter(w => selectedWidgets.includes(w.id))
-                            .map((widget) => {
-                              const Icon = widget.icon;
-                              const size = widgetSizes[widget.id] || '1/3';
-                              
-                              // Calculer la classe de taille pour la grille
-                              let sizeClass = 'col-span-1';
-                              if (size === '1/1') {
-                                sizeClass = previewMode ? 'col-span-1' : 'col-span-12';
-                              } else if (size === '1/3') {
-                                sizeClass = 'col-span-4';
-                              } else if (size === '1/2') {
-                                sizeClass = 'col-span-6';
-                              } else if (size === '2/3') {
-                                sizeClass = 'col-span-8';
-                              }
-                              
-                              return (
-                                <div 
-                                  key={widget.id} 
-                                  className={`${sizeClass} bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200 shadow-sm hover:shadow-md transition-shadow`}
-                                >
-                                  <div className="flex items-center mb-3">
-                                    <Icon className="h-5 w-5 text-orange-600 mr-2" />
-                                    <h4 className="text-sm font-semibold text-orange-900">{widget.title}</h4>
-                                  </div>
-                                  
-                                  {previewMode && (
-                                    <div className="text-xs text-orange-700 mb-2">
-                                      {widget.description}
-                                    </div>
-                                  )}
-                                  
-                                  <div className="flex items-center justify-between">
-                                    <div className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full">
-                                      {size === '1/3' ? '1/3' : size === '1/2' ? '1/2' : size === '2/3' ? '2/3' : '1/1'}
-                                    </div>
-                                    
-                                    {previewMode && (
-                                      <div className="flex items-center space-x-1">
-                                        <span className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full">
-                                          {widget.type}
-                                        </span>
-                                        <span className="text-xs text-orange-600 bg-white px-2 py-1 rounded-full">
-                                          {widget.dataSource}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  
-                                  {/* Indicateur de taille visuel */}
-                                  <div className="mt-3 flex items-center space-x-1">
-                                    <div className={`h-2 rounded-full ${
-                                      size === '1/3' ? 'w-8 bg-orange-300' : 
-                                      size === '1/2' ? 'w-16 bg-orange-400' : 
-                                      size === '2/3' ? 'w-24 bg-orange-500' : 
-                                      'w-32 bg-orange-600'
-                                    }`}></div>
-                                    <span className="text-xs text-orange-600">
-                                      {size === '1/3' ? 'Compact' : size === '1/2' ? 'Standard' : size === '2/3' ? 'Étendu' : 'Complet'}
-                                    </span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    )}
+                  <div className="bg-white rounded-lg border border-gray-200 p-2 min-h-[250px] max-w-[500px] mx-auto">
+                    <ResponsiveGridLayout
+                      className="layout"
+                      layouts={{ lg: selectedWidgets.map((id, idx) => {
+                        const size = widgetSizes[id] || '1/3';
+                        let w = 4;
+                        if (size === '1/2') w = 6;
+                        if (size === '2/3') w = 8;
+                        if (size === '1/1') w = 12;
+                        return { i: id, x: (idx * 4) % 12, y: Math.floor(idx / 3) * 2, w, h: 2, minH: 2, maxH: 2 };
+                      }) }}
+                      breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+                      cols={{ lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }}
+                      rowHeight={60}
+                      isDraggable={true}
+                      isResizable={false}
+                      margin={[16, 16]}
+                      useCSSTransforms={true}
+                      compactType="vertical"
+                      onLayoutChange={(layout) => {
+                        // Met à jour l'ordre et la taille des widgets
+                        const newWidgetSizes = { ...widgetSizes };
+                        layout.forEach(l => {
+                          if (l.w === 4) newWidgetSizes[l.i] = '1/3';
+                          else if (l.w === 6) newWidgetSizes[l.i] = '1/2';
+                          else if (l.w === 8) newWidgetSizes[l.i] = '2/3';
+                          else if (l.w === 12) newWidgetSizes[l.i] = '1/1';
+                        });
+                        setWidgetSizes(newWidgetSizes);
+                        // Réordonne les widgets selon la grille
+                        setSelectedWidgets(layout.map(l => l.i));
+                      }}
+                    >
+                      {selectedWidgets.map((id) => {
+                        const widget = selectedMetierData.widgets.find(w => w.id === id);
+                        if (!widget) return null;
+                        const Icon = widget.icon;
+                        const size = widgetSizes[id] || '1/3';
+                        return (
+                          <div key={id} className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-2 border border-orange-200 shadow-sm flex flex-col">
+                            <div className="flex items-center mb-2">
+                              <Icon className="h-4 w-4 text-orange-600 mr-1" />
+                              <h4 className="text-xs font-semibold text-orange-900">{widget.title}</h4>
+                            </div>
+                            <div className="text-xs text-orange-700 mb-1">{widget.description}</div>
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs text-orange-600 bg-white px-1 py-0.5 rounded-full">
+                                {size === '1/3' ? '1/3' : size === '1/2' ? '1/2' : size === '2/3' ? '2/3' : '1/1'}
+                              </div>
+                            </div>
+                            <div className="mt-2 flex items-center space-x-1">
+                              <div className={`h-1 rounded-full ${
+                                size === '1/3' ? 'w-6 bg-orange-300' : 
+                                size === '1/2' ? 'w-10 bg-orange-400' : 
+                                size === '2/3' ? 'w-16 bg-orange-500' : 
+                                'w-20 bg-orange-600'
+                              }`}></div>
+                              <span className="text-xs text-orange-600">
+                                {size === '1/3' ? 'Compact' : size === '1/2' ? 'Standard' : size === '2/3' ? 'Étendu' : 'Complet'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </ResponsiveGridLayout>
                   </div>
                 </div>
               </div>
