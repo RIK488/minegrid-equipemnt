@@ -11,6 +11,7 @@ import { VendeurWidgets } from './widgets/VendeurWidgets';
 import { useRef } from 'react';
 import WidgetRenderer from '../components/dashboard/WidgetRenderer';
 import { listData } from '../constants/mockData';
+import { NotificationContainer } from '../components/NotificationToast';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -618,6 +619,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      <NotificationContainer />
       <div className="max-w-6xl mx-auto">
         {renderCommonServices()}
         <button

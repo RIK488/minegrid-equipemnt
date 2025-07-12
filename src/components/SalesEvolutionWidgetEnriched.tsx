@@ -11,6 +11,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Megaphone, PlusCircle, Pencil, Brain } from 'lucide-react';
+import { apiService, notificationService, exportService, communicationService } from '../services';
 
 ChartJS.register(
   CategoryScale,
@@ -66,6 +67,9 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
   const [benchmarkData, setBenchmarkData] = useState<BenchmarkData | null>(null);
+  const [showPromoModal, setShowPromoModal] = useState(false);
+  const [showEquipmentModal, setShowEquipmentModal] = useState(false);
+  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
 
   // Données par défaut si pas de données réelles
   const defaultData: SalesData[] = [
@@ -78,11 +82,24 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
   ];
 
   useEffect(() => {
-    // Simulation de chargement des données
-    setTimeout(() => {
-      // Ici tu peux remplacer par un vrai appel API
+    loadSalesData();
+  }, []);
+
+  const loadSalesData = async () => {
+    try {
+      setLoading(true);
+      
+      // TODO: Remplacer par un vrai appel API quand la table sales sera créée
+      // const response = await apiService.getSalesData();
+      // if (response.success && response.data) {
+      //   setSalesData(response.data);
+      // } else {
+      //   setSalesData(defaultData);
+      //   notificationService.warning('Données de vente', 'Utilisation des données par défaut');
+      // }
+      
+      // Pour l'instant, utiliser les données par défaut
       setSalesData(defaultData);
-      setLoading(false);
       
       // Génération des notifications automatiques
       generateNotifications();
@@ -92,11 +109,18 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
       
       // Chargement des données de benchmark
       loadBenchmarkData();
-    }, 1000);
-  }, []);
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement des données de vente:', error);
+      notificationService.error('Erreur de chargement', 'Impossible de charger les données de vente');
+      setSalesData(defaultData);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const generateNotifications = () => {
-    const currentMonth = defaultData[defaultData.length - 1];
+    const currentMonth = salesData[salesData.length - 1];
     const notifications: Notification[] = [];
 
     if (currentMonth && currentMonth.sales < currentMonth.target * 0.85) {
@@ -202,15 +226,12 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
         position: 'top' as const,
       },
       title: {
-        display: true,
-        text: 'Évolution des Ventes',
+        display: false,
       },
     },
     scales: {
       y: {
         beginAtZero: true,
-        min: 0,
-        max: 80000,
         ticks: {
           callback: function(value: any) {
             return new Intl.NumberFormat('fr-FR', {
@@ -224,20 +245,148 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
     }
   };
 
-  const handleQuickAction = (action: string) => {
+  // Actions rapides connectées aux services
+  const handleQuickAction = async (action: string) => {
     switch (action) {
       case 'publish_promo':
-        alert('Redirection vers la page de publication de promotion...');
+        await handlePublishPromo();
         break;
       case 'add_equipment':
-        alert('Redirection vers l\'ajout d\'équipement...');
+        await handleAddEquipment();
         break;
       case 'correct_month':
-        alert('Ouverture du formulaire de correction...');
+        await handleCorrectMonth();
         break;
       case 'ai_forecast':
-        setShowForecast(true);
+        await handleAIForecast();
         break;
+      case 'export_data':
+        await handleExportData();
+        break;
+    }
+  };
+
+  const handlePublishPromo = async () => {
+    try {
+      notificationService.info('Création de promotion', 'Ouverture du formulaire de promotion...');
+      
+      // Ouvrir modal de création de promotion
+      setShowPromoModal(true);
+      
+      // TODO: Implémenter la vraie logique de création de promotion
+      // const promotionData = {
+      //   title: 'Promotion spéciale',
+      //   description: 'Offre limitée sur les équipements',
+      //   discount: 15,
+      //   startDate: new Date().toISOString(),
+      //   endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      //   equipmentIds: [],
+      //   status: 'active'
+      // };
+      
+      // const response = await apiService.createPromotion(promotionData);
+      // if (response.success) {
+      //   notificationService.promotionCreated(promotionData.title);
+      // } else {
+      //   notificationService.apiError('création de promotion', response.error || 'Erreur inconnue');
+      // }
+      
+    } catch (error) {
+      notificationService.error('Erreur', 'Impossible de créer la promotion');
+    }
+  };
+
+  const handleAddEquipment = async () => {
+    try {
+      notificationService.info('Ajout d\'équipement', 'Redirection vers le formulaire d\'ajout...');
+      
+      // Ouvrir modal d'ajout d'équipement
+      setShowEquipmentModal(true);
+      
+      // TODO: Implémenter la vraie logique d'ajout d'équipement
+      // Rediriger vers la page d'ajout d'équipement ou ouvrir un modal
+      
+    } catch (error) {
+      notificationService.error('Erreur', 'Impossible d\'ajouter l\'équipement');
+    }
+  };
+
+  const handleCorrectMonth = async () => {
+    try {
+      notificationService.info('Correction des données', 'Ouverture du formulaire de correction...');
+      
+      // Ouvrir modal de correction
+      setShowCorrectionModal(true);
+      
+      // TODO: Implémenter la vraie logique de correction
+      // const correctionData = {
+      //   month: 'Juin',
+      //   newSales: 72000,
+      //   reason: 'Correction des données de vente'
+      // };
+      
+      // const response = await apiService.updateSalesData(correctionData);
+      // if (response.success) {
+      //   notificationService.success('Données corrigées', 'Les données de vente ont été mises à jour');
+      //   loadSalesData(); // Recharger les données
+      // } else {
+      //   notificationService.apiError('correction des données', response.error || 'Erreur inconnue');
+      // }
+      
+    } catch (error) {
+      notificationService.error('Erreur', 'Impossible de corriger les données');
+    }
+  };
+
+  const handleAIForecast = async () => {
+    try {
+      notificationService.aiProcessing();
+      
+      // Simuler un délai d'analyse IA
+      setTimeout(() => {
+        setShowForecast(true);
+        notificationService.aiCompleted();
+      }, 2000);
+      
+      // TODO: Implémenter la vraie logique de prévision IA
+      // const forecastData = await apiService.getAIForecast(salesData);
+      // if (forecastData.success) {
+      //   setForecastData(forecastData.data);
+      //   setShowForecast(true);
+      //   notificationService.aiCompleted();
+      // } else {
+      //   notificationService.apiError('prévision IA', forecastData.error || 'Erreur inconnue');
+      // }
+      
+    } catch (error) {
+      notificationService.error('Erreur IA', 'Impossible de générer la prévision');
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      notificationService.info('Export en cours', 'Génération du rapport...');
+      
+      const exportData = {
+        monthlyData: salesData.map(month => ({
+          month: month.month,
+          sales: month.sales,
+          target: month.target,
+          gap: month.target - month.sales,
+          achievementRate: Math.round((month.sales / month.target) * 100)
+        }))
+      };
+      
+      const result = await exportService.exportSalesEvolution(exportData, { format: 'pdf' });
+      
+      if (result.success) {
+        notificationService.success('Export réussi', `Rapport téléchargé: ${result.filename}`);
+      } else {
+        notificationService.error('Erreur d\'export', result.error || 'Erreur inconnue');
+      }
+      
+    } catch (error) {
+      notificationService.error('Erreur d\'export', 'Impossible d\'exporter les données');
     }
   };
 
@@ -415,7 +564,7 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
           Analyse complète
         </button>
         <button
-          onClick={() => setShowForecast(true)}
+          onClick={() => handleQuickAction('ai_forecast')}
           className="px-3 py-1 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors"
         >
           Prévision IA
@@ -425,6 +574,12 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
           className="px-3 py-1 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors"
         >
           Benchmark secteur
+        </button>
+        <button
+          onClick={() => handleQuickAction('export_data')}
+          className="px-3 py-1 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200 text-sm transition-colors"
+        >
+          Exporter
         </button>
       </div>
 
@@ -469,14 +624,16 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
           <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Analyse complète des ventes</h3>
             <p className="text-gray-600 mb-4">
-              Analyse détaillée des tendances, saisonnalité, et recommandations d'optimisation.
+              Analyse détaillée des performances de vente avec recommandations d'amélioration.
             </p>
-            <button
-              onClick={() => setShowDetails(false)}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-            >
-              Fermer
-            </button>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDetails(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -486,14 +643,16 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
           <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Prévision IA</h3>
             <p className="text-gray-600 mb-4">
-              Prévisions basées sur l'historique, les tendances du marché et l'IA.
+              Prévisions de vente basées sur l'intelligence artificielle et l'analyse des tendances.
             </p>
-            <button
-              onClick={() => setShowForecast(false)}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-            >
-              Fermer
-            </button>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowForecast(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -503,27 +662,95 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
           <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Benchmark secteur</h3>
             <p className="text-gray-600 mb-4">
-              Comparaison détaillée avec les concurrents et le marché.
+              Comparaison détaillée avec les performances du secteur.
             </p>
-            <button
-              onClick={() => setShowBenchmark(false)}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-            >
-              Fermer
-            </button>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowBenchmark(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Test de rendu avec données simulées */}
-      <div className="mt-8 border-t pt-4">
-        <h2 className="text-lg font-semibold mb-4">Test widget ventes enrichies</h2>
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <p className="text-sm text-blue-800">
-            ✅ Widget enrichi rendu avec succès - {salesData.length} mois de données
-          </p>
+      {/* Modales pour les actions rapides */}
+      {showPromoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Créer une promotion</h3>
+            <p className="text-gray-600 mb-4">
+              Formulaire de création de promotion (à implémenter).
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowPromoModal(false)}
+                className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200"
+              >
+                Créer
+              </button>
+              <button
+                onClick={() => setShowPromoModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {showEquipmentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Ajouter un équipement</h3>
+            <p className="text-gray-600 mb-4">
+              Formulaire d'ajout d'équipement (à implémenter).
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowEquipmentModal(false)}
+                className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200"
+              >
+                Ajouter
+              </button>
+              <button
+                onClick={() => setShowEquipmentModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCorrectionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Corriger les données</h3>
+            <p className="text-gray-600 mb-4">
+              Formulaire de correction des données (à implémenter).
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowCorrectionModal(false)}
+                className="px-4 py-2 bg-orange-100 text-orange-800 border border-orange-300 rounded hover:bg-orange-200"
+              >
+                Corriger
+              </button>
+              <button
+                onClick={() => setShowCorrectionModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
