@@ -669,14 +669,7 @@ const DashboardConfigurator: React.FC = () => {
                   <div className="bg-white rounded-lg border border-gray-200 p-2 min-h-[250px] max-w-[500px] mx-auto">
                     <ResponsiveGridLayout
                       className="layout"
-                      layouts={{ lg: selectedWidgets.map((id, idx) => {
-                        const size = widgetSizes[id] || '1/3';
-                        let w = 4;
-                        if (size === '1/2') w = 6;
-                        if (size === '2/3') w = 8;
-                        if (size === '1/1') w = 12;
-                        return { i: id, x: (idx * 4) % 12, y: Math.floor(idx / 3) * 2, w, h: 2, minH: 2, maxH: 2 };
-                      }) }}
+                      layouts={{ lg: generateCompactLayout(selectedWidgets, widgetSizes) }}
                       breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                       cols={{ lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }}
                       rowHeight={60}
