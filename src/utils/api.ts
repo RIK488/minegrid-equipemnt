@@ -415,8 +415,8 @@ export async function getMessages() {
     .from('messages')
     .select(`
       *,
-      sender:profiles!messages_sender_id_fkey(firstName, lastName),
-      receiver:profiles!messages_receiver_id_fkey(firstName, lastName)
+      sender:profiles!messages_sender_id_fkey(firstname, lastname),
+      receiver:profiles!messages_receiver_id_fkey(firstname, lastname)
     `)
     .eq('receiver_id', user.id)
     .order('created_at', { ascending: false });
@@ -466,7 +466,7 @@ export async function getOffers() {
     .from('offers')
     .select(`
       *,
-      buyer:profiles!offers_buyer_id_fkey(firstName, lastName),
+      buyer:profiles!offers_buyer_id_fkey(firstname, lastname),
       machine:machines(name, brand, model)
     `)
     .eq('seller_id', user.id)

@@ -24,7 +24,7 @@ export function useExchangeRates() {
     queryFn: async () => {
       try {
         // Essayer d'abord l'API Supabase
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/exchange-rates`, {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/exchange_rates`, {
           headers: {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
           }
