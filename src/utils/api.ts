@@ -870,3 +870,287 @@ export async function deleteUserAccount() {
 
   return { success: true };
 }
+
+// -------------------- HOOKS --------------------
+
+import { useState, useCallback } from 'react';
+
+export function useApiService() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const apiCall = useCallback(async (method: string, endpoint: string, data?: any) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Simulation d'appel API pour les widgets
+      console.log(`API Call: ${method} ${endpoint}`, data);
+      
+      // Simuler un délai réseau
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Retourner des données simulées selon l'endpoint
+      switch (endpoint) {
+        case '/api/actions/start':
+          return { success: true, message: 'Action démarrée' };
+        case '/api/actions/complete':
+          return { success: true, message: 'Action terminée' };
+        case '/api/actions/reschedule':
+          return { success: true, message: 'Action reprogrammée' };
+        case '/api/actions/create':
+          return { success: true, id: Date.now().toString() };
+        case '/api/actions/auto-followup':
+          return { success: true, count: data?.actions?.length || 0 };
+        case '/api/actions/schedule':
+          return { success: true, scheduled: data?.actions?.length || 0 };
+        case '/api/actions/ai-report':
+          return { 
+            success: true, 
+            report: {
+              total: data?.actions?.length || 0,
+              highPriority: data?.actions?.filter((a: any) => a.priority === 'high').length || 0,
+              recommendations: ['Optimiser le planning', 'Prioriser les contacts']
+            }
+          };
+        case '/api/actions/sync-crm':
+          return { success: true, synced: data?.actions?.length || 0 };
+        case '/api/actions/optimize-schedule':
+          return { success: true, optimized: true };
+        default:
+          return { success: true, data: 'Opération réussie' };
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { apiCall, loading, error };
+}
+
+// -------------------- DASHBOARD VENDEUR --------------------
+
+interface SalesPerformanceData {
+  score: number;
+  target: number;
+  rank: number;
+  totalVendors: number;
+  sales: number;
+  salesTarget: number;
+  growth: number;
+  growthTarget: number;
+  prospects: number;
+  activeProspects: number;
+  responseTime: number;
+  responseTarget: number;
+  activityLevel: string;
+  activityRecommendation: string;
+  recommendations: Array<{
+    type: string;
+    action: string;
+    impact: string;
+    priority: 'high' | 'medium' | 'low';
+  }>;
+  trends: {
+    sales: 'up' | 'down' | 'stable';
+    growth: 'up' | 'down' | 'stable';
+    prospects: 'up' | 'down' | 'stable';
+    responseTime: 'up' | 'down' | 'stable';
+  };
+  metrics: {
+    sales: { value: number; target: number; trend: 'up' | 'down' | 'stable' };
+    growth: { value: number; target: number; trend: 'up' | 'down' | 'stable' };
+    prospects: { value: number; target: number; trend: 'up' | 'down' | 'stable' };
+    responseTime: { value: number; target: number; trend: 'up' | 'down' | 'stable' };
+  };
+}
+
+export async function getSalesPerformanceData(): Promise<SalesPerformanceData> {
+  try {
+    const user = await getCurrentUser();
+    
+    // Récupérer les annonces du vendeur
+    const { data: machines, error: machinesError } = await supabase
+      .from('machines')
+      .select('*')
+      .eq('sellerId', user.id);
+
+    if (machinesError) throw machinesError;
+
+    // Récupérer les vues des annonces
+    const { data: views, error: viewsError } = await supabase
+      .from('machine_views')
+      .select('*')
+      .in('machine_id', machines?.map(m => m.id) || []);
+
+    if (viewsError) throw viewsError;
+
+    // Récupérer les messages reçus
+    const { data: messages, error: messagesError } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('receiver_id', user.id);
+
+    if (messagesError) throw messagesError;
+
+    // Récupérer les offres reçues
+    const { data: offers, error: offersError } = await supabase
+      .from('offers')
+      .select('*')
+      .eq('seller_id', user.id);
+
+    if (offersError) throw offersError;
+
+    // Calculer les métriques
+    const totalMachines = machines?.length || 0;
+    const totalViews = views?.length || 0;
+    const totalMessages = messages?.length || 0;
+    const totalOffers = offers?.length || 0;
+    
+    // Calculer le score de performance (0-100)
+    const viewsScore = Math.min((totalViews / Math.max(totalMachines, 1)) * 20, 20);
+    const messagesScore = Math.min((totalMessages / Math.max(totalMachines, 1)) * 30, 30);
+    const offersScore = Math.min((totalOffers / Math.max(totalMachines, 1)) * 50, 50);
+    const performanceScore = Math.round(viewsScore + messagesScore + offersScore);
+
+    // Calculer le temps de réponse moyen (en heures)
+    const responseTime = messages?.length > 0 ? 
+      messages.reduce((acc, msg) => {
+        const responseTime = msg.response_time || 24; // Par défaut 24h
+        return acc + responseTime;
+      }, 0) / messages.length : 24;
+
+    // Calculer la croissance (comparaison avec le mois précédent)
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    
+    const currentMonthViews = views?.filter(v => {
+      const viewDate = new Date(v.created_at);
+      return viewDate.getMonth() === currentMonth && viewDate.getFullYear() === currentYear;
+    }).length || 0;
+
+    const lastMonthViews = views?.filter(v => {
+      const viewDate = new Date(v.created_at);
+      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const lastYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+      return viewDate.getMonth() === lastMonth && viewDate.getFullYear() === lastYear;
+    }).length || 0;
+
+    const growth = lastMonthViews > 0 ? 
+      ((currentMonthViews - lastMonthViews) / lastMonthViews) * 100 : 0;
+
+    // Générer des recommandations basées sur les données
+    const recommendations = [];
+    
+    if (responseTime > 2) {
+      recommendations.push({
+        type: 'process',
+        action: 'Optimiser le temps de réponse',
+        impact: `Réduire le temps de réponse de ${responseTime.toFixed(1)}h à 2h`,
+        priority: 'high' as const
+      });
+    }
+
+    if (totalMachines < 5) {
+      recommendations.push({
+        type: 'prospection',
+        action: 'Augmenter le nombre d\'annonces',
+        impact: 'Passer de ' + totalMachines + ' à au moins 5 annonces actives',
+        priority: 'medium' as const
+      });
+    }
+
+    if (totalViews < totalMachines * 10) {
+      recommendations.push({
+        type: 'marketing',
+        action: 'Améliorer la visibilité des annonces',
+        impact: 'Augmenter le nombre de vues par annonce',
+        priority: 'medium' as const
+      });
+    }
+
+    // Déterminer le niveau d'activité
+    let activityLevel = 'faible';
+    if (totalViews > 50 && totalMessages > 10) activityLevel = 'élevé';
+    else if (totalViews > 20 && totalMessages > 5) activityLevel = 'modéré';
+
+    // Déterminer les tendances
+    const trends = {
+      sales: growth > 0 ? 'up' as const : growth < 0 ? 'down' as const : 'stable' as const,
+      growth: growth > 0 ? 'up' as const : growth < 0 ? 'down' as const : 'stable' as const,
+      prospects: totalMessages > 0 ? 'up' as const : 'stable' as const,
+      responseTime: responseTime < 24 ? 'down' as const : 'up' as const
+    };
+
+    return {
+      score: performanceScore,
+      target: 85,
+      rank: 3, // À calculer par rapport aux autres vendeurs
+      totalVendors: 12, // À récupérer depuis la base de données
+      sales: totalOffers * 50000, // Estimation basée sur les offres
+      salesTarget: 3000000,
+      growth: growth,
+      growthTarget: 15,
+      prospects: totalMessages,
+      activeProspects: Math.min(totalMessages, 25),
+      responseTime: responseTime,
+      responseTarget: 2,
+      activityLevel: activityLevel,
+      activityRecommendation: recommendations.length > 0 ? 
+        recommendations[0].action : 'Continuer les bonnes pratiques',
+      recommendations: recommendations,
+      trends: trends,
+      metrics: {
+        sales: { value: totalOffers * 50000, target: 3000000, trend: trends.sales },
+        growth: { value: growth, target: 15, trend: trends.growth },
+        prospects: { value: totalMessages, target: 25, trend: trends.prospects },
+        responseTime: { value: responseTime, target: 2, trend: trends.responseTime }
+      }
+    };
+
+  } catch (error) {
+    console.error('Erreur lors du calcul des performances:', error);
+    
+    // Retourner des données par défaut en cas d'erreur
+    return {
+      score: 75,
+      target: 85,
+      rank: 3,
+      totalVendors: 12,
+      sales: 0,
+      salesTarget: 3000000,
+      growth: 0,
+      growthTarget: 15,
+      prospects: 25,
+      activeProspects: 18,
+      responseTime: 2.5,
+      responseTarget: 1.5,
+      activityLevel: 'modéré',
+      activityRecommendation: 'Analyser les opportunités d\'amélioration',
+      recommendations: [
+        {
+          type: 'process',
+          action: 'Optimiser le temps de réponse',
+          impact: 'Réduire le temps de réponse aux prospects de 2.5h à 1.5h',
+          priority: 'high' as const
+        }
+      ],
+      trends: {
+        sales: 'up' as const,
+        growth: 'up' as const,
+        prospects: 'stable' as const,
+        responseTime: 'down' as const
+      },
+      metrics: {
+        sales: { value: 0, target: 3000000, trend: 'up' as const },
+        growth: { value: 0, target: 15, trend: 'up' as const },
+        prospects: { value: 18, target: 25, trend: 'stable' as const },
+        responseTime: { value: 2.5, target: 1.5, trend: 'down' as const }
+      }
+    };
+  }
+}

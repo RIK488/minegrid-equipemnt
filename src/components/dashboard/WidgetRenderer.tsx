@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Widget } from '../../constants/dashboardTypes';
 import { getWidgetData } from '../../constants/mockData';
 
@@ -52,6 +52,88 @@ function getFontSizeFromWidgetSize(size: string, type: 'title' | 'value' = 'titl
 // Classe CSS pour l'ellipsis (à ajouter dans le global CSS si besoin)
 // .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+// Composant asynchrone pour le widget de performance commerciale
+const SalesPerformanceScoreWidgetAsync: React.FC = () => {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const { getSalesPerformanceData } = await import('../../utils/api');
+        const realData = await getSalesPerformanceData();
+        setData(realData);
+      } catch (err) {
+        console.error('Erreur lors du chargement des données de performance:', err);
+        setError(err instanceof Error ? err.message : 'Erreur inconnue');
+        // Utiliser des données par défaut en cas d'erreur
+        setData({
+          score: 75,
+          target: 85,
+          rank: 3,
+          totalVendors: 12,
+          sales: 0,
+          salesTarget: 3000000,
+          growth: 0,
+          growthTarget: 15,
+          prospects: 25,
+          activeProspects: 18,
+          responseTime: 2.5,
+          responseTarget: 1.5,
+          activityLevel: 'modéré',
+          activityRecommendation: 'Analyser les opportunités d\'amélioration',
+          recommendations: [
+            {
+              type: 'process',
+              action: 'Optimiser le temps de réponse',
+              impact: 'Réduire le temps de réponse aux prospects de 2.5h à 1.5h',
+              priority: 'high' as const
+            }
+          ],
+          trends: {
+            sales: 'up' as const,
+            growth: 'up' as const,
+            prospects: 'stable' as const,
+            responseTime: 'down' as const
+          },
+          metrics: {
+            sales: { value: 0, target: 3000000, trend: 'up' as const },
+            growth: { value: 0, target: 15, trend: 'up' as const },
+            prospects: { value: 18, target: 25, trend: 'stable' as const },
+            responseTime: { value: 2.5, target: 1.5, trend: 'down' as const }
+          }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+        <span className="ml-2 text-gray-600">Chargement des données...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <h3 className="text-red-800 font-semibold">Erreur de chargement</h3>
+        <p className="text-red-600 text-sm">{error}</p>
+      </div>
+    );
+  }
+
+  return <SalesPerformanceScoreWidget data={data} />;
+};
+
 const WidgetRenderer: React.FC<WidgetRendererProps> = ({ 
   widget, 
   widgetSize = 'medium',
@@ -64,68 +146,77 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
   const fontSizeClass = getFontSizeFromWidgetSize(widget.size || widgetSize);
 
   // Fonctions de transformation des données pour les widgets avancés
-  const getSalesPerformanceData = () => {
-    // Données par défaut complètes
-    const defaultData = {
-      score: 75,
-      target: 85,
-      rank: 3,
-      totalVendors: 12,
-      sales: 0,
-      salesTarget: 3000000,
-      growth: 0,
-      growthTarget: 15,
-      prospects: 25,
-      activeProspects: 18,
-      responseTime: 2.5,
-      responseTarget: 1.5,
-      activityLevel: 'modéré',
-      activityRecommendation: 'Analyser les opportunités d\'amélioration',
-      recommendations: [
-        {
-          type: 'process',
-          action: 'Optimiser le temps de réponse',
-          impact: 'Réduire le temps de réponse aux prospects de 2.5h à 1.5h',
-          priority: 'high' as const
+  const getSalesPerformanceData = async () => {
+    try {
+      // Importer la fonction pour récupérer les vraies données
+      const { getSalesPerformanceData } = await import('../../utils/api');
+      const realData = await getSalesPerformanceData();
+      console.log("📊 Données réelles récupérées pour SalesPerformanceScoreWidget:", realData);
+      return realData;
+    } catch (error) {
+      console.error("❌ Erreur lors de la récupération des données réelles:", error);
+      
+      // Données par défaut en cas d'erreur
+      const defaultData = {
+        score: 75,
+        target: 85,
+        rank: 3,
+        totalVendors: 12,
+        sales: 0,
+        salesTarget: 3000000,
+        growth: 0,
+        growthTarget: 15,
+        prospects: 25,
+        activeProspects: 18,
+        responseTime: 2.5,
+        responseTarget: 1.5,
+        activityLevel: 'modéré',
+        activityRecommendation: 'Analyser les opportunités d\'amélioration',
+        recommendations: [
+          {
+            type: 'process',
+            action: 'Optimiser le temps de réponse',
+            impact: 'Réduire le temps de réponse aux prospects de 2.5h à 1.5h',
+            priority: 'high' as const
+          },
+          {
+            type: 'prospection',
+            action: 'Augmenter le nombre de prospects',
+            impact: 'Passer de 25 à 35 prospects actifs',
+            priority: 'medium' as const
+          }
+        ],
+        trends: {
+          sales: 'up' as const,
+          growth: 'up' as const,
+          prospects: 'stable' as const,
+          responseTime: 'down' as const
         },
-        {
-          type: 'prospection',
-          action: 'Augmenter le nombre de prospects',
-          impact: 'Passer de 25 à 35 prospects actifs',
-          priority: 'medium' as const
-        }
-      ],
-      trends: {
-        sales: 'up' as const,
-        growth: 'up' as const,
-        prospects: 'stable' as const,
-        responseTime: 'down' as const
-      },
-      metrics: {
-        sales: { value: 0, target: 3000000, trend: 'up' as const },
-        growth: { value: 0, target: 15, trend: 'up' as const },
-        prospects: { value: 18, target: 25, trend: 'stable' as const },
-        responseTime: { value: 2.5, target: 1.5, trend: 'down' as const }
-      }
-    };
-
-    // Si rawData existe et a la propriété revenue, on l'utilise
-    if (rawData && typeof rawData === 'object' && 'revenue' in rawData) {
-      return {
-        ...defaultData,
-        sales: rawData.revenue || 0,
-        growth: rawData.growth || 0,
         metrics: {
-          ...defaultData.metrics,
-          sales: { value: rawData.revenue || 0, target: 3000000, trend: 'up' as const },
-          growth: { value: rawData.growth || 0, target: 15, trend: 'up' as const }
+          sales: { value: 0, target: 3000000, trend: 'up' as const },
+          growth: { value: 0, target: 15, trend: 'up' as const },
+          prospects: { value: 18, target: 25, trend: 'stable' as const },
+          responseTime: { value: 2.5, target: 1.5, trend: 'down' as const }
         }
       };
-    }
 
-    // Sinon, on retourne les données par défaut
-    console.log("📊 Utilisation des données par défaut pour SalesPerformanceScoreWidget");
-    return defaultData;
+      // Si rawData existe et a la propriété revenue, on l'utilise
+      if (rawData && typeof rawData === 'object' && 'revenue' in rawData) {
+        return {
+          ...defaultData,
+          sales: rawData.revenue || 0,
+          growth: rawData.growth || 0,
+          metrics: {
+            ...defaultData.metrics,
+            sales: { value: rawData.revenue || 0, target: 3000000, trend: 'up' as const },
+            growth: { value: rawData.growth || 0, target: 15, trend: 'up' as const }
+          }
+        };
+      }
+
+      console.log("📊 Utilisation des données par défaut pour SalesPerformanceScoreWidget");
+      return defaultData;
+    }
   };
 
   const getSalesPipelineData = () => {
@@ -299,7 +390,8 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     // Widgets avancés avec IA - Priorité haute
     case 'performance':
       if (widget.id === 'sales-performance-score') {
-        return <SalesPerformanceScoreWidget data={getSalesPerformanceData()} />;
+        // Utiliser un composant avec état pour gérer les données asynchrones
+        return <SalesPerformanceScoreWidgetAsync />;
       }
       return (
         <PerformanceWidget 

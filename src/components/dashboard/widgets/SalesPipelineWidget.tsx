@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus, ChevronUp, ChevronDown, Brain, AlertTriangle, FileText, Star, TrendingUp, Info, X,
-  Phone, Mail, Calendar, Download, Send, Target, Users, TrendingDown
+  Phone, Mail, Calendar, Download, Send, Target, Users, TrendingDown, ChevronRight
 } from 'lucide-react';
 import { apiService, notificationService, exportService, communicationService } from '../../../services';
 
@@ -19,6 +19,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
   const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'timeline'>('list');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [showConversionRates, setShowConversionRates] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(true);
 
   function getDaysSinceLastContact(dateString: string) {
     const lastContact = new Date(dateString);
@@ -774,75 +775,86 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
 
       {/* Actions rapides connectées aux services communs */}
       <div className="bg-white rounded-lg border border-orange-200 p-4">
-        <h4 className="text-sm font-semibold text-orange-900 mb-3 flex items-center gap-2">
-          <Target className="w-4 h-4" />
-          Actions Rapides
-        </h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-semibold text-orange-900 flex items-center gap-2">
+            <Target className="w-4 h-4" />
+            Actions Rapides
+          </h4>
           <button
-            onClick={() => handleQuickAction('add-lead')}
-            className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
+            className="p-1 text-orange-500 hover:text-orange-700 transition-colors"
+            onClick={() => setShowQuickActions((v) => !v)}
+            title={showQuickActions ? 'Fermer' : 'Ouvrir'}
           >
-            <Plus className="w-4 h-4 text-orange-600 mb-1" />
-            <span className="text-orange-800 font-medium">Ajouter Lead</span>
-          </button>
-          
-          <button
-            onClick={() => handleQuickAction('export-pipeline')}
-            className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
-          >
-            <Download className="w-4 h-4 text-orange-600 mb-1" />
-            <span className="text-orange-800 font-medium">Exporter</span>
-          </button>
-          
-          <button
-            onClick={() => handleQuickAction('send-followup')}
-            className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
-          >
-            <Send className="w-4 h-4 text-orange-600 mb-1" />
-            <span className="text-orange-800 font-medium">Relances</span>
-          </button>
-          
-          <button
-            onClick={() => handleQuickAction('schedule-meeting')}
-            className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
-          >
-            <Calendar className="w-4 h-4 text-orange-600 mb-1" />
-            <span className="text-orange-800 font-medium">Réunions</span>
-          </button>
-          
-          <button
-            onClick={() => handleQuickAction('generate-report')}
-            className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
-          >
-            <FileText className="w-4 h-4 text-orange-600 mb-1" />
-            <span className="text-orange-800 font-medium">Rapport</span>
-          </button>
-          
-          <button
-            onClick={() => handleQuickAction('relance-automatique')}
-            className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
-          >
-            <Mail className="w-4 h-4 text-orange-600 mb-1" />
-            <span className="text-orange-800 font-medium">Auto-Relance</span>
-          </button>
-          
-          <button
-            onClick={() => handleQuickAction('analyse-performance')}
-            className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
-          >
-            <TrendingUp className="w-4 h-4 text-orange-600 mb-1" />
-            <span className="text-orange-800 font-medium">Analyse</span>
-          </button>
-          
-          <button
-            onClick={() => handleQuickAction('optimisation-ia')}
-            className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
-          >
-            <Brain className="w-4 h-4 text-orange-600 mb-1" />
-            <span className="text-orange-800 font-medium">Optimisation IA</span>
+            {showQuickActions ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </button>
         </div>
+        {showQuickActions && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <button
+              onClick={() => handleQuickAction('add-lead')}
+              className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
+            >
+              <Plus className="w-4 h-4 text-orange-600 mb-1" />
+              <span className="text-orange-800 font-medium">Ajouter Lead</span>
+            </button>
+            
+            <button
+              onClick={() => handleQuickAction('export-pipeline')}
+              className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
+            >
+              <Download className="w-4 h-4 text-orange-600 mb-1" />
+              <span className="text-orange-800 font-medium">Exporter</span>
+            </button>
+            
+            <button
+              onClick={() => handleQuickAction('send-followup')}
+              className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
+            >
+              <Send className="w-4 h-4 text-orange-600 mb-1" />
+              <span className="text-orange-800 font-medium">Relances</span>
+            </button>
+            
+            <button
+              onClick={() => handleQuickAction('schedule-meeting')}
+              className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
+            >
+              <Calendar className="w-4 h-4 text-orange-600 mb-1" />
+              <span className="text-orange-800 font-medium">Réunions</span>
+            </button>
+            
+            <button
+              onClick={() => handleQuickAction('generate-report')}
+              className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
+            >
+              <FileText className="w-4 h-4 text-orange-600 mb-1" />
+              <span className="text-orange-800 font-medium">Rapport</span>
+            </button>
+            
+            <button
+              onClick={() => handleQuickAction('relance-automatique')}
+              className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
+            >
+              <Mail className="w-4 h-4 text-orange-600 mb-1" />
+              <span className="text-orange-800 font-medium">Auto-Relance</span>
+            </button>
+            
+            <button
+              onClick={() => handleQuickAction('analyse-performance')}
+              className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
+            >
+              <TrendingUp className="w-4 h-4 text-orange-600 mb-1" />
+              <span className="text-orange-800 font-medium">Analyse</span>
+            </button>
+            
+            <button
+              onClick={() => handleQuickAction('optimisation-ia')}
+              className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
+            >
+              <Brain className="w-4 h-4 text-orange-600 mb-1" />
+              <span className="text-orange-800 font-medium">Optimisation IA</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Insights IA */}
@@ -857,7 +869,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
               onClick={() => setShowAIInsights(!showAIInsights)}
               className="text-orange-600 hover:text-orange-700"
             >
-              {showAIInsights ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showAIInsights ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             </button>
           </div>
           

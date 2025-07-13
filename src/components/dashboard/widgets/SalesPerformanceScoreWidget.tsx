@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 
 interface SalesPerformanceScoreData {
   score: number;
@@ -137,6 +138,8 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
     alert(`Action recommandée : ${recommendation.action}`);
   };
 
+  const [showQuickActions, setShowQuickActions] = useState(true);
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       
@@ -241,30 +244,41 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
 
       {/* Recommandations IA */}
       <div className="border-t pt-4">
-        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-          <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-          Recommandations IA pour améliorer votre score
-        </h4>
-        <div className="space-y-2">
-          {data.recommendations.map((rec: any, index: number) => (
-            <div key={index} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className={`w-2 h-2 rounded-full mt-2 ${
-                rec.priority === 'high' ? 'bg-red-500' :
-                rec.priority === 'medium' ? 'bg-orange-500' : 'bg-blue-500'
-              }`}></div>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-gray-900">{rec.action}</div>
-                <div className="text-xs text-gray-500">Impact: {rec.impact}</div>
-              </div>
-              <button
-                className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors"
-                onClick={() => handleRecommendationAction(rec)}
-              >
-                Agir
-              </button>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+            <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+            Recommandations IA pour améliorer votre score
+          </h4>
+          <button
+            className="p-1 text-orange-500 hover:text-orange-700 transition-colors"
+            onClick={() => setShowQuickActions((v) => !v)}
+            title={showQuickActions ? 'Fermer' : 'Ouvrir'}
+          >
+            {showQuickActions ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </button>
         </div>
+        {showQuickActions && (
+          <div className="space-y-2">
+            {data.recommendations.map((rec: any, index: number) => (
+              <div key={index} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className={`w-2 h-2 rounded-full mt-2 ${
+                  rec.priority === 'high' ? 'bg-red-500' :
+                  rec.priority === 'medium' ? 'bg-orange-500' : 'bg-blue-500'
+                }`}></div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-900">{rec.action}</div>
+                  <div className="text-xs text-gray-500">Impact: {rec.impact}</div>
+                </div>
+                <button
+                  className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors"
+                  onClick={() => handleRecommendationAction(rec)}
+                >
+                  Agir
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Barre de progression vers l'objectif */}

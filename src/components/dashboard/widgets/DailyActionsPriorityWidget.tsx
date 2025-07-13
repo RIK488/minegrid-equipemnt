@@ -14,8 +14,14 @@ import {
   Star,
   MessageSquare,
   FileText,
-  ArrowRight
+  ArrowRight,
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
+import { useApiService } from '../../../utils/api';
+import { useNotificationService } from '../../../utils/notifications';
+import { useExportService } from '../../../utils/export';
+import { useCommunicationService } from '../../../utils/communication';
 
 interface DailyAction {
   id: string;
@@ -51,6 +57,13 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showCompleted, setShowCompleted] = useState(false);
   const [sortBy, setSortBy] = useState<'priority' | 'time' | 'value'>('priority');
+  const [showQuickActions, setShowQuickActions] = useState(true);
+
+  // Services communs
+  const { apiCall } = useApiService();
+  const { showNotification } = useNotificationService();
+  const { exportData } = useExportService();
+  const { sendMessage } = useCommunicationService();
 
   // Données par défaut si aucune donnée n'est fournie
   const defaultActions: DailyAction[] = [
@@ -204,24 +217,37 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
     }).format(amount);
   };
 
-  const handleActionClick = (action: DailyAction, actionType: string) => {
+  const handleActionClick = async (action: DailyAction, actionType: string) => {
     if (onAction) {
       onAction(actionType, action);
     }
     
-    switch (actionType) {
-      case 'start':
-        console.log('Démarrer action:', action.title);
-        break;
-      case 'complete':
-        console.log('Terminer action:', action.title);
-        break;
-      case 'contact':
-        console.log('Contacter:', action.contact);
-        break;
-      case 'reschedule':
-        console.log('Reprogrammer:', action.title);
-        break;
+    try {
+      switch (actionType) {
+        case 'start':
+          await apiCall('POST', '/api/actions/start', { actionId: action.id });
+          showNotification('success', `Action démarrée : ${action.title}`);
+          break;
+        case 'complete':
+          await apiCall('POST', '/api/actions/complete', { actionId: action.id });
+          showNotification('success', `Action terminée : ${action.title}`);
+          break;
+        case 'contact':
+          if (action.contact?.phone) {
+            await sendMessage('SMS', action.contact.phone, `Rappel : ${action.title}`);
+          }
+          if (action.contact?.email) {
+            await sendMessage('EMAIL', action.contact.email, `Rappel : ${action.title}`);
+          }
+          showNotification('info', `Contact établi avec ${action.contact?.name || 'le contact'}`);
+          break;
+        case 'reschedule':
+          await apiCall('POST', '/api/actions/reschedule', { actionId: action.id });
+          showNotification('info', `Action reprogrammée : ${action.title}`);
+          break;
+      }
+    } catch (error) {
+      showNotification('error', `Erreur lors de l'action : ${error}`);
     }
   };
 
@@ -249,6 +275,63 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
       case 'urgent': return 'text-yellow-600 bg-yellow-50';
       case 'upcoming': return 'text-green-600 bg-green-50';
       default: return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  // Actions rapides
+  const handleQuickAction = async (action: string) => {
+    try {
+      switch (action) {
+        case 'new-task':
+          await apiCall('POST', '/api/actions/create', { 
+            title: 'Nouvelle tâche',
+            priority: 'medium',
+            category: 'follow-up'
+          });
+          showNotification('success', 'Nouvelle tâche créée');
+          break;
+        case 'auto-followup':
+          await apiCall('POST', '/api/actions/auto-followup', { 
+            actions: filteredActions.filter(a => a.status === 'pending')
+          });
+          showNotification('success', 'Relances automatiques programmées');
+          break;
+        case 'schedule':
+          await apiCall('POST', '/api/actions/schedule', { 
+            actions: filteredActions.filter(a => a.status === 'pending')
+          });
+          showNotification('success', 'Actions planifiées');
+          break;
+        case 'ai-report':
+          const report = await apiCall('GET', '/api/actions/ai-report', { 
+            actions: filteredActions
+          });
+          await exportData(report, 'rapport-actions-ia', 'pdf');
+          showNotification('success', 'Rapport IA généré et exporté');
+          break;
+        case 'export-actions':
+          await exportData(filteredActions, 'actions-prioritaires', 'excel');
+          showNotification('success', 'Actions exportées');
+          break;
+        case 'notify-team':
+          await sendMessage('TEAM', 'all', `Actions prioritaires du jour : ${filteredActions.length} tâches`);
+          showNotification('success', 'Équipe notifiée');
+          break;
+        case 'sync-crm':
+          await apiCall('POST', '/api/actions/sync-crm', { 
+            actions: filteredActions
+          });
+          showNotification('success', 'CRM synchronisé');
+          break;
+        case 'optimize-schedule':
+          const optimized = await apiCall('POST', '/api/actions/optimize-schedule', { 
+            actions: filteredActions
+          });
+          showNotification('success', 'Planning optimisé par IA');
+          break;
+      }
+    } catch (error) {
+      showNotification('error', `Erreur lors de l'action rapide : ${error}`);
     }
   };
 
@@ -415,13 +498,13 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
                   {action.status === 'pending' && (
                     <>
                       <button
-                        onClick={() => { handleActionClick(action, 'start'); alert('Action démarrée : ' + action.title); }}
+                        onClick={() => handleActionClick(action, 'start')}
                         className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                       >
                         Démarrer
                       </button>
                       <button
-                        onClick={() => { handleActionClick(action, 'contact'); alert('Contact : ' + (action.contact?.name || '')); }}
+                        onClick={() => handleActionClick(action, 'contact')}
                         className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                       >
                         Contacter
@@ -439,7 +522,7 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
                   )}
                   
                   <button
-                    onClick={() => { handleActionClick(action, 'reschedule'); alert('Action reprogrammée : ' + action.title); }}
+                    onClick={() => handleActionClick(action, 'reschedule')}
                     className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                   >
                     Reprogrammer
@@ -453,13 +536,68 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
 
       {/* Actions rapides */}
       <div className="border-t border-gray-200 pt-4 mt-6">
-        <h4 className="text-sm font-semibold text-gray-900 mb-3">Actions Rapides</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" onClick={() => alert('Nouvelle tâche')}>Nouvelle tâche</button>
-          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" onClick={() => alert('Relance auto')}>Relance auto</button>
-          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" onClick={() => alert('Planifier')}>Planifier</button>
-          <button className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" onClick={() => alert('Rapport IA')}>Rapport IA</button>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-semibold text-gray-900">Actions Rapides</h4>
+          <button
+            className="p-1 text-orange-500 hover:text-orange-700 transition-colors"
+            onClick={() => setShowQuickActions((v) => !v)}
+            title={showQuickActions ? 'Fermer' : 'Ouvrir'}
+          >
+            {showQuickActions ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </button>
         </div>
+        {showQuickActions && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <button 
+              className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
+              onClick={() => handleQuickAction('new-task')}
+            >
+              Nouvelle tâche
+            </button>
+            <button 
+              className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
+              onClick={() => handleQuickAction('auto-followup')}
+            >
+              Relance auto
+            </button>
+            <button 
+              className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
+              onClick={() => handleQuickAction('schedule')}
+            >
+              Planifier
+            </button>
+            <button 
+              className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
+              onClick={() => handleQuickAction('ai-report')}
+            >
+              Rapport IA
+            </button>
+            <button 
+              className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
+              onClick={() => handleQuickAction('export-actions')}
+            >
+              Exporter
+            </button>
+            <button 
+              className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
+              onClick={() => handleQuickAction('notify-team')}
+            >
+              Notifier équipe
+            </button>
+            <button 
+              className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
+              onClick={() => handleQuickAction('sync-crm')}
+            >
+              Sync CRM
+            </button>
+            <button 
+              className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
+              onClick={() => handleQuickAction('optimize-schedule')}
+            >
+              Optimiser IA
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

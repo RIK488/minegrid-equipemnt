@@ -586,11 +586,11 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
                       {l.h < 6 ? <Maximize2 className="w-4 h-4 text-orange-600" /> : <Minimize2 className="w-4 h-4 text-orange-600" />}
                     </button>
                     <button
-                      className="p-1 bg-white rounded-full shadow hover:bg-blue-100 transition-colors"
+                      className="p-1 bg-white rounded-full shadow hover:bg-orange-100 transition-colors"
                       title="Réinitialiser la taille"
                       onClick={() => handleResetWidgetSize(widget.id)}
                     >
-                      <Layout className="w-4 h-4 text-blue-600" />
+                      <Layout className="w-4 h-4 text-orange-600" />
                     </button>
                     <button
                       className="p-1 bg-white rounded-full shadow hover:bg-red-100 transition-colors"

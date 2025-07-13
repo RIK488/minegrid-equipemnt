@@ -82,7 +82,7 @@ export default function WidgetWrapper({
           {/* Bouton collapse/expand */}
           <button
             onClick={handleToggleCollapse}
-            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1 text-orange-500 hover:text-orange-700 transition-colors"
             title={isCollapsed ? "Développer" : "Réduire"}
           >
             {isCollapsed ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
