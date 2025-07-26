@@ -13,15 +13,17 @@ export default function Dashboard({ section = 'overview' }) {
     const [offers, setOffers] = useState([]);
     const [activeSettingsTab, setActiveSettingsTab] = useState('profil');
     const [isSavingSettings, setIsSavingSettings] = useState(false);
+    const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
+    const [subscriptionType, setSubscriptionType] = useState('entreprise');
 
-    const navigation = [
+    const [navigation, setNavigation] = useState([
         { name: 'Vue d\'ensemble', href: '#dashboard/overview', icon: Eye },
         { name: 'Mes annonces', href: '#dashboard/annonces', icon: Package },
         { name: 'Services', href: '#dashboard/services', icon: Shield },
         { name: 'Mon abonnement', href: '#dashboard/abonnement', icon: Wallet },
         { name: 'Notifications', href: '#dashboard/notifications', icon: Bell },
         { name: 'Paramètres', href: '#dashboard/settings', icon: Settings }
-    ];
+    ]);
 
     const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
@@ -33,6 +35,19 @@ export default function Dashboard({ section = 'overview' }) {
         window.addEventListener('hashchange', handleHashChange);
         return () => window.removeEventListener('hashchange', handleHashChange);
     }, []);
+
+    useEffect(() => {
+        // Mettre à jour le nom de la navigation selon le type d'abonnement
+        setNavigation(prev => prev.map(item => {
+            if (item.name === 'Vue d\'ensemble' || item.name === 'Tableau de bord') {
+                return {
+                    ...item,
+                    name: (!hasActiveSubscription || subscriptionType === 'gratuit') ? 'Vue d\'ensemble' : 'Tableau de bord'
+                };
+            }
+            return item;
+        }));
+    }, [hasActiveSubscription, subscriptionType]);
 
     const loadMachines = async () => {
         try {
@@ -94,9 +109,20 @@ export default function Dashboard({ section = 'overview' }) {
     };
 
     const handleCancelSubscription = () => {
-        if (confirm('Êtes-vous sûr de vouloir résilier votre abonnement entreprise ?')) {
-            alert('Votre abonnement entreprise a été résilié avec succès !');
+        if (confirm('Êtes-vous sûr de vouloir résilier votre abonnement ?')) {
+            setHasActiveSubscription(false);
+            setSubscriptionType('aucun');
+            alert('Votre abonnement a été résilié avec succès ! Vous pouvez maintenant choisir un nouvel abonnement.');
         }
+    };
+
+    const handleActivateSubscription = (type) => {
+        setHasActiveSubscription(true);
+        setSubscriptionType(type);
+        alert(`Abonnement ${type} activé avec succès !`);
+        // Rediriger vers la vue d'ensemble pour voir le tableau de bord complet
+        setActiveSection('overview');
+        window.location.hash = '#dashboard/overview';
     };
 
     const formatNumber = (num) => {
@@ -117,7 +143,7 @@ export default function Dashboard({ section = 'overview' }) {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent">
-                            Tableau de bord
+                            {(!hasActiveSubscription || subscriptionType === 'gratuit') ? 'Vue d\'ensemble' : 'Tableau de bord'}
                         </h1>
                         <p className="text-gray-600 mt-2 text-lg">
                             Bienvenue{userName ? `, ${userName}` : ''}
@@ -131,7 +157,9 @@ export default function Dashboard({ section = 'overview' }) {
                                 </li>
                                 <ChevronRight className="h-4 w-4 text-orange-400" />
                                 <li>
-                                    <span className="text-gray-700 font-medium">Tableau de bord</span>
+                                    <span className="text-gray-700 font-medium">
+                                        {(!hasActiveSubscription || subscriptionType === 'gratuit') ? 'Vue d\'ensemble' : 'Tableau de bord'}
+                                    </span>
                                 </li>
                             </ol>
                         </nav>
@@ -167,7 +195,8 @@ export default function Dashboard({ section = 'overview' }) {
                                             key={item.name}
                                             href={item.href}
                                             className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                                                activeSection === item.name.toLowerCase()
+                                                (activeSection === 'overview' && (item.name === 'Vue d\'ensemble' || item.name === 'Tableau de bord')) || 
+                                                (activeSection === item.name.toLowerCase().replace(' ', '').replace('\'', ''))
                                                     ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md'
                                                     : 'text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 hover:text-orange-700'
                                             }`}
@@ -260,40 +289,240 @@ export default function Dashboard({ section = 'overview' }) {
                                     </div>
                                 </div>
 
-                                {/* Abonnement Entreprise */}
-                                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-900">Votre abonnement</h3>
-                                        <span className="px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded-full">
-                                            Entreprise
-                                        </span>
+                                {(!hasActiveSubscription || subscriptionType === 'gratuit') ? (
+                                    // Vue simplifiée pour les abonnements gratuits
+                                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-lg font-semibold text-gray-900">Votre abonnement</h3>
+                                            <span className="px-3 py-1 bg-gray-500 text-white text-xs font-medium rounded-full">
+                                                Gratuit
+                                            </span>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center text-sm">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                <span className="text-gray-700">Jusqu'à 3 images par annonce</span>
+                                            </div>
+                                            <div className="flex items-center text-sm">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                <span className="text-gray-700">Support par email</span>
+                                            </div>
+                                            <div className="flex items-center text-sm">
+                                                <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                <span className="text-gray-700">Statistiques de base</span>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 pt-4 border-t border-orange-200">
+                                            <button
+                                                onClick={() => setActiveSection('abonnement')}
+                                                className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 font-medium"
+                                            >
+                                                Passer à un abonnement payant
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center text-sm">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                                            <span className="text-gray-700">Visibilité renforcée sur la page d'accueil</span>
+                                ) : (
+                                    // Vue complète pour les abonnements payants
+                                    <>
+                                        {/* Abonnement dynamique selon le type */}
+                                        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-lg font-semibold text-gray-900">Votre abonnement</h3>
+                                                <span className="px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded-full capitalize">
+                                                    {subscriptionType}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {subscriptionType === 'premium' && (
+                                                    <>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Visibilité renforcée sur la page d'accueil</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Jusqu'à 10 images par annonce</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Support prioritaire</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Statistiques détaillées</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {subscriptionType === 'pro' && (
+                                                    <>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Visibilité maximale et positionnement prioritaire</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Jusqu'à 12 images par annonce</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Support prioritaire par téléphone, email et chat</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Analytics avancés et rapports personnalisés</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Tableau de bord professionnel</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Formation et accompagnement</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Badge 'Pro' exclusif</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Services de financement et logistique</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                {subscriptionType === 'entreprise' && (
+                                                    <>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Visibilité renforcée sur la page d'accueil</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Jusqu'à 15 images par annonce</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Support prioritaire 24/7</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Statistiques détaillées et analytics</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Tableau de bord entreprise personnalisé</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Gestion multi-utilisateurs</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">API d'intégration</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Analytics complets</span>
+                                                        </div>
+                                                        <div className="flex items-center text-sm">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                                            <span className="text-gray-700">Réseau partenarial intégré</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                            <div className="mt-4 pt-4 border-t border-orange-200">
+                                                <p className="text-xs text-gray-600">Renouvellement automatique le 15 juillet 2024</p>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center text-sm">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                                            <span className="text-gray-700">Jusqu'à 15 images par annonce</span>
+
+                                        {/* Activité récente et Annonces récentes */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                            {/* Activité récente */}
+                                            <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-100">
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Activité récente</h3>
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between text-sm">
+                                                        <span className="text-gray-600">Vues cette semaine</span>
+                                                        <span className="font-medium text-gray-900">
+                                                            {weeklyData.reduce((sum, day) => sum + day.views, 0)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {weekDays.map((day, index) => {
+                                                            const dayData = weeklyData[index] || { views: 0 };
+                                                            return (
+                                                                <div key={day} className="flex items-center space-x-3">
+                                                                    <span className="text-xs text-gray-500 w-8">{day}</span>
+                                                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                                                        <div
+                                                                            className="bg-gradient-to-r from-orange-400 to-orange-600 h-2 rounded-full transition-all duration-300"
+                                                                            style={{ width: `${getBarWidth(dayData.views, maxWeeklyViews)}%` }}
+                                                                        ></div>
+                                                                    </div>
+                                                                    <span className="text-xs text-gray-600 w-8 text-right">{dayData.views}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Annonces récentes */}
+                                            <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-100">
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Annonces récentes</h3>
+                                                <div className="space-y-3">
+                                                    {machines.slice(0, 3).map((machine) => (
+                                                        <div key={machine.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                                            <div className="h-8 w-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
+                                                                <Package className="h-4 w-4 text-white" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-medium text-gray-900 truncate">{machine.title}</p>
+                                                                <p className="text-xs text-gray-500">{machine.category}</p>
+                                                            </div>
+                                                            <span className="text-xs text-gray-400">{machine.created_at}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center text-sm">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                                            <span className="text-gray-700">Support prioritaire 24/7</span>
+
+                                        {/* Actions rapides */}
+                                        <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-100">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <a
+                                                    href="#vendre"
+                                                    className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
+                                                >
+                                                    <Plus className="h-6 w-6 text-orange-600 mb-2" />
+                                                    <span className="text-sm font-medium text-gray-700">Nouvelle annonce</span>
+                                                </a>
+                                                <a
+                                                    href="#contact"
+                                                    className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
+                                                >
+                                                    <MessageSquare className="h-6 w-6 text-orange-600 mb-2" />
+                                                    <span className="text-sm font-medium text-gray-700">Contacter le support</span>
+                                                </a>
+                                                <a
+                                                    href="#settings"
+                                                    className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
+                                                >
+                                                    <Settings className="h-6 w-6 text-orange-600 mb-2" />
+                                                    <span className="text-sm font-medium text-gray-700">Paramètres</span>
+                                                </a>
+                                                <a
+                                                    href="#abonnement"
+                                                    className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
+                                                >
+                                                    <Wallet className="h-6 w-6 text-orange-600 mb-2" />
+                                                    <span className="text-sm font-medium text-gray-700">Gérer l'abonnement</span>
+                                                </a>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center text-sm">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                                            <span className="text-gray-700">Statistiques détaillées et analytics</span>
-                                        </div>
-                                        <div className="flex items-center text-sm">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                                            <span className="text-gray-700">Accès au tableau de bord entreprise</span>
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 pt-4 border-t border-orange-200">
-                                        <p className="text-xs text-gray-600">Renouvellement automatique le 15 juillet 2024</p>
-                                    </div>
-                                </div>
+                                    </>
+                                )}
                             </div>
                         )}
 
@@ -304,47 +533,167 @@ export default function Dashboard({ section = 'overview' }) {
                                     Mon abonnement
                                 </h2>
                                 
-                                <div className="mb-6 p-6 bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl border border-orange-200">
-                                    <p className="mb-4 text-lg">
-                                        Vous êtes actuellement sur l'offre{' '}
-                                        <span className="text-orange-700 font-bold">Entreprise</span>.
-                                    </p>
-                                    <ul className="list-disc pl-6 text-gray-700 space-y-2">
-                                        <li>Téléchargement jusqu'à 15 images par annonce</li>
-                                        <li>Visibilité renforcée sur la page d'accueil</li>
-                                        <li>Support prioritaire 24/7</li>
-                                        <li>Statistiques détaillées et analytics</li>
-                                        <li>Accès au tableau de bord entreprise</li>
-                                        <li>Gestion multi-utilisateurs</li>
-                                        <li>API d'intégration</li>
-                                    </ul>
-                                </div>
+                                {hasActiveSubscription ? (
+                                    <>
+                                        <div className="mb-6 p-6 bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl border border-orange-200">
+                                            <p className="mb-4 text-lg">
+                                                Vous êtes actuellement sur l'offre{' '}
+                                                <span className="text-orange-700 font-bold capitalize">{subscriptionType}</span>.
+                                            </p>
+                                            <ul className="list-disc pl-6 text-gray-700 space-y-2">
+                                                {subscriptionType === 'premium' && (
+                                                    <>
+                                                        <li>Jusqu'à 10 images par annonce</li>
+                                                        <li>Visibilité renforcée sur la page d'accueil</li>
+                                                        <li>Support prioritaire</li>
+                                                        <li>Statistiques détaillées</li>
+                                                    </>
+                                                )}
+                                                {subscriptionType === 'pro' && (
+                                                    <>
+                                                        <li>Jusqu'à 12 images par annonce</li>
+                                                        <li>Visibilité maximale et positionnement prioritaire</li>
+                                                        <li>Support prioritaire par téléphone, email et chat</li>
+                                                        <li>Analytics avancés et rapports personnalisés</li>
+                                                        <li>Tableau de bord professionnel</li>
+                                                        <li>Formation et accompagnement</li>
+                                                        <li>Badge 'Pro' exclusif</li>
+                                                        <li>Services de financement et logistique</li>
+                                                    </>
+                                                )}
+                                                {subscriptionType === 'entreprise' && (
+                                                    <>
+                                                        <li>Jusqu'à 15 images par annonce</li>
+                                                        <li>Visibilité renforcée sur la page d'accueil</li>
+                                                        <li>Support prioritaire 24/7</li>
+                                                        <li>Statistiques détaillées et analytics</li>
+                                                        <li>Accès au tableau de bord entreprise</li>
+                                                        <li>Gestion multi-utilisateurs</li>
+                                                        <li>API d'intégration</li>
+                                                        <li>Analytics complets</li>
+                                                        <li>Réseau partenarial intégré</li>
+                                                    </>
+                                                )}
+                                            </ul>
+                                        </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                                        <h4 className="font-semibold text-green-800 mb-2">Statut de l'abonnement</h4>
-                                        <p className="text-sm text-green-700">Actif jusqu'au 15 juillet 2024</p>
-                                    </div>
-                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <h4 className="font-semibold text-blue-800 mb-2">Prochain paiement</h4>
-                                        <p className="text-sm text-blue-700">15 juillet 2024 - 299€/mois</p>
-                                    </div>
-                                </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                                <h4 className="font-semibold text-green-800 mb-2">Statut de l'abonnement</h4>
+                                                <p className="text-sm text-green-700">Actif jusqu'au 15 juillet 2024</p>
+                                            </div>
+                                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                                <h4 className="font-semibold text-blue-800 mb-2">Prochain paiement</h4>
+                                                <p className="text-sm text-blue-700">
+                                                    15 juillet 2024 - 
+                                                    {subscriptionType === 'premium' ? ' 49€/mois' : 
+                                                     subscriptionType === 'pro' ? ' 149€/mois' : 
+                                                     subscriptionType === 'entreprise' ? ' Sur devis' : ' 0€/mois'}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                                <div className="flex flex-col sm:flex-row gap-4">
-                                    <button
-                                        onClick={handleCancelSubscription}
-                                        className="px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 transform hover:scale-105 shadow-lg font-medium"
-                                    >
-                                        Résilier mon abonnement
-                                    </button>
-                                    <button
-                                        onClick={() => window.location.hash = '#contact'}
-                                        className="px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all duration-200 transform hover:scale-105 shadow-lg font-medium"
-                                    >
-                                        Contacter le support
-                                    </button>
-                                </div>
+                                        <div className="flex flex-col sm:flex-row gap-4">
+                                            <button
+                                                onClick={handleCancelSubscription}
+                                                className="px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 transform hover:scale-105 shadow-lg font-medium"
+                                            >
+                                                Résilier mon abonnement
+                                            </button>
+                                            <button
+                                                onClick={() => window.location.hash = '#contact'}
+                                                className="px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all duration-200 transform hover:scale-105 shadow-lg font-medium"
+                                            >
+                                                Contacter le support
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    // Affichage des offres d'abonnement
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            {/* Offre Premium */}
+                                            <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-200 relative">
+                                                <div className="text-center">
+                                                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Premium</h3>
+                                                    <div className="text-3xl font-bold text-orange-600 mb-4">49€<span className="text-lg text-gray-500">/mois</span></div>
+                                                    <ul className="text-sm text-gray-600 space-y-2 mb-6">
+                                                        <li>• Visibilité renforcée sur la page d'accueil</li>
+                                                        <li>• Jusqu'à 10 images par annonce</li>
+                                                        <li>• Support prioritaire</li>
+                                                        <li>• Statistiques détaillées</li>
+                                                    </ul>
+                                                    <button
+                                                        onClick={() => handleActivateSubscription('premium')}
+                                                        className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 font-medium"
+                                                    >
+                                                        Choisir Premium
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Offre Pro */}
+                                            <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-200 relative">
+                                                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                                                    <span className="px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded-full">
+                                                        Populaire
+                                                    </span>
+                                                </div>
+                                                <div className="text-center pt-8">
+                                                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Pro</h3>
+                                                    <div className="text-3xl font-bold text-orange-600 mb-4">149€<span className="text-lg text-gray-500">/mois</span></div>
+                                                    <ul className="text-sm text-gray-600 space-y-2 mb-6">
+                                                        <li>• Visibilité maximale et positionnement prioritaire</li>
+                                                        <li>• Jusqu'à 12 images par annonce</li>
+                                                        <li>• Support prioritaire par téléphone, email et chat</li>
+                                                        <li>• Analytics avancés et rapports personnalisés</li>
+                                                        <li>• Tableau de bord professionnel</li>
+                                                        <li>• Formation et accompagnement</li>
+                                                        <li>• Badge 'Pro' exclusif</li>
+                                                        <li>• Services de financement et logistique</li>
+                                                    </ul>
+                                                    <button
+                                                        onClick={() => handleActivateSubscription('pro')}
+                                                        className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 font-medium"
+                                                    >
+                                                        Choisir Pro
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Offre Entreprise */}
+                                            <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-200 relative">
+                                                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                                                    <span className="px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded-full">
+                                                        Devis
+                                                    </span>
+                                                </div>
+                                                <div className="text-center pt-8">
+                                                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Entreprise</h3>
+                                                    <div className="text-3xl font-bold text-orange-600 mb-4">Sur devis</div>
+                                                    <div className="text-sm text-gray-500 mb-4">Appel conseiller</div>
+                                                    <ul className="text-sm text-gray-600 space-y-2 mb-6">
+                                                        <li>• Visibilité renforcée sur la page d'accueil</li>
+                                                        <li>• Jusqu'à 15 images par annonce</li>
+                                                        <li>• Support prioritaire 24/7</li>
+                                                        <li>• Statistiques détaillées et analytics</li>
+                                                        <li>• Tableau de bord entreprise personnalisé</li>
+                                                        <li>• Gestion multi-utilisateurs</li>
+                                                        <li>• API d'intégration</li>
+                                                        <li>• Analytics complets</li>
+                                                        <li>• Réseau partenarial intégré</li>
+                                                    </ul>
+                                                    <button
+                                                        onClick={() => window.location.hash = '#contact'}
+                                                        className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 font-medium"
+                                                    >
+                                                        Contacter un conseiller
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
