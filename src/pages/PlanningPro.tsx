@@ -429,7 +429,7 @@ export default function PlanningPro() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <a 
-                href="#dashboard-entreprise"
+                href="#dashboard-entreprise-display"
                 className="text-gray-600 hover:text-gray-900"
               >
                 <ArrowLeft className="h-5 w-5" />

@@ -12,7 +12,7 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import Blog from './pages/Blog';
 import SellEquipment from './pages/SellEquipment';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/Dashboard.jsx';
 import { useExchangeRates } from './hooks/useExchangeRates';
 import SectorMachines from './pages/SectorMachines';
 import SellerMachines from './pages/SellerMachines';

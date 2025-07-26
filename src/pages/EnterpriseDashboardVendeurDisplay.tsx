@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, Maximize2, Minimize2, X, Layout } from 'lucide-react';
+import { CheckCircle, Maximize2, Minimize2, X, Layout, Save } from 'lucide-react';
 import { commonServices } from '../constants/commonServices';
 import SalesPerformanceScoreWidget from '../components/dashboard/widgets/SalesPerformanceScoreWidget';
 import SalesPipelineWidget from '../components/dashboard/widgets/SalesPipelineWidget';
@@ -15,7 +15,7 @@ import { NotificationContainer } from '../components/NotificationToast';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-// Mapping des liens pour chaque service commun (à adapter selon tes routes)
+// Mapping des liens pour chaque service commun (corrigé pour ramener au tableau de bord sauvegardé)
 const serviceLinks = [
   '/#vitrine',                // Vitrine personnalisée
   '/#publication',            // Publication rapide
@@ -164,6 +164,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   const [addStatus, setAddStatus] = useState<{ [key: string]: 'idle' | 'added' }>({});
   const addTimeouts = useRef<{ [key: string]: NodeJS.Timeout }>({});
   const [showSizeMenu, setShowSizeMenu] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // 1. Chargement initial
   useEffect(() => {
@@ -479,6 +480,58 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     });
   };
 
+  // Fonction pour sauvegarder la configuration
+  const handleSaveDashboard = () => {
+    setSaveStatus('saving');
+    
+    // Sauvegarde la configuration actuelle
+    if (config) {
+      const configToSave = {
+        ...config,
+        layout: layout,
+        lastSaved: new Date().toISOString(),
+        version: '1.0'
+      };
+      
+      try {
+        localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(configToSave));
+        setConfig(configToSave);
+        
+        // Affiche le statut de sauvegarde
+        setTimeout(() => {
+          setSaveStatus('saved');
+          
+          // Notification de succès
+          const event = new CustomEvent('showNotification', {
+            detail: {
+              type: 'success',
+              title: 'Tableau de bord sauvegardé',
+              message: 'Votre configuration a été sauvegardée avec succès !'
+            }
+          });
+          window.dispatchEvent(event);
+          
+          setTimeout(() => {
+            setSaveStatus('idle');
+          }, 2000);
+        }, 500);
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde:', error);
+        setSaveStatus('idle');
+        
+        // Notification d'erreur
+        const event = new CustomEvent('showNotification', {
+          detail: {
+            type: 'error',
+            title: 'Erreur de sauvegarde',
+            message: 'Impossible de sauvegarder la configuration.'
+          }
+        });
+        window.dispatchEvent(event);
+      }
+    }
+  };
+
   if (!config) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -491,12 +544,13 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     );
   }
 
-  // Services communs interactifs (boutons/onglets)
+  // Services communs interactifs (boutons/onglets) - avec liens corrects
   const renderCommonServices = () => (
     <div className="mb-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2">
         {commonServices.map((service, idx) => {
           const Icon = service.icon;
+          // Utiliser les liens originaux pour chaque service
           const link = serviceLinks[idx] || '#';
           return (
             <a
@@ -622,12 +676,47 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       <NotificationContainer />
       <div className="max-w-6xl mx-auto">
         {renderCommonServices()}
-        <button
-          className="mb-4 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
-          onClick={() => setShowAddWidgetModal(true)}
-        >
-          + Ajouter des widgets
-        </button>
+        
+        {/* Barre d'actions avec bouton Sauvegarder */}
+        <div className="flex justify-between items-center mb-4">
+          {/* Bouton Sauvegarder sur le côté gauche */}
+          <button
+            className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 ${
+              saveStatus === 'saving' 
+                ? 'bg-orange-500 text-white cursor-not-allowed' 
+                : saveStatus === 'saved'
+                ? 'bg-orange-400 text-white'
+                : 'bg-orange-600 text-white hover:bg-orange-700 hover:shadow-lg'
+            }`}
+            onClick={handleSaveDashboard}
+            disabled={saveStatus === 'saving'}
+          >
+            {saveStatus === 'saving' ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Sauvegarde...</span>
+              </>
+            ) : saveStatus === 'saved' ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                <span>Sauvegardé !</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Sauvegarder</span>
+              </>
+            )}
+          </button>
+          
+          <button
+            className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors"
+            onClick={() => setShowAddWidgetModal(true)}
+          >
+            + Ajouter des widgets
+          </button>
+        </div>
+
         {showAddWidgetModal && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
@@ -662,7 +751,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
                   })}
               </ul>
               <button
-                className="mt-4 px-4 py-2 bg-gray-300 rounded hoverouibg-gray-400"
+                className="mt-4 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
                 onClick={() => setShowAddWidgetModal(false)}
               >
                 Fermer

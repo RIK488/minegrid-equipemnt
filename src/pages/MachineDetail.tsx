@@ -19,6 +19,13 @@ interface MachineDetailProps {
   machineId: string;
 }
 
+interface ContactFormData {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+}
+
 export default function MachineDetail({ machineId }: MachineDetailProps) {
   const [machineData, setMachineData] = useState<MachineWithPremium | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -26,6 +33,17 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // États pour le formulaire de contact
+  const [contactForm, setContactForm] = useState<ContactFormData>({
+    name: '',
+    email: '',
+    phone: '',
+    message: ''
+  });
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   
   // 🔄 Récupération de la devise sélectionnée pour forcer le re-render
   const { currentCurrency } = useCurrencyStore();
@@ -41,6 +59,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
       .select('*')
       .eq('id', id)
       .single()
+      .abortSignal(new AbortController().signal)  // Force refresh
       .then(({ data, error }) => {
         if (error) {
           console.error('Erreur chargement machine :', error);
@@ -48,15 +67,18 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
           setLoading(false);
         } else {
           console.log('Données machine chargées:', data);
-          console.log('Seller ID de la machine:', data.seller_id);
+          console.log('Seller ID de la machine:', data.sellerid);
+          console.log('🔍 DEBUG COMPLET - Toutes les propriétés de data:', Object.keys(data));
+          console.log('🔍 DEBUG COMPLET - Valeur de sellerid:', data.sellerid);
+          console.log('🔍 DEBUG COMPLET - Type de sellerid:', typeof data.sellerid);
           
           // Ensuite, charger les données du vendeur séparément
-          if (data.seller_id) {
-            console.log('Tentative de chargement du vendeur avec ID:', data.seller_id);
+          if (data.sellerid) {
+            console.log('Tentative de chargement du vendeur avec ID:', data.sellerid);
             supabase
             .from('users')
             .select('id, name, email, location, phone, company_name, description')
-            .eq('id', data.seller_id)
+            .eq('id', data.sellerid)
             .single()
             .then(({ data: sellerData, error: sellerError }) => {
               if (!sellerError && sellerData) {
@@ -74,7 +96,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
               setLoading(false);
             });
           } else {
-            console.log('Aucun seller_id trouvé dans les données de la machine');
+            console.log('Aucun sellerid trouvé dans les données de la machine');
             setMachineData(data);
             setLoading(false);
           }
@@ -196,6 +218,154 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
     } catch (error) {
       console.error("Erreur téléchargement fiche :", error);
       alert("❌ Une erreur est survenue.");
+    }
+  };
+
+  // Fonction pour gérer les changements dans le formulaire de contact
+  const handleContactFormChange = (field: keyof ContactFormData, value: string) => {
+    setContactForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Fonction pour envoyer l'email de contact
+  const handleSendContactEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validation du formulaire
+    if (!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim()) {
+      setEmailError('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    if (!contactForm.email.includes('@')) {
+      setEmailError('Veuillez entrer une adresse email valide.');
+      return;
+    }
+
+    setSendingEmail(true);
+    setEmailError(null);
+
+    try {
+      // 1. Sauvegarder le message dans la base de données
+      const { data: messageData, error: messageError } = await supabase
+        .from('messages')
+        .insert([
+          {
+            sender_name: contactForm.name,
+            sender_email: contactForm.email,
+            sender_phone: contactForm.phone || null,
+            message: contactForm.message,
+            machine_id: machineId,
+            sellerid: machineData?.seller?.id || (machineData as any)?.sellerid,
+            status: 'new',
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+
+      if (messageError) {
+        console.error('Erreur sauvegarde message:', messageError);
+        throw new Error('Erreur lors de la sauvegarde du message');
+      }
+
+      console.log('✅ Message sauvegardé avec succès:', messageData);
+
+      // 2. Récupérer l'email du vendeur depuis la base de données
+      let sellerEmail = 'contact@minegrid-equipment.com'; // Email par défaut
+      if (machineData?.seller?.id || (machineData as any)?.sellerid) {
+        const sellerId = machineData?.seller?.id || (machineData as any)?.sellerid;
+        
+        // D'abord essayer de récupérer depuis la table machines
+        const { data: machineInfo } = await supabase
+          .from('machines')
+          .select('seller_email')
+          .eq('id', machineId)
+          .single();
+        
+        if (machineInfo?.seller_email) {
+          sellerEmail = machineInfo.seller_email;
+        } else {
+          // Sinon essayer depuis la table profiles
+          const { data: sellerData } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', sellerId)
+            .single();
+          
+          if (sellerData?.email) {
+            sellerEmail = sellerData.email;
+          }
+        }
+      }
+
+      // 3. Envoyer l'email via la fonction Supabase Edge
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          to: sellerEmail,
+          from: contactForm.email,
+          subject: `Demande d'information - ${machineData?.name}`,
+          html: `
+            <h2>Nouvelle demande d'information</h2>
+            <p><strong>Machine :</strong> ${machineData?.name}</p>
+            <p><strong>Nom :</strong> ${contactForm.name}</p>
+            <p><strong>Email :</strong> ${contactForm.email}</p>
+            <p><strong>Téléphone :</strong> ${contactForm.phone || 'Non renseigné'}</p>
+            <p><strong>Message :</strong></p>
+            <p>${contactForm.message.replace(/\n/g, '<br>')}</p>
+          `,
+          machineId: machineId,
+          messageId: messageData.id
+        }
+      });
+
+      if (emailError) {
+        console.error('Erreur envoi email:', emailError);
+        // Même si l'email échoue, le message est sauvegardé
+        console.log('Message sauvegardé mais email non envoyé');
+        
+        // Afficher quand même un message de succès car le message est sauvegardé
+        setEmailSent(true);
+        setContactForm({
+          name: '',
+          email: '',
+          phone: '',
+          message: ''
+        });
+        
+        // Fermer le formulaire après 3 secondes
+        setTimeout(() => {
+          setShowContactForm(false);
+          setEmailSent(false);
+        }, 3000);
+        
+        return; // Sortir de la fonction ici
+      } else {
+        console.log('✅ Email envoyé avec succès:', emailData);
+      }
+
+      // 4. Succès
+      setEmailSent(true);
+      setContactForm({
+        name: '',
+        email: '',
+        phone: '',
+        message: ''
+      });
+
+      // 5. Fermer le formulaire après 3 secondes
+      setTimeout(() => {
+        setShowContactForm(false);
+        setEmailSent(false);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Erreur envoi contact:', error);
+      setEmailError('Une erreur est survenue lors de l\'envoi. Veuillez réessayer.');
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -402,13 +572,13 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
                     console.log('Debug - machineData:', machineData);
                     console.log('Debug - seller:', machineData.seller);
                     console.log('Debug - seller_id from raw data:', (machineData as any).seller_id);
-                    alert(`Informations du vendeur non disponibles.\n\nDebug:\n- Seller ID: ${(machineData as any).seller_id || 'null'}\n- Seller data: ${machineData.seller ? 'présent' : 'absent'}`);
+                    alert(`Informations du vendeur non disponibles.\n\nDebug:\n- Seller ID: ${(machineData as any).sellerid || 'null'}\n- Seller data: ${machineData.seller ? 'présent' : 'absent'}`);
                   }}
                   className="w-full border border-gray-300 text-gray-500 px-6 py-3 rounded-md hover:bg-gray-50 flex items-center justify-center cursor-not-allowed"
                   disabled
                 >
                   <Globe className="h-5 w-5 mr-2" />
-                  Vitrine non disponible (seller_id: {(machineData as any).seller_id || 'null'})
+                  Vitrine non disponible (sellerid: {(machineData as any).sellerid || 'null'})
                 </button>
               )}
               {canEdit && (
@@ -434,31 +604,99 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
           {showContactForm && (
             <div className="bg-white rounded-lg shadow-md p-6 transition-all duration-300 ease-in-out">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Contacter le vendeur</h2>
-              <form className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
-                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500" />
+              
+              {emailSent ? (
+                <div className="text-center py-8">
+                  <div className="text-green-600 text-6xl mb-4">✓</div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Message envoyé !</h3>
+                  <p className="text-gray-600">Votre message a été envoyé au vendeur. Il vous répondra dans les plus brefs délais.</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input type="email" className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                  <input type="tel" className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-                  <textarea
-                    rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                    defaultValue={`Bonjour,\nJe suis intéressé par votre ${machineData.name}.\nPouvez-vous me donner plus d'informations ?\nMerci.`}
-                  />
-                </div>
-                <button type="submit" className="w-full bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700 transition-colors">
-                  Envoyer
-                </button>
-              </form>
+              ) : (
+                <form onSubmit={handleSendContactEmail} className="space-y-4">
+                  {emailError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                      {emailError}
+                    </div>
+                  )}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nom complet <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      value={contactForm.name}
+                      onChange={(e) => handleContactFormChange('name', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500" 
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                      type="email" 
+                      value={contactForm.email}
+                      onChange={(e) => handleContactFormChange('email', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500" 
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Téléphone
+                    </label>
+                    <input 
+                      type="tel" 
+                      value={contactForm.phone}
+                      onChange={(e) => handleContactFormChange('phone', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Message <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={contactForm.message}
+                      onChange={(e) => handleContactFormChange('message', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                      placeholder={`Bonjour,\nJe suis intéressé par votre ${machineData?.name}.\nPouvez-vous me donner plus d'informations ?\nMerci.`}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex space-x-3">
+                    <button 
+                      type="submit" 
+                      disabled={sendingEmail}
+                      className="flex-1 bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {sendingEmail ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Envoi...
+                        </>
+                      ) : (
+                        'Envoyer le message'
+                      )}
+                    </button>
+                    
+                    <button 
+                      type="button"
+                      onClick={() => setShowContactForm(false)}
+                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           )}
 

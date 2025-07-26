@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
 import { getSellerMachines } from '../utils/api';
+import { getCurrentUser } from '../utils/auth';
 
 interface MachineFormData {
   name: string;
@@ -55,6 +56,18 @@ export default function PublicationRapide() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
+
+  // ✅ NOUVEAUX ÉTATS POUR LES ANALYTICS RÉELLES
+  const [analyticsData, setAnalyticsData] = useState({
+    totalViews: 0,
+    totalContacts: 0,
+    conversionRate: 0,
+    weeklyPerformance: [],
+    topPerformers: [],
+    categoryStats: {},
+    responseTime: 0
+  });
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // Formulaire manuel
   const [formData, setFormData] = useState<MachineFormData>({
@@ -90,6 +103,143 @@ export default function PublicationRapide() {
     'Outils de démolition'
   ];
 
+  // ✅ NOUVELLE FONCTION POUR CHARGER LES ANALYTICS RÉELLES
+  const loadAnalyticsData = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const user = await getCurrentUser();
+      if (!user) throw new Error('Utilisateur non connecté');
+
+      // 1. Récupérer les vues des machines
+      const { data: viewsData, error: viewsError } = await supabase
+        .from('machine_views')
+        .select('machine_id, created_at')
+        .in('machine_id', machines.map(m => m.id));
+
+      if (viewsError) {
+        console.error('Erreur chargement vues:', viewsError);
+      }
+
+      // 2. Récupérer les messages/contacts avec plus de détails
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('messages')
+        .select('machine_id, created_at, status, updated_at')
+        .eq('sellerid', user.id);
+
+      if (messagesError) {
+        console.error('Erreur chargement messages:', messagesError);
+      }
+
+      // 3. Calculer les statistiques
+      const totalViews = viewsData?.length || 0;
+      const totalContacts = messagesData?.length || 0;
+      const conversionRate = totalViews > 0 ? (totalContacts / totalViews * 100).toFixed(1) : 0;
+
+      // 4. Performance hebdomadaire (7 derniers jours)
+      const weeklyPerformance = [];
+      const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+      
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dayViews = viewsData?.filter(v => {
+          const viewDate = new Date(v.created_at);
+          return viewDate.toDateString() === date.toDateString();
+        }).length || 0;
+        
+        weeklyPerformance.push({
+          day: days[date.getDay() === 0 ? 6 : date.getDay() - 1],
+          views: dayViews,
+          percentage: totalViews > 0 ? Math.round((dayViews / totalViews) * 100) : 0
+        });
+      }
+
+      // 5. Top des annonces performantes
+      const machineViews = {};
+      viewsData?.forEach(view => {
+        machineViews[view.machine_id] = (machineViews[view.machine_id] || 0) + 1;
+      });
+
+      const topPerformers = machines
+        .map(machine => ({
+          ...machine,
+          views: machineViews[machine.id] || 0,
+          contacts: messagesData?.filter(m => m.machine_id === machine.id).length || 0
+        }))
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 5);
+
+      // 6. Statistiques par catégorie
+      const categoryStats = {};
+      machines.forEach(machine => {
+        const views = machineViews[machine.id] || 0;
+        if (!categoryStats[machine.category]) {
+          categoryStats[machine.category] = { views: 0, machines: 0 };
+        }
+        categoryStats[machine.category].views += views;
+        categoryStats[machine.category].machines += 1;
+      });
+
+      // ✅ 7. TEMPS DE RÉPONSE MOYEN RÉEL
+      const responseTimes = [];
+      
+      if (messagesData && messagesData.length > 0) {
+        // Grouper les messages par machine_id pour calculer les temps de réponse
+        const messagesByMachine = {};
+        messagesData.forEach(message => {
+          if (!messagesByMachine[message.machine_id]) {
+            messagesByMachine[message.machine_id] = [];
+          }
+          messagesByMachine[message.machine_id].push(message);
+        });
+
+        // Calculer le temps de réponse pour chaque machine
+        Object.values(messagesByMachine).forEach(machineMessages => {
+          // Trier par date de création
+          const sortedMessages = machineMessages.sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+
+          // Calculer le temps entre le premier message et la réponse
+          if (sortedMessages.length >= 2) {
+            const firstMessage = sortedMessages[0];
+            const responseMessage = sortedMessages.find(m => 
+              m.status === 'replied' || 
+              new Date(m.updated_at) > new Date(firstMessage.created_at)
+            );
+
+            if (responseMessage) {
+              const responseTime = (new Date(responseMessage.updated_at).getTime() - 
+                                  new Date(firstMessage.created_at).getTime()) / (1000 * 60 * 60); // en heures
+              responseTimes.push(responseTime);
+            }
+          }
+        });
+      }
+
+      // Calculer la moyenne des temps de réponse
+      const avgResponseTime = responseTimes.length > 0 
+        ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(1)
+        : 0; // ✅ 0 au lieu de 2.3 si aucune donnée
+
+      setAnalyticsData({
+        totalViews,
+        totalContacts,
+        conversionRate: parseFloat(conversionRate),
+        weeklyPerformance,
+        topPerformers,
+        categoryStats,
+        responseTime: parseFloat(avgResponseTime)
+      });
+
+    } catch (error) {
+      console.error('Erreur chargement analytics:', error);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  // ✅ MODIFIER loadMachines pour charger aussi les analytics
   const loadMachines = async () => {
     try {
       setLoading(true);
@@ -97,6 +247,9 @@ export default function PublicationRapide() {
       const machinesData = await getSellerMachines();
       console.log("📊 Machines chargées:", machinesData);
       setMachines(machinesData);
+      
+      // Charger les analytics après les machines
+      await loadAnalyticsData();
     } catch (err) {
       console.error('❌ Erreur chargement machines :', err);
     } finally {
@@ -465,21 +618,265 @@ export default function PublicationRapide() {
   };
 
   const downloadTemplate = () => {
-    const template = [
-      ['Nom', 'Marque', 'Modèle', 'Catégorie', 'Année', 'Prix', 'Localisation', 'Description'],
-      ['Pelle hydraulique CAT 320D', 'Caterpillar', '320D', 'Pelles hydrauliques', '2018', '125000', 'Bamako, Mali', 'Pelle hydraulique en excellent état']
+    // En-têtes avec TOUTES les colonnes nécessaires et compatibles
+    const headers = [
+      // Colonnes obligatoires (mapping exact avec n8n)
+      'nom',
+      'marque', 
+      'modele',
+      'categorie',
+      'type',
+      'annee',
+      'prix_euros',  // ✅ Nom exact pour n8n
+      'condition',
+      'localisation',
+      'description',
+      
+      // Spécifications techniques (mapping exact avec n8n)
+      'poids',
+      'puissance_valeur',
+      'puissance_unite',
+      'capacite_operationnelle',
+      'poids_de_travail',  // ✅ Nom exact pour n8n
+      'dimensions',
+      'heures_estimees',   // ✅ Nom exact pour n8n
+      
+      // Images et médias
+      'images',
+      
+      // Informations supplémentaires (optionnelles)
+      'videos',
+      'view360',
+      'is_premium',
+      'rental_price_daily',
+      'rental_price_weekly',
+      'rental_price_monthly',
+      'fuel_consumption',
+      'operator_required',
+      'delivery_available',
+      'delivery_cost'
     ];
 
-    const csvContent = template.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    // Exemples de données réelles avec TOUTES les colonnes
+    const examples = [
+      [
+        'Pelle hydraulique CAT 320D',
+        'Caterpillar',
+        '320D',
+        'Pelles hydrauliques',
+        'sale',
+        '2018',
+        '125000',
+        'used',
+        'Bamako, Mali',
+        'Pelle hydraulique Caterpillar 320D en excellent état. Machine bien entretenue, prête à travailler. Idéale pour travaux de terrassement et extraction.',
+        '19500',
+        '127',
+        'kW',
+        '18500',
+        '19500',
+        '6.1m x 2.55m x 3.0m',
+        '2500',
+        'https://example.com/image1.jpg;https://example.com/image2.jpg',
+        'https://example.com/video1.mp4',
+        'https://example.com/360view.html',
+        'false',
+        '',
+        '',
+        '',
+        '15L/h',
+        'true',
+        'true',
+        '500'
+      ],
+      [
+        'Bulldozer Komatsu D65',
+        'Komatsu',
+        'D65',
+        'Bulldozers',
+        'both',
+        '2019',
+        '180000',
+        'used',
+        'Casablanca, Maroc',
+        'Bulldozer Komatsu D65 en très bon état. Parfait pour travaux de déblaiement et nivellement.',
+        '18000',
+        '145',
+        'kW',
+        '22000',
+        '18000',
+        '5.8m x 2.4m x 2.9m',
+        '1800',
+        'https://example.com/bulldozer1.jpg',
+        'https://example.com/bulldozer_video.mp4',
+        '',
+        'true',
+        '1200',
+        '8000',
+        '30000',
+        '20L/h',
+        'true',
+        'true',
+        '800'
+      ],
+      [
+        'Chargeur frontal JCB 3CX',
+        'JCB',
+        '3CX',
+        'Chargeurs',
+        'both',
+        '2020',
+        '85000',
+        'used',
+        'Dakar, Sénégal',
+        'Chargeur frontal JCB 3CX polyvalent. Vente ou location possible. Excellent pour travaux urbains.',
+        '8500',
+        '55',
+        'kW',
+        '12000',
+        '8500',
+        '4.2m x 1.9m x 2.4m',
+        '1200',
+        'https://example.com/chargeur1.jpg',
+        '',
+        '',
+        'false',
+        '800',
+        '5000',
+        '20000',
+        '12L/h',
+        'true',
+        'true',
+        '300'
+      ],
+      [
+        'Concasseur mobile Metso LT1213',
+        'Metso',
+        'LT1213',
+        'Concasseurs',
+        'sale',
+        '2017',
+        '320000',
+        'used',
+        'Abidjan, Côte d\'Ivoire',
+        'Concasseur mobile Metso LT1213 pour concassage primaire et secondaire. Très productif.',
+        '42000',
+        '310',
+        'kW',
+        '35000',
+        '42000',
+        '12.5m x 3.0m x 3.4m',
+        '4500',
+        'https://example.com/concasseur1.jpg',
+        'https://example.com/concasseur_video.mp4',
+        '',
+        'true',
+        '',
+        '',
+        '',
+        '25L/h',
+        'true',
+        'true',
+        '1200'
+      ],
+      [
+        'Foreuse rotative Atlas Copco ROC L8',
+        'Atlas Copco',
+        'ROC L8',
+        'Foreuses',
+        'sale',
+        '2016',
+        '280000',
+        'used',
+        'Lubumbashi, RDC',
+        'Foreuse rotative Atlas Copco ROC L8 pour forage de production. Très fiable.',
+        '28000',
+        '200',
+        'kW',
+        '25000',
+        '28000',
+        '8.5m x 2.5m x 2.8m',
+        '3800',
+        'https://example.com/foreuse1.jpg',
+        '',
+        '',
+        'false',
+        '',
+        '',
+        '',
+        '18L/h',
+        'true',
+        'true',
+        '900'
+      ]
+    ];
+
+    // Instructions détaillées et précises
+    const instructions = `# INSTRUCTIONS D'IMPORT EN LOT - MINEGRID ÉQUIPEMENT
+# 
+# ⚠️ IMPORTANT : Ce fichier est optimisé pour l'import automatique via n8n
+# Les noms de colonnes correspondent exactement au mapping n8n
+#
+# COLONNES OBLIGATOIRES (doivent être remplies) :
+# - nom : Nom complet de la machine
+# - marque : Marque du fabricant
+# - modele : Modèle spécifique
+# - categorie : Doit être une des valeurs suivantes : Pelles hydrauliques, Bulldozers, Chargeurs, Concasseurs, Cribles, Foreuses, Grues, Niveleuses, Compacteurs, Outils de démolition, Matériel de Voirie
+# - type : Doit être "sale" (vente), "rental" (location) ou "both" (vente et location)
+# - annee : Année de fabrication (nombre entre 1950 et ${new Date().getFullYear()})
+# - prix_euros : Prix en euros (nombre positif sans devise) - ⚠️ NOM EXACT POUR N8N
+# - condition : Doit être "new" (neuf) ou "used" (occasion)
+# - localisation : Lieu de l'équipement
+# - description : Description détaillée de la machine
+#
+# COLONNES OPTIONNELLES (peuvent être laissées vides) :
+# - poids : Poids en kg
+# - puissance_valeur : Valeur de la puissance (nombre)
+# - puissance_unite : Unité de puissance ("kW" ou "CV")
+# - capacite_operationnelle : Capacité en kg
+# - poids_de_travail : Poids de travail en kg - ⚠️ NOM EXACT POUR N8N
+# - dimensions : Dimensions au format "L x l x H"
+# - heures_estimees : Heures d'utilisation estimées - ⚠️ NOM EXACT POUR N8N
+# - images : URLs des images séparées par des points-virgules (;)
+# - videos : URLs des vidéos séparées par des points-virgules (;)
+# - view360 : URL de la vue 360°
+# - is_premium : "true" ou "false" pour le statut premium
+# - rental_price_daily : Prix location journalier en euros
+# - rental_price_weekly : Prix location hebdomadaire en euros
+# - rental_price_monthly : Prix location mensuel en euros
+# - fuel_consumption : Consommation carburant (ex: "15L/h")
+# - operator_required : "true" ou "false" si opérateur requis
+# - delivery_available : "true" ou "false" si livraison disponible
+# - delivery_cost : Coût de livraison en euros
+#
+# 🎯 MAPPING N8N AUTOMATIQUE :
+# - prix_euros → price (Supabase)
+# - poids_de_travail → specifications.workingWeight (Supabase)
+# - heures_estimees → specifications.heures (Supabase)
+# - sellerid → automatiquement assigné par n8n
+#
+# EXEMPLES DE DONNÉES CI-DESSOUS :
+`;
+
+    // Créer le contenu CSV avec en-têtes et exemples
+    const csvContent = [
+      headers.join(','),
+      ...examples.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const fullContent = instructions + '\n' + csvContent;
+
+    // Créer et télécharger le fichier
+    const blob = new Blob([fullContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'template_machines.csv';
+    a.download = 'modele_import_machines_minegrid_complet.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
+  // ✅ MODIFIER LA SECTION ANALYTICS POUR UTILISER LES DONNÉES RÉELLES
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -488,7 +885,7 @@ export default function PublicationRapide() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <a 
-                href="#dashboard-entreprise"
+                href="#dashboard-entreprise-display"
                 className="text-gray-600 hover:text-gray-900"
                 title="Retourner au tableau de bord"
               >
@@ -501,7 +898,7 @@ export default function PublicationRapide() {
             </div>
             <div className="flex items-center space-x-3">
               <a
-                href="#dashboard-entreprise"
+                href="#dashboard-entreprise-display"
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium flex items-center"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -1145,161 +1542,191 @@ export default function PublicationRapide() {
                 )}
               </div>
             ) : activeTab === 'analytics' ? (
-              /* Analytics détaillés */
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    Analytics détaillés des publications
-                  </h3>
-                  <div className="flex items-center space-x-3">
+              /* ✅ ANALYTICS AVEC DONNÉES RÉELLES */
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900">Analytics détaillées</h3>
+                  <div className="flex items-center space-x-4">
                     <button
-                      onClick={loadMachines}
-                      disabled={loading}
+                      onClick={loadAnalyticsData}
+                      disabled={analyticsLoading}
                       className="p-2 text-gray-500 hover:text-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       title="Actualiser les données"
                     >
-                      <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`h-4 w-4 ${analyticsLoading ? 'animate-spin' : ''}`} />
                     </button>
-                    <span className="text-sm text-gray-500">Dernière mise à jour : {new Date().toLocaleTimeString('fr-FR')}</span>
+                    <span className="text-sm text-gray-500">
+                      Dernière mise à jour : {new Date().toLocaleTimeString('fr-FR')}
+                    </span>
                   </div>
                 </div>
 
-                {/* Statistiques principales */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Total annonces</p>
-                        <p className="text-3xl font-bold text-orange-600">{machines.length}</p>
-                        <p className="text-xs text-orange-600 mt-1">+2 ce mois</p>
-                      </div>
-                      <div className="bg-orange-100 p-3 rounded-xl">
-                        <FileText className="h-8 w-8 text-orange-600" />
-                      </div>
-                    </div>
+                {analyticsLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
+                    <p className="text-gray-500 mt-2">Chargement des analytics...</p>
                   </div>
-                  
-                  <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Vues totales</p>
-                        <p className="text-3xl font-bold text-orange-600">1,247</p>
-                        <p className="text-xs text-orange-600 mt-1">+12% vs mois dernier</p>
-                      </div>
-                      <div className="bg-orange-100 p-3 rounded-xl">
-                        <Eye className="h-8 w-8 text-orange-600" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Contacts reçus</p>
-                        <p className="text-3xl font-bold text-orange-600">23</p>
-                        <p className="text-xs text-orange-600 mt-1">+5 ce mois</p>
-                      </div>
-                      <div className="bg-orange-100 p-3 rounded-xl">
-                        <Users className="h-8 w-8 text-orange-600" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Taux de conversion</p>
-                        <p className="text-3xl font-bold text-orange-600">1.8%</p>
-                        <p className="text-xs text-orange-600 mt-1">+0.3% vs mois dernier</p>
-                      </div>
-                      <div className="bg-orange-100 p-3 rounded-xl">
-                        <TrendingUp className="h-8 w-8 text-orange-600" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Graphiques et analyses */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Performance des 7 derniers jours */}
-                  <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
-                    <h5 className="text-lg font-semibold text-gray-900 mb-6">Performance des 7 derniers jours</h5>
-                    <div className="space-y-4">
-                      {[
-                        { day: 'Lundi', views: 156, percentage: 75 },
-                        { day: 'Mardi', views: 189, percentage: 90 },
-                        { day: 'Mercredi', views: 126, percentage: 60 },
-                        { day: 'Jeudi', views: 178, percentage: 85 },
-                        { day: 'Vendredi', views: 201, percentage: 95 },
-                        { day: 'Samedi', views: 95, percentage: 45 },
-                        { day: 'Dimanche', views: 63, percentage: 30 }
-                      ].map((item, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 w-16">{item.day}</span>
-                          <div className="flex items-center space-x-3 flex-1">
-                            <div className="flex-1 bg-gray-200 rounded-full h-3">
-                              <div 
-                                className="bg-orange-600 h-3 rounded-full transition-all duration-300" 
-                                style={{ width: `${item.percentage}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium text-gray-900 w-16 text-right">{item.views} vues</span>
+                ) : (
+                  <>
+                    {/* Statistiques principales */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">Total annonces</p>
+                            <p className="text-3xl font-bold text-orange-600">{machines.length}</p>
+                            <p className="text-xs text-orange-600 mt-1">Actives</p>
+                          </div>
+                          <div className="bg-orange-100 p-3 rounded-xl">
+                            <FileText className="h-8 w-8 text-orange-600" />
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Top des annonces performantes */}
-                  <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
-                    <h5 className="text-lg font-semibold text-gray-900 mb-6">Top des annonces performantes</h5>
-                    <div className="space-y-4">
-                      {machines.slice(0, 5).map((machine, index) => (
-                        <div key={machine.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                              index === 0 ? 'bg-yellow-500' : 
-                              index === 1 ? 'bg-gray-400' : 
-                              index === 2 ? 'bg-orange-500' : 'bg-orange-400'
-                            }`}>
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{machine.name}</p>
-                              <p className="text-sm text-gray-600">{machine.brand} • {machine.category}</p>
-                            </div>
+                      </div>
+                      
+                      <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">Vues totales</p>
+                            <p className="text-3xl font-bold text-orange-600">{analyticsData.totalViews.toLocaleString()}</p>
+                            <p className="text-xs text-orange-600 mt-1">Réelles</p>
                           </div>
-                          <div className="text-right">
-                            <p className="font-medium text-orange-600">{Math.floor(Math.random() * 200) + 50} vues</p>
-                            <p className="text-sm text-gray-600">{Math.floor(Math.random() * 10) + 1} contacts</p>
+                          <div className="bg-orange-100 p-3 rounded-xl">
+                            <Eye className="h-8 w-8 text-orange-600" />
                           </div>
                         </div>
-                      ))}
+                      </div>
+                      
+                      <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">Contacts reçus</p>
+                            <p className="text-3xl font-bold text-orange-600">{analyticsData.totalContacts}</p>
+                            <p className="text-xs text-orange-600 mt-1">Réels</p>
+                          </div>
+                          <div className="bg-orange-100 p-3 rounded-xl">
+                            <Users className="h-8 w-8 text-orange-600" />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">Taux de conversion</p>
+                            <p className="text-3xl font-bold text-orange-600">{analyticsData.conversionRate}%</p>
+                            <p className="text-xs text-orange-600 mt-1">Calculé</p>
+                          </div>
+                          <div className="bg-orange-100 p-3 rounded-xl">
+                            <TrendingUp className="h-8 w-8 text-orange-600" />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Analyses détaillées */}
-                <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
-                  <h5 className="text-lg font-semibold text-gray-900 mb-6">Analyses détaillées</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <h6 className="font-semibold text-orange-800 mb-2">Meilleur jour</h6>
-                      <p className="text-2xl font-bold text-orange-600">Vendredi</p>
-                      <p className="text-sm text-gray-600">201 vues en moyenne</p>
+                    {/* Graphiques et analyses */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                      {/* Performance des 7 derniers jours */}
+                      <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
+                        <h5 className="text-lg font-semibold text-gray-900 mb-6">Performance des 7 derniers jours</h5>
+                        <div className="space-y-4">
+                          {analyticsData.weeklyPerformance.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600 w-16">{item.day}</span>
+                              <div className="flex items-center space-x-3 flex-1">
+                                <div className="flex-1 bg-gray-200 rounded-full h-3">
+                                  <div 
+                                    className="bg-orange-600 h-3 rounded-full transition-all duration-300" 
+                                    style={{ width: `${item.percentage}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-medium text-gray-900 w-16 text-right">{item.views} vues</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Top des annonces performantes */}
+                      <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm">
+                        <h5 className="text-lg font-semibold text-gray-900 mb-6">Top des annonces performantes</h5>
+                        <div className="space-y-4">
+                          {analyticsData.topPerformers.map((machine, index) => (
+                            <div key={machine.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                                  index === 0 ? 'bg-yellow-500' : 
+                                  index === 1 ? 'bg-gray-400' : 
+                                  index === 2 ? 'bg-orange-500' : 'bg-orange-400'
+                                }`}>
+                                  {index + 1}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-900">{machine.name}</p>
+                                  <p className="text-sm text-gray-600">{machine.brand} • {machine.category}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-medium text-orange-600">{machine.views} vues</p>
+                                <p className="text-sm text-gray-600">{machine.contacts} contacts</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <h6 className="font-semibold text-orange-800 mb-2">Catégorie la plus vue</h6>
-                      <p className="text-2xl font-bold text-orange-600">Pelles hydrauliques</p>
-                      <p className="text-sm text-gray-600">45% des vues totales</p>
+
+                    {/* Analyses détaillées */}
+                    <div className="bg-white p-6 rounded-xl border border-orange-200 shadow-sm mt-8">
+                      <h5 className="text-lg font-semibold text-gray-900 mb-6">Analyses détaillées</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="text-center p-4 bg-orange-50 rounded-lg">
+                          <h6 className="font-semibold text-orange-800 mb-2">Meilleur jour</h6>
+                          <p className="text-2xl font-bold text-orange-600">
+                            {analyticsData.weeklyPerformance.length > 0 
+                              ? analyticsData.weeklyPerformance.reduce((max, day) => 
+                                  day.views > max.views ? day : max
+                                ).day 
+                              : 'N/A'
+                            }
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {analyticsData.weeklyPerformance.length > 0 
+                              ? `${analyticsData.weeklyPerformance.reduce((max, day) => 
+                                  day.views > max.views ? day : max
+                                ).views} vues`
+                              : 'Aucune donnée'
+                            }
+                          </p>
+                        </div>
+                        <div className="text-center p-4 bg-orange-50 rounded-lg">
+                          <h6 className="font-semibold text-orange-800 mb-2">Catégorie la plus vue</h6>
+                          <p className="text-2xl font-bold text-orange-600">
+                            {Object.keys(analyticsData.categoryStats).length > 0 
+                              ? Object.entries(analyticsData.categoryStats)
+                                  .reduce((max, [cat, stats]) => 
+                                    stats.views > max.views ? { category: cat, ...stats } : max
+                                  ).category
+                              : 'N/A'
+                            }
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {Object.keys(analyticsData.categoryStats).length > 0 
+                              ? `${Math.round(Object.values(analyticsData.categoryStats)
+                                  .reduce((total, stats) => total + stats.views, 0) / 
+                                  analyticsData.totalViews * 100)}% des vues`
+                              : 'Aucune donnée'
+                            }
+                          </p>
+                        </div>
+                        <div className="text-center p-4 bg-orange-50 rounded-lg">
+                          <h6 className="font-semibold text-orange-800 mb-2">Temps de réponse</h6>
+                          <p className="text-2xl font-bold text-orange-600">{analyticsData.responseTime}h</p>
+                          <p className="text-sm text-gray-600">Moyenne des réponses</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <h6 className="font-semibold text-orange-800 mb-2">Temps de réponse</h6>
-                      <p className="text-2xl font-bold text-orange-600">2.3h</p>
-                      <p className="text-sm text-gray-600">Moyenne des réponses</p>
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             ) : null}
           </div>

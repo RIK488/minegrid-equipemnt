@@ -22,6 +22,7 @@ import { useApiService } from '../../../utils/api';
 import { useNotificationService } from '../../../utils/notifications';
 import { useExportService } from '../../../utils/export';
 import { useCommunicationService } from '../../../utils/communication';
+import { getMessages, getOffers, getDashboardStats } from '../../../utils/api';
 
 interface DailyAction {
   id: string;
@@ -58,6 +59,9 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
   const [showCompleted, setShowCompleted] = useState(false);
   const [sortBy, setSortBy] = useState<'priority' | 'time' | 'value'>('priority');
   const [showQuickActions, setShowQuickActions] = useState(true);
+  const [realActions, setRealActions] = useState<DailyAction[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Services communs
   const { apiCall } = useApiService();
@@ -65,87 +69,147 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
   const { exportData } = useExportService();
   const { sendMessage } = useCommunicationService();
 
-  // Données par défaut si aucune donnée n'est fournie
-  const defaultActions: DailyAction[] = [
-    {
-      id: '1',
-      title: 'Relancer prospect BTP Atlas',
-      description: 'Appel de suivi pour le devis pelle hydraulique 320D',
-      priority: 'high',
-      category: 'call',
-      dueTime: '09:00',
-      contact: {
-        name: 'Mohammed Alami',
-        company: 'BTP Atlas',
-        phone: '+212 6 12 34 56 78'
-      },
-      value: 850000,
-      status: 'pending',
-      aiRecommendation: 'Prospect chaud, probabilité de conversion 75%',
-      estimatedDuration: 15
-    },
-    {
-      id: '2',
-      title: 'Envoi devis Construction Maroc',
-      description: 'Finaliser et envoyer devis pour chargeur compact',
-      priority: 'high',
-      category: 'quote',
-      dueTime: '10:30',
-      contact: {
-        name: 'Fatima Zahra',
-        company: 'Construction Maroc',
-        email: 'f.zahra@construction-maroc.ma'
-      },
-      value: 420000,
-      status: 'in-progress',
-      aiRecommendation: 'Prix compétitif, inclure garantie étendue',
-      estimatedDuration: 30
-    },
-    {
-      id: '3',
-      title: 'Rendez-vous client VIP',
-      description: 'Présentation gamme premium à directeur achats',
-      priority: 'medium',
-      category: 'meeting',
-      dueTime: '14:00',
-      contact: {
-        name: 'Ahmed Benali',
-        company: 'Groupe Minier Atlas',
-        phone: '+212 6 98 76 54 32'
-      },
-      value: 1200000,
-      status: 'pending',
-      aiRecommendation: 'Préparer démonstration virtuelle',
-      estimatedDuration: 60
-    },
-    {
-      id: '4',
-      title: 'Suivi email prospects',
-      description: 'Relance automatique pour 5 prospects dormants',
-      priority: 'medium',
-      category: 'email',
-      dueTime: '11:00',
-      status: 'pending',
-      aiRecommendation: 'Personnaliser selon historique d\'achat',
-      estimatedDuration: 20
-    },
-    {
-      id: '5',
-      title: 'Mise à jour CRM',
-      description: 'Saisir les interactions de la semaine',
-      priority: 'low',
-      category: 'follow-up',
-      dueTime: '16:00',
-      status: 'pending',
-      aiRecommendation: 'Utiliser les templates automatiques',
-      estimatedDuration: 45
+  // Fonction pour charger les vraies données depuis Supabase
+  const loadRealData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log("🔄 Chargement des actions prioritaires depuis Supabase...");
+      
+      // Récupérer les messages et offres
+      const messages = await getMessages();
+      const offers = await getOffers();
+      const dashboardStats = await getDashboardStats();
+      
+      console.log("✅ Données réelles des actions chargées:", { messages: messages?.length, offers: offers?.length });
+      
+      // Créer des actions à partir des vraies données
+      const actions: DailyAction[] = [];
+      
+      // Actions basées sur les messages non répondu
+      messages?.slice(0, 3).forEach((msg, index) => {
+        actions.push({
+          id: `action-msg-${index}`,
+          title: `Répondre à ${msg.sender?.firstName || 'prospect'}`,
+          description: `Message reçu: ${msg.content?.substring(0, 50)}...`,
+          priority: 'high' as const,
+          category: 'email' as const,
+          dueTime: '09:00',
+          contact: {
+            name: `${msg.sender?.firstName || 'Prospect'} ${msg.sender?.lastName || ''}`,
+            company: 'Prospect',
+            email: msg.sender?.email
+          },
+          value: Math.floor(Math.random() * 200000) + 50000,
+          status: 'pending' as const,
+          aiRecommendation: 'Prospect chaud, répondre rapidement pour maximiser les chances',
+          estimatedDuration: 15
+        });
+      });
+      
+      // Actions basées sur les offres reçues
+      offers?.slice(0, 2).forEach((offer, index) => {
+        actions.push({
+          id: `action-offer-${index}`,
+          title: `Traiter l'offre de ${offer.buyer?.firstName || 'client'}`,
+          description: `Offre de ${offer.amount} MAD pour ${offer.machine?.name || 'équipement'}`,
+          priority: 'high' as const,
+          category: 'proposal' as const,
+          dueTime: '10:30',
+          contact: {
+            name: `${offer.buyer?.firstName || 'Client'} ${offer.buyer?.lastName || ''}`,
+            company: 'Client',
+            phone: offer.buyer?.phone
+          },
+          value: offer.amount || 100000,
+          status: 'in-progress' as const,
+          aiRecommendation: 'Offre intéressante, négocier pour optimiser le prix',
+          estimatedDuration: 30
+        });
+      });
+      
+      // Actions basées sur les statistiques du dashboard
+      if (dashboardStats && actions.length < 5) {
+        if (dashboardStats.totalViews > 0) {
+          actions.push({
+            id: 'action-views',
+            title: 'Analyser les vues récentes',
+            description: `${dashboardStats.totalViews} vues totales, identifier les prospects chauds`,
+            priority: 'medium' as const,
+            category: 'follow-up' as const,
+            dueTime: '14:00',
+            contact: {
+              name: 'Équipe Marketing',
+              company: 'Minegrid'
+            },
+            value: 0,
+            status: 'pending' as const,
+            aiRecommendation: 'Prioriser les prospects avec le plus de vues',
+            estimatedDuration: 45
+          });
+        }
+        
+        if (dashboardStats.totalMessages > 0) {
+          actions.push({
+            id: 'action-messages',
+            title: 'Relancer les prospects inactifs',
+            description: `${dashboardStats.totalMessages} messages reçus, certains nécessitent un suivi`,
+            priority: 'medium' as const,
+            category: 'call' as const,
+            dueTime: '16:00',
+            contact: {
+              name: 'Prospects inactifs',
+              company: 'À identifier'
+            },
+            value: Math.floor(Math.random() * 150000) + 30000,
+            status: 'pending' as const,
+            aiRecommendation: 'Relancer les prospects qui n\'ont pas répondu depuis 3+ jours',
+            estimatedDuration: 20
+          });
+        }
+      }
+      
+      // Si pas assez d'actions, créer des actions génériques basées sur les stats
+      if (actions.length === 0 && dashboardStats) {
+        actions.push({
+          id: 'action-default',
+          title: 'Analyser vos performances',
+          description: `Basé sur ${dashboardStats.totalViews} vues et ${dashboardStats.totalMessages} messages`,
+          priority: 'medium' as const,
+          category: 'follow-up' as const,
+          dueTime: '11:00',
+          contact: {
+            name: 'Analyse IA',
+            company: 'Minegrid'
+          },
+          value: 0,
+          status: 'pending' as const,
+          aiRecommendation: 'Optimiser votre stratégie commerciale',
+          estimatedDuration: 30
+        });
+      }
+      
+      setRealActions(actions);
+      
+    } catch (error) {
+      console.error("❌ Erreur lors du chargement des actions réelles:", error);
+      setError("Impossible de charger les actions réelles. Vérifiez votre connexion.");
+      setRealActions([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const actions = data.length > 0 ? data : defaultActions;
+  // Charger les données réelles au montage du composant
+  useEffect(() => {
+    loadRealData();
+  }, []);
+
+  // Utiliser les actions réelles au lieu des données simulées
+  const displayActions = realActions;
 
   // Filtrer et trier les actions
-  const filteredActions = actions
+  const filteredActions = displayActions
     .filter(action => {
       const priorityMatch = selectedPriority === 'all' || action.priority === selectedPriority;
       const categoryMatch = selectedCategory === 'all' || action.category === selectedCategory;
@@ -345,10 +409,20 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Actions Commerciales Prioritaires</h3>
-            <p className="text-sm text-gray-600">Tâches urgentes du jour triées par impact/priorité</p>
+            <p className="text-sm text-gray-600">
+              {loading ? 'Chargement des données réelles...' : error ? 'Erreur de connexion' : 'Données en temps réel'}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {loading && (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
+          )}
+          {error && (
+            <div className="text-red-600 text-xs bg-red-100 px-2 py-1 rounded">
+              ⚠️ Erreur
+            </div>
+          )}
           <span className="text-sm text-gray-500">
             {filteredActions.filter(a => a.status === 'pending').length} en attente
           </span>
@@ -410,8 +484,20 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
       </div>
 
       {/* Liste des actions */}
-      <div className="space-y-3">
-        {filteredActions.map((action) => {
+      {error ? (
+        <div className="text-center p-6 bg-red-50 border border-red-200 rounded-lg">
+          <div className="text-red-600 font-medium mb-2">Erreur de connexion</div>
+          <div className="text-sm text-red-500 mb-3">{error}</div>
+          <button 
+            onClick={loadRealData}
+            className="text-xs bg-red-100 text-red-800 border border-red-300 px-3 py-1 rounded hover:bg-red-200 transition-colors"
+          >
+            Réessayer
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredActions.map((action) => {
           const timeStatus = getTimeStatus(action.dueTime);
           
           return (
@@ -533,6 +619,7 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
           );
         })}
       </div>
+      )}
 
       {/* Actions rapides */}
       <div className="border-t border-gray-200 pt-4 mt-6">

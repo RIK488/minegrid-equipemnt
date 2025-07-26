@@ -241,7 +241,7 @@ export async function getSellerMachines() {
   const { data, error } = await supabase
     .from('machines')
     .select('*')
-    .eq('sellerId', user.id);
+    .eq('sellerid', user.id);
 
   if (error) throw error;
   return data;
@@ -277,7 +277,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const { data: machines } = await supabase
     .from('machines')
     .select('id')
-    .eq('sellerId', user.id);
+    .eq('sellerid', user.id);
 
   const machineIds = machines?.map(m => m.id) || [];
 
@@ -340,7 +340,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const { count: totalMessages } = await supabase
     .from('messages')
     .select('*', { count: 'exact', head: true })
-    .eq('receiver_id', user.id);
+    .or(`receiver_id.eq.${user.id},seller_id.eq.${user.id}`);
 
   // Offres reçues
   const { count: totalOffers } = await supabase
@@ -375,7 +375,7 @@ export async function getWeeklyActivityData() {
   const { data: machines } = await supabase
     .from('machines')
     .select('id')
-    .eq('sellerId', user.id);
+    .eq('sellerid', user.id);
 
   const machineIds = machines?.map(m => m.id) || [];
   
@@ -418,7 +418,7 @@ export async function getMessages() {
       sender:profiles!messages_sender_id_fkey(firstname, lastname),
       receiver:profiles!messages_receiver_id_fkey(firstname, lastname)
     `)
-    .eq('receiver_id', user.id)
+    .or(`receiver_id.eq.${user.id},seller_id.eq.${user.id}`)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -977,7 +977,7 @@ export async function getSalesPerformanceData(): Promise<SalesPerformanceData> {
     const { data: machines, error: machinesError } = await supabase
       .from('machines')
       .select('*')
-      .eq('sellerId', user.id);
+      .eq('sellerid', user.id);
 
     if (machinesError) throw machinesError;
 

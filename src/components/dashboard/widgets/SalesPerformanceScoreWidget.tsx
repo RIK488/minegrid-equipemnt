@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { getSalesPerformanceData } from '../../../utils/api';
 
 interface SalesPerformanceScoreData {
   score: number;
@@ -35,8 +36,37 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
   console.log("✅ Composant SalesPerformanceScoreWidget monté");
   console.log("📊 Données reçues:", data);
 
+  const [realData, setRealData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Fonction pour charger les vraies données depuis Supabase
+  const loadRealData = async () => {
+    try {
+      setLoading(true);
+      console.log("🔄 Chargement des données réelles depuis Supabase...");
+      
+      const performanceData = await getSalesPerformanceData();
+      console.log("✅ Données réelles chargées:", performanceData);
+      
+      setRealData(performanceData);
+    } catch (error) {
+      console.error("❌ Erreur lors du chargement des données réelles:", error);
+      // En cas d'erreur, on garde les données simulées
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Charger les données réelles au montage du composant
+  useEffect(() => {
+    loadRealData();
+  }, []);
+
+  // Utiliser les données réelles si disponibles, sinon les données simulées
+  const displayData = realData || data;
+
   // Protection contre les données null/undefined
-  if (!data) {
+  if (!displayData) {
     console.log("⚠️ Données manquantes, utilisation des valeurs par défaut");
     data = {
       score: 0,
@@ -147,10 +177,17 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Score de Performance Commerciale</h3>
-          <p className="text-sm text-gray-600">Votre performance globale sur 100 points</p>
+          <p className="text-sm text-gray-600">
+            {loading ? 'Chargement des données réelles...' : realData ? 'Données en temps réel' : 'Données simulées'}
+          </p>
         </div>
-        <div className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBgColor(data.score)} ${getScoreColor(data.score)}`}>
-          Rang {data.rank}/{data.totalVendors}
+        <div className="flex items-center gap-2">
+          {loading && (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
+          )}
+          <div className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreBgColor(displayData.score)} ${getScoreColor(displayData.score)}`}>
+            Rang {displayData.rank}/{displayData.totalVendors}
+          </div>
         </div>
       </div>
 
@@ -178,15 +215,15 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
                 stroke="currentColor"
                 strokeWidth="8"
                 fill="transparent"
-                strokeDasharray={`${(data.score / 100) * 339.292} 339.292`}
+                strokeDasharray={`${(displayData.score / 100) * 339.292} 339.292`}
                 strokeLinecap="round"
-                className={`${getScoreBarColor(data.score)} transition-all duration-1000`}
+                className={`${getScoreBarColor(displayData.score)} transition-all duration-1000`}
               />
             </svg>
             {/* Score au centre */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div>
-                <div className={`text-3xl font-bold ${getScoreColor(data.score)}`}>{data.score}</div>
+                <div className={`text-3xl font-bold ${getScoreColor(displayData.score)}`}>{displayData.score}</div>
                 <div className="text-sm text-gray-500">/ 100</div>
               </div>
             </div>
@@ -196,9 +233,9 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
         {/* Objectif */}
         <div className="mt-4">
           <div className="text-sm text-gray-600">Objectif mensuel</div>
-          <div className="text-lg font-semibold text-gray-900">{data.target}/100</div>
+          <div className="text-lg font-semibold text-gray-900">{displayData.target}/100</div>
           <div className="text-sm text-gray-500">
-            {data.score >= data.target ? '✅ Objectif atteint' : `${data.target - data.score} points à gagner`}
+            {displayData.score >= displayData.target ? '✅ Objectif atteint' : `${displayData.target - displayData.score} points à gagner`}
           </div>
         </div>
       </div>
@@ -208,37 +245,37 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
         <div className="bg-gray-50 p-3 rounded-lg">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">Ventes</span>
-            <span className={`text-sm font-medium ${getTrendColor(data.trends.sales)}`}>{getTrendIcon(data.trends.sales)}</span>
+            <span className={`text-sm font-medium ${getTrendColor(displayData.trends.sales)}`}>{getTrendIcon(displayData.trends.sales)}</span>
           </div>
-          <div className="text-lg font-semibold text-gray-900">{formatCurrency(data.sales)}</div>
-          <div className="text-xs text-gray-500">{Math.round((data.sales / data.salesTarget) * 100)}% de l'objectif</div>
+          <div className="text-lg font-semibold text-gray-900">{formatCurrency(displayData.sales)}</div>
+          <div className="text-xs text-gray-500">{Math.round((displayData.sales / displayData.salesTarget) * 100)}% de l'objectif</div>
         </div>
 
         <div className="bg-gray-50 p-3 rounded-lg">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">Croissance</span>
-            <span className={`text-sm font-medium ${getTrendColor(data.trends.growth)}`}>{getTrendIcon(data.trends.growth)}</span>
+            <span className={`text-sm font-medium ${getTrendColor(displayData.trends.growth)}`}>{getTrendIcon(displayData.trends.growth)}</span>
           </div>
-          <div className="text-lg font-semibold text-gray-900">+{data.growth}%</div>
-          <div className="text-xs text-gray-500">Objectif: +{data.growthTarget}%</div>
+          <div className="text-lg font-semibold text-gray-900">+{displayData.growth}%</div>
+          <div className="text-xs text-gray-500">Objectif: +{displayData.growthTarget}%</div>
         </div>
 
         <div className="bg-gray-50 p-3 rounded-lg">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">Prospects</span>
-            <span className={`text-sm font-medium ${getTrendColor(data.trends.prospects)}`}>{getTrendIcon(data.trends.prospects)}</span>
+            <span className={`text-sm font-medium ${getTrendColor(displayData.trends.prospects)}`}>{getTrendIcon(displayData.trends.prospects)}</span>
           </div>
-          <div className="text-lg font-semibold text-gray-900">{data.activeProspects}/{data.prospects}</div>
+          <div className="text-lg font-semibold text-gray-900">{displayData.activeProspects}/{displayData.prospects}</div>
           <div className="text-xs text-gray-500">Actifs</div>
         </div>
 
         <div className="bg-gray-50 p-3 rounded-lg">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">Réactivité</span>
-            <span className={`text-sm font-medium ${getTrendColor(data.trends.responseTime)}`}>{getTrendIcon(data.trends.responseTime)}</span>
+            <span className={`text-sm font-medium ${getTrendColor(displayData.trends.responseTime)}`}>{getTrendIcon(displayData.trends.responseTime)}</span>
           </div>
-          <div className="text-lg font-semibold text-gray-900">{data.responseTime}h</div>
-          <div className="text-xs text-gray-500">Objectif: {data.responseTarget}h</div>
+          <div className="text-lg font-semibold text-gray-900">{displayData.responseTime}h</div>
+          <div className="text-xs text-gray-500">Objectif: {displayData.responseTarget}h</div>
         </div>
       </div>
 
@@ -259,7 +296,7 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
         </div>
         {showQuickActions && (
           <div className="space-y-2">
-            {data.recommendations.map((rec: any, index: number) => (
+            {displayData.recommendations.map((rec: any, index: number) => (
               <div key={index} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                 <div className={`w-2 h-2 rounded-full mt-2 ${
                   rec.priority === 'high' ? 'bg-red-500' :
@@ -285,10 +322,10 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
       <div className="mt-4 pt-4 border-t">
         <div className="flex items-center justify-between text-sm mb-2">
           <span className="text-gray-600">Progression vers l'objectif</span>
-          <span className="font-medium text-regray-900">{data.score}%</span>
+          <span className="font-medium text-gray-900">{displayData.score}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
-          <div className={`h-2 rounded-full transition-all duration-1000 ${getScoreBarColor(data.score)}`} style={{ width: `${data.score}%` }}></div>
+          <div className={`h-2 rounded-full transition-all duration-1000 ${getScoreBarColor(displayData.score)}`} style={{ width: `${displayData.score}%` }}></div>
         </div>
       </div>
     </div>

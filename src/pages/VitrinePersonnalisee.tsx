@@ -323,7 +323,7 @@ export default function VitrinePersonnalisee() {
       const { data: machinesData, error: machinesError } = await supabase
         .from('machines')
         .select('*, machine_images(*)')
-        .eq('seller_id', userIdToLoad)
+        .eq('sellerid', userIdToLoad)
         .order('created_at', { ascending: false });
       
       if (machinesError) {
@@ -610,7 +610,7 @@ export default function VitrinePersonnalisee() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <a 
-                href="#dashboard-entreprise"
+                href="#dashboard-entreprise-display"
                 className="text-gray-600 hover:text-gray-900"
               >
                 ← Retour au tableau de bord

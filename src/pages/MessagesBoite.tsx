@@ -25,39 +25,17 @@ import supabase from '../utils/supabaseClient';
 
 interface Message {
   id: string;
-  subject: string;
-  content: string;
   sender_name: string;
   sender_email: string;
   sender_phone?: string;
-  sender_company?: string;
-  sender_id: string;
-  recipient_id: string;
-  type: 'demande_devis' | 'demande_info' | 'reclamation' | 'commande' | 'autre';
-  priority: 'basse' | 'normale' | 'haute' | 'urgente';
-  status: 'non_lu' | 'lu' | 'repondu' | 'traite' | 'archive';
+  message: string;
+  machine_id?: string;
+  sellerid?: string;
+  status?: string;
   created_at: string;
-  read_at?: string;
-  replied_at?: string;
-  tags: string[];
-  machine_reference?: string;
-  estimated_value?: number;
+  updated_at?: string;
+  // Supprimer les colonnes qui n'existent pas dans la table
 }
-
-const messageTypes = [
-  { value: 'demande_devis', label: 'Demande de devis', color: 'text-orange-600', bg: 'bg-orange-50' },
-  { value: 'demande_info', label: 'Demande d\'information', color: 'text-orange-500', bg: 'bg-orange-50' },
-  { value: 'reclamation', label: 'Réclamation', color: 'text-orange-700', bg: 'bg-orange-50' },
-  { value: 'commande', label: 'Commande', color: 'text-orange-600', bg: 'bg-orange-50' },
-  { value: 'autre', label: 'Autre', color: 'text-orange-600', bg: 'bg-orange-50' }
-];
-
-const priorities = [
-  { value: 'basse', label: 'Basse', color: 'text-orange-400' },
-  { value: 'normale', label: 'Normale', color: 'text-orange-600' },
-  { value: 'haute', label: 'Haute', color: 'text-orange-700' },
-  { value: 'urgente', label: 'Urgente', color: 'text-orange-800' }
-];
 
 export default function MessagesBoite() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -84,7 +62,7 @@ export default function MessagesBoite() {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .eq('recipient_id', user.id)
+        .eq('sellerid', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -155,12 +133,11 @@ export default function MessagesBoite() {
 
       // Sauvegarder la réponse
       const replyData = {
-        original_message_id: selectedMessage.id,
-        sender_id: user.id,
-        recipient_id: selectedMessage.sender_id,
-        subject: `Re: ${selectedMessage.subject}`,
-        content: replyContent,
-        type: 'reponse',
+        sender_name: 'Réponse automatique',
+        sender_email: user.email || 'system@minegrid.com',
+        message: replyContent,
+        sellerid: selectedMessage.sellerid,
+        status: 'new',
         created_at: new Date().toISOString()
       };
 
@@ -216,27 +193,16 @@ export default function MessagesBoite() {
   };
 
   const filteredMessages = messages.filter(msg => {
-    const matchesSearch = msg.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         msg.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         msg.sender_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = msg.sender_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         msg.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          msg.sender_email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === 'all' || msg.type === selectedType;
     const matchesStatus = selectedStatus === 'all' || msg.status === selectedStatus;
-    const matchesPriority = selectedPriority === 'all' || msg.priority === selectedPriority;
     
-    return matchesSearch && matchesType && matchesStatus && matchesPriority;
+    return matchesSearch && matchesStatus;
   });
 
-  const getUnreadCount = () => messages.filter(msg => msg.status === 'non_lu').length;
-  const getUrgentCount = () => messages.filter(msg => msg.priority === 'urgente').length;
-
-  const getTypeInfo = (type: Message['type']) => {
-    return messageTypes.find(t => t.value === type) || messageTypes[4];
-  };
-
-  const getPriorityInfo = (priority: Message['priority']) => {
-    return priorities.find(p => p.value === priority) || priorities[1];
-  };
+  const getUnreadCount = () => messages.filter(msg => msg.status !== 'lu').length;
+  const getUrgentCount = () => messages.filter(msg => msg.status === 'new').length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -245,7 +211,7 @@ export default function MessagesBoite() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <a
-              href="#dashboard-entreprise"
+              href="#dashboard-entreprise-display"
               className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
@@ -290,9 +256,9 @@ export default function MessagesBoite() {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="all">Tous les types</option>
-              {messageTypes.map(type => (
+              {/* messageTypes.map(type => (
                 <option key={type.value} value={type.value}>{type.label}</option>
-              ))}
+              )) */}
             </select>
             
             <select
@@ -314,9 +280,9 @@ export default function MessagesBoite() {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="all">Toutes priorités</option>
-              {priorities.map(priority => (
+              {/* priorities.map(priority => (
                 <option key={priority.value} value={priority.value}>{priority.label}</option>
-              ))}
+              )) */}
             </select>
             
             <div className="text-sm text-gray-600 flex items-center">
@@ -342,8 +308,8 @@ export default function MessagesBoite() {
             ) : (
               <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
                 {filteredMessages.map((message) => {
-                  const typeInfo = getTypeInfo(message.type);
-                  const priorityInfo = getPriorityInfo(message.priority);
+                  // const typeInfo = getTypeInfo(message.type);
+                  // const priorityInfo = getPriorityInfo(message.priority);
                   
                   return (
                     <div
@@ -364,7 +330,7 @@ export default function MessagesBoite() {
                             <h3 className={`text-sm font-semibold truncate ${
                               message.status === 'non_lu' ? 'text-gray-900' : 'text-gray-700'
                             }`}>
-                              {message.subject}
+                              {/* {message.subject} */}
                             </h3>
                             {message.status === 'non_lu' && (
                               <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
@@ -372,12 +338,12 @@ export default function MessagesBoite() {
                           </div>
                           <p className="text-xs text-gray-600 truncate">{message.sender_name}</p>
                           <div className="flex items-center space-x-2 mt-2">
-                            <span className={`px-2 py-1 rounded-full text-xs ${typeInfo.bg} ${typeInfo.color}`}>
+                            {/* <span className={`px-2 py-1 rounded-full text-xs ${typeInfo.bg} ${typeInfo.color}`}>
                               {typeInfo.label}
-                            </span>
-                            <span className={`text-xs ${priorityInfo.color}`}>
+                            </span> */}
+                            {/* <span className={`text-xs ${priorityInfo.color}`}>
                               {priorityInfo.label}
-                            </span>
+                            </span> */}
                           </div>
                           <p className="text-xs text-gray-500 mt-1">
                             {new Date(message.created_at).toLocaleDateString('fr-FR')}
@@ -397,7 +363,7 @@ export default function MessagesBoite() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">{selectedMessage.subject}</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">{selectedMessage.message}</h2>
                     <p className="text-sm text-gray-600">
                       Reçu le {new Date(selectedMessage.created_at).toLocaleDateString('fr-FR')} à {new Date(selectedMessage.created_at).toLocaleTimeString('fr-FR')}
                     </p>
@@ -454,37 +420,37 @@ export default function MessagesBoite() {
                             {selectedMessage.sender_phone}
                           </p>
                         )}
-                        {selectedMessage.sender_company && (
+                        {/* {selectedMessage.sender_company && (
                           <p className="flex items-center">
                             <Building2 className="h-4 w-4 mr-2 text-gray-400" />
                             {selectedMessage.sender_company}
                           </p>
-                        )}
+                        )} */}
                       </div>
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-2">Détails</h3>
                       <div className="space-y-1 text-sm">
-                        <p className="flex items-center">
+                        {/* <p className="flex items-center">
                           <Tag className="h-4 w-4 mr-2 text-gray-400" />
                           {getTypeInfo(selectedMessage.type).label}
-                        </p>
-                        <p className={`flex items-center ${getPriorityInfo(selectedMessage.priority).color}`}>
+                        </p> */}
+                        {/* <p className={`flex items-center ${getPriorityInfo(selectedMessage.priority).color}`}>
                           <AlertCircle className="h-4 w-4 mr-2" />
                           Priorité: {getPriorityInfo(selectedMessage.priority).label}
-                        </p>
-                        {selectedMessage.machine_reference && (
+                        </p> */}
+                        {/* {selectedMessage.machine_reference && (
                           <p className="flex items-center">
                             <Tag className="h-4 w-4 mr-2 text-gray-400" />
                             Référence: {selectedMessage.machine_reference}
                           </p>
-                        )}
-                        {selectedMessage.estimated_value && (
+                        )} */}
+                        {/* {selectedMessage.estimated_value && (
                           <p className="flex items-center">
                             <Tag className="h-4 w-4 mr-2 text-gray-400" />
                             Valeur estimée: {selectedMessage.estimated_value.toLocaleString('fr-FR')} €
                           </p>
-                        )}
+                        )} */}
                       </div>
                     </div>
                   </div>
@@ -494,12 +460,12 @@ export default function MessagesBoite() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Message</h3>
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <p className="text-gray-700 whitespace-pre-wrap">{selectedMessage.content}</p>
+                    <p className="text-gray-700 whitespace-pre-wrap">{selectedMessage.message}</p>
                   </div>
                 </div>
 
                 {/* Tags */}
-                {selectedMessage.tags.length > 0 && (
+                {/* {selectedMessage.tags.length > 0 && (
                   <div className="mt-6">
                     <h3 className="font-semibold text-gray-900 mb-3">Tags</h3>
                     <div className="flex flex-wrap gap-2">
@@ -510,7 +476,7 @@ export default function MessagesBoite() {
                       ))}
                     </div>
                   </div>
-                )}
+                )} */}
               </div>
             ) : (
               <div className="p-8 text-center">

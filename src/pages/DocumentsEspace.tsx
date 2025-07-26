@@ -234,7 +234,7 @@ export default function DocumentsEspace() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <a
-              href="#dashboard-entreprise"
+              href="#dashboard-entreprise-display"
               className="flex items-center text-gray-600 hover:text-gray-900 mr-6"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />

@@ -1,44 +1,72 @@
-#!/usr/bin/env node
+// =====================================================
+// DÉPLOIEMENT DE LA FONCTION EDGE EXCHANGE-RATES
+// =====================================================
 
-/**
- * Script pour déployer la fonction exchange-rates corrigée
- * 
- * Utilisation:
- * node deploy-exchange-rates.js
- */
+const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
-import { execSync } from 'child_process';
-import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+console.log('🚀 Déploiement de la fonction Edge exchange-rates...\n');
 
-const FUNCTION_NAME = 'exchange-rates';
-const FUNCTION_PATH = join(process.cwd(), 'supabase', 'functions', FUNCTION_NAME);
+async function deployExchangeRates() {
+  try {
+    // Vérifier que Supabase CLI est installé
+    console.log('📋 Étape 1: Vérification de Supabase CLI...');
+    try {
+      execSync('supabase --version', { stdio: 'pipe' });
+      console.log('✅ Supabase CLI détecté');
+    } catch (error) {
+      console.log('❌ Supabase CLI non trouvé');
+      console.log('📥 Installez-le avec: npm install -g supabase');
+      return;
+    }
 
-console.log('🚀 Déploiement de la fonction exchange-rates...');
+    // Vérifier que le projet est initialisé
+    console.log('\n📋 Étape 2: Vérification du projet Supabase...');
+    if (!fs.existsSync('supabase/config.toml')) {
+      console.log('❌ Projet Supabase non initialisé');
+      console.log('🔧 Initialisez avec: supabase init');
+      return;
+    }
+    console.log('✅ Projet Supabase détecté');
 
-try {
-  // Vérifier que le fichier existe
-  const functionFile = join(FUNCTION_PATH, 'index.ts');
-  const functionContent = readFileSync(functionFile, 'utf8');
-  
-  console.log('✅ Fichier de fonction trouvé');
-  
-  // Déployer la fonction
-  console.log('📤 Déploiement en cours...');
-  execSync(`npx supabase functions deploy ${FUNCTION_NAME}`, {
-    stdio: 'inherit',
-    cwd: process.cwd()
-  });
-  
-  console.log('✅ Fonction déployée avec succès!');
-  console.log('🌐 URL de la fonction:', `${process.env.VITE_SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`);
-  
-} catch (error) {
-  console.error('❌ Erreur lors du déploiement:', error.message);
-  console.log('\n💡 Solutions alternatives:');
-  console.log('1. Vérifiez que vous êtes connecté à Supabase CLI');
-  console.log('2. Vérifiez que votre projet est configuré');
-  console.log('3. Utilisez le service local en attendant');
-  
-  process.exit(1);
-} 
+    // Vérifier que la fonction existe
+    console.log('\n📋 Étape 3: Vérification de la fonction exchange-rates...');
+    const functionPath = path.join('supabase', 'functions', 'exchange-rates');
+    if (!fs.existsSync(functionPath)) {
+      console.log('❌ Fonction exchange-rates non trouvée');
+      console.log('📁 Créez le dossier: supabase/functions/exchange-rates/');
+      return;
+    }
+    console.log('✅ Fonction exchange-rates trouvée');
+
+    // Déployer la fonction
+    console.log('\n📋 Étape 4: Déploiement de la fonction...');
+    try {
+      execSync('supabase functions deploy exchange-rates', { 
+        stdio: 'inherit',
+        cwd: process.cwd()
+      });
+      console.log('✅ Fonction déployée avec succès');
+    } catch (error) {
+      console.log('❌ Erreur lors du déploiement:', error.message);
+      console.log('\n🔧 Solution alternative:');
+      console.log('   1. Connectez-vous à Supabase Dashboard');
+      console.log('   2. Allez dans Edge Functions');
+      console.log('   3. Créez manuellement la fonction exchange-rates');
+      return;
+    }
+
+    console.log('\n🎉 DÉPLOIEMENT TERMINÉ !');
+    console.log('\n📝 Prochaines étapes :');
+    console.log('   1. Rechargez votre application');
+    console.log('   2. L\'erreur 500 sur exchange-rates devrait disparaître');
+    console.log('   3. Les taux de change devraient fonctionner');
+
+  } catch (error) {
+    console.error('❌ Erreur lors du déploiement:', error);
+  }
+}
+
+// Exécution
+deployExchangeRates(); 

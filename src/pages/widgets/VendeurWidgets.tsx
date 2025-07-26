@@ -30,6 +30,7 @@ import {
   FileText
 } from 'lucide-react';
 
+
 // Types pour les widgets enrichis
 interface WidgetFeature {
   periodSelector: boolean;
@@ -217,7 +218,8 @@ export const VendeurWidgets: VendeurWidgetsConfig = {
         analytics: false,
         alerts: true,
       }
-    }
+    },
+
   ]
 };
 
