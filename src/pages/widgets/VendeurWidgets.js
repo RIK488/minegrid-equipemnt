@@ -41,9 +41,26 @@ export const VendeurWidgets = {
     },
     {
       id: 'stock-status',
-      type: 'pipeline',
-      title: 'Pipeline Commercial',
-      description: 'Assistant pipeline commercial dynamique avec toutes les fonctionnalités avancées',
+      type: 'list',
+      title: 'Plan d\'action stock & revente',
+      description: 'Statut stock dormant, recommandations automatiques, actions rapides',
+      icon: Package,
+      dataSource: 'stock-status',
+      features: {
+        periodSelector: false,
+        export: true,
+        analytics: true,
+        alerts: true,
+        stockAnalytics: true,
+        recommendations: true,
+        quickActions: true
+      }
+    },
+    {
+      id: 'sales-pipeline',
+      type: 'list',
+      title: 'Pipeline commercial',
+      description: 'Alertes de relance, score de probabilité, actions intelligentes',
       icon: Users,
       dataSource: 'sales-pipeline',
       features: {
@@ -56,7 +73,6 @@ export const VendeurWidgets = {
         smartActions: true
       }
     },
-
     {
       id: 'daily-actions',
       type: 'daily-actions',
@@ -72,22 +88,6 @@ export const VendeurWidgets = {
         aiGenerated: true,
         dynamicContent: true,
         stickyDisplay: true
-      }
-    },
-    {
-      id: 'sales-analytics',
-      type: 'analytics',
-      title: 'Analytics commerciales avancées',
-      description: 'KPIs détaillés, tendances, prévisions',
-      icon: BarChart3,
-      dataSource: 'sales-analytics',
-      features: {
-        periodSelector: true,
-        export: true,
-        analytics: true,
-        alerts: true,
-        forecasting: true,
-        trendAnalysis: true
       }
     }
   ]

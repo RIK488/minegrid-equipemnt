@@ -17,7 +17,20 @@ export default function Contact() {
     e.preventDefault();
     // Simuler l'envoi du formulaire
     setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+    
+    // Temporairement : activer l'abonnement entreprise après envoi du message
+    setTimeout(() => {
+      setSubmitted(false);
+      // Rediriger vers le dashboard avec l'abonnement entreprise activé
+      window.location.href = '/#dashboard/overview';
+      
+      // Stocker temporairement l'abonnement entreprise dans localStorage
+      localStorage.setItem('tempSubscription', 'entreprise');
+      localStorage.setItem('tempHasActiveSubscription', 'true');
+      
+      // Afficher un message de confirmation
+      alert('Message envoyé avec succès ! Accès temporaire à l\'abonnement Entreprise activé.');
+    }, 2000);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -131,6 +144,30 @@ export default function Contact() {
                 <Send className="h-5 w-5 mr-2" />
                 Envoyer le message
               </button>
+
+              {/* Bouton temporaire pour valider la formule entreprise */}
+              <div className="border-t pt-6 mt-6">
+                <div className="text-center mb-4">
+                  <p className="text-sm text-gray-600 mb-2">🔧 <strong>Fonctionnalité temporaire</strong></p>
+                  <p className="text-xs text-gray-500">Validez directement l'abonnement Entreprise pour tester</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Activer directement l'abonnement entreprise
+                    localStorage.setItem('userSubscription', 'entreprise');
+                    localStorage.removeItem('subscriptionCancelled');
+                    
+                    // Rediriger vers le dashboard
+                    window.location.href = '/#dashboard/overview';
+                    
+                    alert('✅ Abonnement Entreprise activé avec succès ! Vous pouvez maintenant accéder à votre tableau de bord.');
+                  }}
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-md hover:from-orange-600 hover:to-orange-700 transition-all duration-200 flex items-center justify-center font-medium shadow-lg"
+                >
+                  🚀 Valider l'abonnement Entreprise
+                </button>
+              </div>
 
               {submitted && (
                 <div className="bg-green-50 text-green-800 px-4 py-3 rounded-md">

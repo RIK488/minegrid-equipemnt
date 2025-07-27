@@ -7,15 +7,13 @@ import { DailyActionsPriorityWidget } from './DailyActionsWidgetFixed';
 import { WidthProvider, Responsive } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { VendeurWidgets } from './widgets/VendeurWidgets';
+import { LoueurWidgets } from './widgets/LoueurWidgets';
 import { useRef } from 'react';
 import WidgetRenderer from '../components/dashboard/WidgetRenderer';
 import { listData } from '../constants/mockData';
 import { NotificationContainer } from '../components/NotificationToast';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
-
-
 
 // Mapping des liens pour chaque service commun (corrigé pour ramener au tableau de bord sauvegardé)
 const serviceLinks = [
@@ -29,11 +27,11 @@ const serviceLinks = [
   '/#assistant-ia',           // Assistant IA (corrigé)
 ];
 
-const WIDGETS_VENDEUR_IDS = [
-  'sales-performance-score',
-  'sales-evolution',
-  'stock-status',
-  'sales-pipeline',
+const WIDGETS_LOUEUR_IDS = [
+  'rental-revenue',
+  'equipment-availability',
+  'upcoming-rentals',
+  'rental-pipeline',
   'daily-actions'
 ];
 
@@ -103,61 +101,66 @@ function computeGridRows(widgets, widgetSizes) {
       currentWidth = 0;
     }
   });
-  if (currentRow.length > 0 && currentWidth < 12) {
-    currentRow.push(...Array(Math.floor((12 - currentWidth) / 4)).fill({ widget: null, width: 4 }));
+  if (currentRow.length > 0) {
+    if (currentWidth < 12) {
+      currentRow.push(...Array(Math.floor((12 - currentWidth) / 4)).fill({ widget: null, width: 4 }));
+    }
+    rows.push(currentRow);
   }
-  if (currentRow.length > 0) rows.push(currentRow);
   return rows;
 }
 
 function generateLayoutFromPreview(widgets, widgetSizes) {
-  const rows = computeGridRows(widgets, widgetSizes);
-  const layout = [];
-  let y = 0;
-  rows.forEach(row => {
-    let x = 0;
-    row.forEach(({ widget, width }) => {
-      layout.push({
-        i: widget.id,
-        x,
-        y,
-        w: width,
-        h: 4 // ou la hauteur souhaitée
-      });
-      x += width;
-    });
-    y += 4; // ou la hauteur souhaitée
-  });
-  return layout;
-}
-
-// Fonction utilitaire pour générer le layout comme dans le configurateur, en respectant la taille 'size' de chaque widget
-function generatePreviewLayout(widgets, widgetSizes) {
   const layout = [];
   let x = 0;
   let y = 0;
-  let maxY = 0;
-  widgets.forEach((widget, index) => {
-    const size = widgetSizes?.[widget.id] || widget.size || '1/3';
-    let w = getWidthFromSize(size);
+  let rowHeight = 4;
+
+  widgets.forEach((widget, idx) => {
+    const w = getWidthFromSize(widgetSizes[widget.id] || '1/3');
     if (x + w > 12) {
       x = 0;
-      y = maxY;
+      y += rowHeight;
     }
     layout.push({
       i: widget.id,
       x,
       y,
       w,
-      h: 4,
+      h: rowHeight
     });
     x += w;
-    maxY = Math.max(maxY, y + 4);
   });
+
   return layout;
 }
 
-const EnterpriseDashboardVendeurDisplay: React.FC = () => {
+function generatePreviewLayout(widgets, widgetSizes) {
+  const layout = [];
+  let x = 0;
+  let y = 0;
+  let rowHeight = 4;
+
+  widgets.forEach((widget, idx) => {
+    const w = getWidthFromSize(widgetSizes[widget.id] || '1/3');
+    if (x + w > 12) {
+      x = 0;
+      y += rowHeight;
+    }
+    layout.push({
+      i: widget.id,
+      x,
+      y,
+      w,
+      h: rowHeight
+    });
+    x += w;
+  });
+
+  return layout;
+}
+
+const EnterpriseDashboardLoueurDisplay: React.FC = () => {
   // Suppression automatique de la config locale pour forcer la régénération
   // (Suppression du useEffect qui efface la config)
   const [config, setConfig] = useState<any>(null);
@@ -170,7 +173,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
 
   // 1. Chargement initial
   useEffect(() => {
-    const saved = localStorage.getItem('enterpriseDashboardConfig_vendeur');
+    const saved = localStorage.getItem('enterpriseDashboardConfig_loueur');
     let parsed = saved ? JSON.parse(saved) : null;
     let shouldUpdate = false;
 
@@ -197,15 +200,15 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
 
     if (shouldUpdate) {
       console.log('💾 Sauvegarde de la config mise à jour');
-      localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(parsed));
+      localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(parsed));
     }
 
-    // Harmonisation des IDs : on utilise uniquement 'sales-performance-score' (plus de 'sales-metrics')
+    // Harmonisation des IDs : on utilise uniquement les IDs des widgets loueur
     const validIds = [
-      'sales-performance-score',
-      'sales-evolution',
-      'stock-status',
-      'sales-pipeline',
+      'rental-revenue',
+      'equipment-availability',
+      'upcoming-rentals',
+      'rental-pipeline',
       'daily-actions'
     ];
     parsed.widgets = (parsed.widgets || []).filter(w => validIds.includes(w.id));
@@ -223,23 +226,23 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     setLayout(parsed.layout || { lg: [] });
   }, []);
 
-  // Correction automatique du titre du widget pipeline commercial dans la config locale
+  // Correction automatique du titre du widget pipeline de location dans la config locale
   useEffect(() => {
-    const saved = localStorage.getItem('enterpriseDashboardConfig_vendeur');
+    const saved = localStorage.getItem('enterpriseDashboardConfig_loueur');
     if (saved) {
       const parsed = JSON.parse(saved);
       let updated = false;
       if (parsed.widgets) {
         parsed.widgets = parsed.widgets.map(w => {
-          if (w.id === 'stock-status' && w.title !== 'Pipeline Commercial') {
+          if (w.id === 'rental-pipeline' && w.title !== 'Pipeline de location') {
             updated = true;
-            return { ...w, title: 'Pipeline Commercial' };
+            return { ...w, title: 'Pipeline de location' };
           }
           return w;
         });
       }
       if (updated) {
-        localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(parsed));
+        localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(parsed));
         window.location.reload();
       }
     }
@@ -260,59 +263,59 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   // Effacement automatique de la config locale si elle ne correspond pas aux 5 widgets attendus
   useEffect(() => {
     const validIds = [
-      'sales-performance-score',
-      'sales-evolution',
-      'stock-status',
-      'sales-pipeline',
+      'rental-revenue',
+      'equipment-availability',
+      'upcoming-rentals',
+      'rental-pipeline',
       'daily-actions'
     ];
-    const saved = localStorage.getItem('enterpriseDashboardConfig_vendeur');
+    const saved = localStorage.getItem('enterpriseDashboardConfig_loueur');
     if (saved) {
       const parsed = JSON.parse(saved);
       const widgetIds = (parsed.widgets || []).map((w: any) => w.id);
       const isValid = validIds.every(id => widgetIds.includes(id)) && widgetIds.length === validIds.length;
       if (!isValid) {
-        localStorage.removeItem('enterpriseDashboardConfig_vendeur');
+        localStorage.removeItem('enterpriseDashboardConfig_loueur');
         // Récupère le mapping des tailles depuis la config précédente si présent
         const previousWidgetSizes = parsed && parsed.widgetSizes ? parsed.widgetSizes : {};
         // Crée les widgets par défaut en injectant la taille si connue
         const defaultWidgets = [
           {
-            id: 'sales-performance-score',
-            type: 'performance',
-            title: 'Score de Performance Commerciale',
+            id: 'rental-revenue',
+            type: 'metric',
+            title: 'Revenus de location',
             enabled: true,
             position: 0,
-            size: previousWidgetSizes['sales-performance-score'] || '1/3'
+            size: previousWidgetSizes['rental-revenue'] || '1/3'
           },
           {
-            id: 'sales-evolution',
-            type: 'chart',
-            title: 'Évolution des ventes enrichie',
+            id: 'equipment-availability',
+            type: 'equipment',
+            title: 'Disponibilité Équipements',
             enabled: true,
             position: 1,
-            size: previousWidgetSizes['sales-evolution'] || '1/3'
+            size: previousWidgetSizes['equipment-availability'] || '1/3'
           },
           {
-            id: 'stock-status',
-            type: 'list',
-            title: 'Plan d\'action stock & revente',
+            id: 'upcoming-rentals',
+            type: 'calendar',
+            title: 'Locations à venir',
             enabled: true,
             position: 2,
-            size: previousWidgetSizes['stock-status'] || '1/3'
+            size: previousWidgetSizes['upcoming-rentals'] || '1/3'
           },
           {
-            id: 'sales-pipeline',
-            type: 'list',
-            title: 'Pipeline commercial',
+            id: 'rental-pipeline',
+            type: 'pipeline',
+            title: 'Pipeline de location',
             enabled: true,
             position: 3,
-            size: previousWidgetSizes['sales-pipeline'] || '1/3'
+            size: previousWidgetSizes['rental-pipeline'] || '1/3'
           },
           {
             id: 'daily-actions',
             type: 'daily-actions',
-            title: 'Actions Commerciales Prioritaires',
+            title: 'Actions prioritaires du jour',
             enabled: true,
             position: 4,
             size: previousWidgetSizes['daily-actions'] || '1/3'
@@ -327,7 +330,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
           refreshInterval: 30,
           notifications: true
         };
-        localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+        localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
         setConfig(newConfig);
         setLayout({ lg: defaultLayout });
         return;
@@ -347,7 +350,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     setConfig(prev => {
       if (!prev) return prev;
       const newConfig = { ...prev, layout: { ...prev.layout, lg: newLayout } };
-      localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+      localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
       return newConfig;
     });
   };
@@ -372,7 +375,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       const newWidgetSizes = { ...config.widgetSizes, [widgetId]: newSize };
       const newConfig = { ...config, layout: updatedLayouts, widgetSizes: newWidgetSizes };
       setConfig(newConfig);
-      localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+      localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
     }
   };
 
@@ -384,7 +387,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     const currentLayoutItem = layout.lg.find((l: any) => l.i === widgetId);
     if (currentLayoutItem) {
       // Créer ou mettre à jour le backup avec la position du widget supprimé
-      const existingBackup = localStorage.getItem('enterpriseDashboardConfig_vendeur_backup');
+      const existingBackup = localStorage.getItem('enterpriseDashboardConfig_loueur_backup');
       let backupConfig = existingBackup ? JSON.parse(existingBackup) : { layout: { lg: [] } };
       
       // Ajouter ou mettre à jour la position du widget dans le backup
@@ -395,7 +398,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
         backupConfig.layout.lg.push(currentLayoutItem);
       }
       
-      localStorage.setItem('enterpriseDashboardConfig_vendeur_backup', JSON.stringify(backupConfig));
+      localStorage.setItem('enterpriseDashboardConfig_loueur_backup', JSON.stringify(backupConfig));
       console.log('Position sauvegardée pour restauration:', currentLayoutItem);
     }
     
@@ -405,12 +408,12 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     const newConfig = { ...config, widgets: newWidgets, layout: updatedLayouts };
     setConfig(newConfig);
     setLayout(updatedLayouts);
-    localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+    localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
   };
 
   const handleAddWidget = (widgetId: string) => {
     console.log('Ajout du widget:', widgetId);
-    const widgetToAdd = VendeurWidgets.widgets.find(w => w.id === widgetId);
+    const widgetToAdd = LoueurWidgets.widgets.find(w => w.id === widgetId);
     if (!widgetToAdd) {
       console.log('Widget non trouvé:', widgetId);
       return;
@@ -419,7 +422,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     const newWidgets = [...config.widgets, widgetToAdd];
     
     // Vérifier s'il existe une position sauvegardée pour ce widget
-    const savedLayout = localStorage.getItem('enterpriseDashboardConfig_vendeur_backup');
+    const savedLayout = localStorage.getItem('enterpriseDashboardConfig_loueur_backup');
     let originalPosition = null;
     
     if (savedLayout) {
@@ -454,7 +457,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       // Positionner à la fin par défaut
       newLayout = [
         ...layout.lg,
-        { i: widgetId, x: 0, y: layout.lg.length, w: 4, h: widgetId === 'stock-status' ? 6 : 2 }
+        { i: widgetId, x: 0, y: layout.lg.length, w: 4, h: widgetId === 'rental-pipeline' ? 6 : 2 }
       ];
       console.log('Position par défaut pour', widgetId);
     }
@@ -462,7 +465,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     const newConfig = { ...config, widgets: newWidgets, layout: { ...config.layout, lg: newLayout } };
     setConfig(newConfig);
     setLayout(newConfig.layout);
-    localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+    localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
     
     setAddStatus(s => ({ ...s, [widgetId]: 'added' }));
     if (addTimeouts.current[widgetId]) clearTimeout(addTimeouts.current[widgetId]);
@@ -470,12 +473,12 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       setAddStatus(s => ({ ...s, [widgetId]: 'idle' }));
       
       // Nettoyer le backup pour ce widget après ajout réussi
-      const existingBackup = localStorage.getItem('enterpriseDashboardConfig_vendeur_backup');
+      const existingBackup = localStorage.getItem('enterpriseDashboardConfig_loueur_backup');
       if (existingBackup) {
         try {
           const backupConfig = JSON.parse(existingBackup);
           backupConfig.layout.lg = backupConfig.layout.lg.filter((l: any) => l.i !== widgetId);
-          localStorage.setItem('enterpriseDashboardConfig_vendeur_backup', JSON.stringify(backupConfig));
+          localStorage.setItem('enterpriseDashboardConfig_loueur_backup', JSON.stringify(backupConfig));
           console.log('Backup nettoyé pour', widgetId);
         } catch (error) {
           console.log('Erreur lors du nettoyage du backup:', error);
@@ -487,7 +490,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   // Fonction pour réafficher tous les widgets supprimés
   const handleRestoreAllWidgets = () => {
     // Liste complète des widgets métier
-    const allWidgets = VendeurWidgets.widgets;
+    const allWidgets = LoueurWidgets.widgets;
     // Widgets actuellement affichés
     const currentIds = config.widgets.map((w: any) => w.id);
     // Widgets manquants
@@ -510,7 +513,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     const newConfig = { ...config, widgets: newWidgets, layout: { ...config.layout, lg: newLayout } };
     setConfig(newConfig);
     setLayout(newConfig.layout); // Update layout state
-    localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+    localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
   };
 
   // Largeur (horizontal) : 1/3 → 2/3 → 1/1 → 1/3
@@ -532,7 +535,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
         if (!prevConfig) return prevConfig;
         const newWidgetSizes = { ...prevConfig.widgetSizes, [widgetId]: newSize };
         const newConfig = { ...prevConfig, layout: updatedLayouts, widgetSizes: newWidgetSizes };
-        localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+        localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
         return newConfig;
       });
       return updatedLayouts;
@@ -552,7 +555,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       setConfig(prevConfig => {
         if (!prevConfig) return prevConfig;
         const newConfig = { ...prevConfig, layout: updatedLayouts };
-        localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+        localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
         return newConfig;
       });
       return updatedLayouts;
@@ -573,7 +576,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       };
       
       try {
-        localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(configToSave));
+        localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(configToSave));
         setConfig(configToSave);
         
         // Affiche le statut de sauvegarde
@@ -653,8 +656,6 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     // Gérer les actions des widgets ici
   };
 
-
-
   // Fonction pour alterner la taille du widget
   const getNextWidgetWidth = (currentW: number) => {
     // Cycle: 3 (1/3) -> 7 (2/3) -> 10 (plein écran) -> 3 ...
@@ -662,8 +663,6 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     if (currentW < 10) return 10;
     return 3;
   };
-
-
 
   // Fonction pour réinitialiser la taille d'un widget
   const handleResetWidgetSize = (widgetId: string) => {
@@ -679,7 +678,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       const newWidgetSizes = { ...config.widgetSizes, [widgetId]: '1/3' };
       const newConfig = { ...config, layout: updatedLayouts, widgetSizes: newWidgetSizes };
       setConfig(newConfig);
-      localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+      localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
     }
   };
 
@@ -709,7 +708,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
               <div className="h-full flex flex-col">
                 {/* Header du widget */}
                 <div className="flex justify-between items-center p-4 pb-2 border-b">
-                  <h3 className="text-lg font-bold text-gray-900">{widget.id === 'stock-status' ? "Plan d’action Stock & Revente" : widget.title}</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{widget.id === 'rental-pipeline' ? "Pipeline de location" : widget.title}</h3>
                   <div className="flex space-x-1">
                     <button
                       className="p-1 bg-white rounded-full shadow hover:bg-orange-100 transition-colors"
@@ -790,23 +789,29 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
           
           <button
             className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors"
-            onClick={() => setShowAddWidgetModal(true)}
+            onClick={() => {
+              console.log('Bouton Ajouter des widgets cliqué');
+              setShowAddWidgetModal(true);
+            }}
           >
             + Ajouter des widgets
           </button>
         </div>
 
         {showAddWidgetModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-              <h2 className="text-lg font-bold mb-4">Ajouter un widget vendeur</h2>
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50" onClick={() => {
+            console.log('Modal cliqué, fermeture...');
+            setShowAddWidgetModal(false);
+          }}>
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-lg font-bold mb-4">Ajouter un widget loueur</h2>
               <div className="mb-2 text-xs text-gray-500">
-                Widgets disponibles: {VendeurWidgets.widgets.length} | 
-                Widgets filtrés: {VendeurWidgets.widgets.filter(widget => WIDGETS_VENDEUR_IDS.includes(widget.id)).length}
+                Widgets disponibles: {LoueurWidgets.widgets.length} | 
+                Widgets filtrés: {LoueurWidgets.widgets.filter(widget => WIDGETS_LOUEUR_IDS.includes(widget.id)).length}
               </div>
               <ul>
-                {VendeurWidgets.widgets
-                  .filter(widget => WIDGETS_VENDEUR_IDS.includes(widget.id))
+                {LoueurWidgets.widgets
+                  .filter(widget => WIDGETS_LOUEUR_IDS.includes(widget.id))
                   .map(widget => {
                     const isInstalled = config.widgets.some((cw: any) => cw.id === widget.id);
                     return (
@@ -844,4 +849,4 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   );
 };
 
-export default EnterpriseDashboardVendeurDisplay; 
+export default EnterpriseDashboardLoueurDisplay; 

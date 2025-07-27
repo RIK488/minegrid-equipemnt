@@ -1,13 +1,7 @@
 // Export centralisé de tous les widgets par métier
 export { VendeurWidgets } from './VendeurWidgets';
-export { 
-  VendeurWidgets as VendeurWidgetsTS,
-  PerformanceScoreWidget,
-  SalesEvolutionWidget,
-  StockActionWidget,
-  ProspectionAssistantWidget,
-  DailyActionsWidget
-} from './VendeurWidgets.tsx';
+// Les composants React ont été supprimés du fichier VendeurWidgets.tsx
+// car seuls les widgets de configuration sont maintenant utilisés
 export { LoueurWidgets } from './LoueurWidgets';
 export { MecanicienWidgets } from './MecanicienWidgets';
 export { TransporteurWidgets } from './TransporteurWidgets';

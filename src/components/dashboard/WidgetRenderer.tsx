@@ -18,14 +18,8 @@ import DailyActionsWidget from './widgets/DailyActionsWidget';
 import StockStatusWidget from './widgets/StockStatusWidget';
 
 // Import des widgets spécialisés pour vendeur
-import {
-  EquipmentCatalogWidget,
-  CustomerLeadsWidget,
-  QuotesManagementWidget,
-  AfterSalesServiceWidget,
-  MarketTrendsWidget,
-  SalesAnalyticsWidget
-} from '../../pages/widgets/VendeurWidgets';
+// Les composants React ont été supprimés du fichier VendeurWidgets.tsx
+// car seuls les widgets de configuration sont maintenant utilisés
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -356,6 +350,66 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     return [];
   };
 
+  const getRentalPipelineData = () => {
+    if (Array.isArray(rawData)) {
+      return rawData;
+    }
+    // Données par défaut pour le pipeline de location
+    return [
+      {
+        id: '1',
+        title: 'Location Excavatrice CAT 320',
+        status: 'Demande reçue',
+        priority: 'high' as const,
+        value: 45000,
+        probability: 90,
+        nextAction: 'Vérification disponibilité',
+        lastContact: '2024-01-20',
+        assignedTo: 'Ahmed Benali',
+        stage: 'Demande',
+        company: 'BTP Maroc',
+        email: 'contact@btp-maroc.ma',
+        phone: '+212 5 22 34 56 78',
+        duration: '5 jours',
+        equipment: 'Excavatrice CAT 320'
+      },
+      {
+        id: '2',
+        title: 'Location Chargeur frontal',
+        status: 'En négociation',
+        priority: 'high' as const,
+        value: 28000,
+        probability: 75,
+        nextAction: 'Finalisation contrat',
+        lastContact: '2024-01-19',
+        assignedTo: 'Fatima Zahra',
+        stage: 'Négociation',
+        company: 'Construction Plus',
+        email: 'achat@construction-plus.ma',
+        phone: '+212 5 24 12 34 56',
+        duration: '7 jours',
+        equipment: 'Chargeur frontal'
+      },
+      {
+        id: '3',
+        title: 'Location Bouteur D6',
+        status: 'Prospection',
+        priority: 'medium' as const,
+        value: 35000,
+        probability: 50,
+        nextAction: 'Premier contact',
+        lastContact: '2024-01-15',
+        assignedTo: 'Karim Alami',
+        stage: 'Prospection',
+        company: 'Mines Atlas',
+        email: 'direction@mines-atlas.ma',
+        phone: '+212 5 28 98 76 54',
+        duration: '10 jours',
+        equipment: 'Bouteur D6'
+      }
+    ];
+  };
+
   // Fonction pour gérer les actions des widgets
   const handleWidgetAction = (action: string, actionData: any) => {
     if (onAction) {
@@ -445,6 +499,14 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
           </div>
         );
       }
+      if (widget.id === 'rental-pipeline') {
+        // Pipeline de location avec données spécifiques
+        return (
+          <div className="flex-1 overflow-y-auto min-h-0 p-4" style={{ maxHeight: '100%' }}>
+            <SalesPipelineWidget data={{ leads: getRentalPipelineData() }} />
+          </div>
+        );
+      }
       return (
         <ListWidget 
           widget={widget} 
@@ -481,47 +543,53 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
         />
       );
 
-    // Widgets spécialisés pour vendeur d'engins
-    case 'equipment-catalog':
+    case 'equipment':
+      // Widget pour la disponibilité des équipements
       return (
-        <EquipmentCatalogWidget 
-          data={rawData as any[]} 
-        />
+        <div className="p-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600 mb-2">85%</div>
+            <div className="text-sm text-gray-600">Équipements disponibles</div>
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Disponibles</span>
+                <span className="font-semibold text-green-600">17/20</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>En location</span>
+                <span className="font-semibold text-orange-600">3/20</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>En maintenance</span>
+                <span className="font-semibold text-red-600">0/20</span>
+              </div>
+            </div>
+          </div>
+        </div>
       );
 
-    case 'customer-leads':
+    case 'calendar':
+      // Widget pour les locations à venir
       return (
-        <CustomerLeadsWidget 
-          data={rawData as any[]} 
-        />
-      );
-
-    case 'quotes-management':
-      return (
-        <QuotesManagementWidget 
-          data={rawData as any[]} 
-        />
-      );
-
-    case 'after-sales-service':
-      return (
-        <AfterSalesServiceWidget 
-          data={rawData as any[]} 
-        />
-      );
-
-    case 'market-trends':
-      return (
-        <MarketTrendsWidget 
-          data={rawData as any[]} 
-        />
-      );
-
-    case 'sales-analytics':
-      return (
-        <SalesAnalyticsWidget 
-          data={rawData as any[]} 
-        />
+        <div className="p-4">
+          <div className="text-center">
+            <div className="text-lg font-semibold mb-3">Locations à venir</div>
+            <div className="space-y-2">
+              <div className="bg-blue-50 p-2 rounded">
+                <div className="text-sm font-medium">Excavatrice CAT 320</div>
+                <div className="text-xs text-gray-600">15-20 Déc • Client: BTP Maroc</div>
+              </div>
+              <div className="bg-green-50 p-2 rounded">
+                <div className="text-sm font-medium">Chargeur frontal</div>
+                <div className="text-xs text-gray-600">18-25 Déc • Client: Construction Plus</div>
+              </div>
+              <div className="bg-yellow-50 p-2 rounded">
+                <div className="text-sm font-medium">Bouteur D6</div>
+                <div className="text-xs text-gray-600">22-30 Déc • Client: Mines Atlas</div>
+              </div>
+            </div>
+          </div>
+        </div>
       );
 
     default:

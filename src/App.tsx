@@ -37,6 +37,7 @@ import AssistantIA from './pages/AssistantIA';
 import WidgetTest from './WidgetTest';
 import VendeurDashboardRestored from './pages/VendeurDashboardRestored';
 import EnterpriseDashboardVendeurDisplay from './pages/EnterpriseDashboardVendeurDisplay';
+import EnterpriseDashboardLoueurDisplay from './pages/EnterpriseDashboardLoueurDisplay';
 
 console.log('🔥 App.tsx: import EnterpriseDashboard principal');
 
@@ -136,6 +137,9 @@ function AppContent() {
 
       case 'dashboard-entreprise-display':
         return <EnterpriseDashboardVendeurDisplay />;
+
+      case 'dashboard-loueur-display':
+        return <EnterpriseDashboardLoueurDisplay />;
 
       case 'dashboard-configurator':
         return <DashboardConfigurator />;

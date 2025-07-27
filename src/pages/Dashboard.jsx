@@ -2,6 +2,57 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Package, Settings, FileText, Bell, User, LogOut, ChevronRight, Shield, Wallet, RefreshCw, Eye, MessageSquare, DollarSign, Camera } from 'lucide-react';
 import { getSellerMachines, logoutUser, getDashboardStats, getWeeklyActivityData, getMessages, getOffers } from '../utils/api';
 
+// Fonction utilitaire pour vérifier si une configuration valide existe
+const hasValidConfiguration = () => {
+    // Vérifier d'abord si la configuration a été explicitement validée
+    const isConfigured = localStorage.getItem('enterpriseDashboardConfigured');
+    if (isConfigured !== 'true') {
+        console.log('🔍 Configuration non validée explicitement');
+        return false;
+    }
+    
+    const vendeurConfig = localStorage.getItem('enterpriseDashboardConfig_vendeur');
+    const generalConfig = localStorage.getItem('enterpriseDashboardConfig');
+    
+    // Vérifier d'abord la configuration vendeur
+    if (vendeurConfig && vendeurConfig !== 'null' && vendeurConfig !== 'undefined' && vendeurConfig !== '' && vendeurConfig !== '{}') {
+        try {
+            const config = JSON.parse(vendeurConfig);
+            if (config && 
+                config.widgets && 
+                Array.isArray(config.widgets) && 
+                config.widgets.length > 0 &&
+                config.widgets.every(widget => widget && typeof widget === 'object' && widget.type && widget.title)) {
+                console.log('✅ Configuration vendeur valide détectée');
+                return true;
+            }
+        } catch (e) {
+            console.log('❌ Erreur parsing vendeurConfig:', e);
+        }
+    }
+    
+    // Vérifier la configuration générale
+    if (generalConfig && generalConfig !== 'null' && generalConfig !== 'undefined' && generalConfig !== '' && generalConfig !== '{}') {
+        try {
+            const config = JSON.parse(generalConfig);
+            if (config && 
+                config.dashboardConfig && 
+                config.dashboardConfig.widgets && 
+                Array.isArray(config.dashboardConfig.widgets) && 
+                config.dashboardConfig.widgets.length > 0 &&
+                config.dashboardConfig.widgets.every(widget => widget && typeof widget === 'object' && widget.type && widget.title)) {
+                console.log('✅ Configuration générale valide détectée');
+                return true;
+            }
+        } catch (e) {
+            console.log('❌ Erreur parsing generalConfig:', e);
+        }
+    }
+    
+    console.log('❌ Aucune configuration valide détectée');
+    return false;
+};
+
 export default function Dashboard({ section = 'overview' }) {
     const [machines, setMachines] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,8 +64,64 @@ export default function Dashboard({ section = 'overview' }) {
     const [offers, setOffers] = useState([]);
     const [activeSettingsTab, setActiveSettingsTab] = useState('profil');
     const [isSavingSettings, setIsSavingSettings] = useState(false);
-    const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
-    const [subscriptionType, setSubscriptionType] = useState('entreprise');
+    const [hasActiveSubscription, setHasActiveSubscription] = useState(() => {
+        // Vérifier si l'abonnement a été explicitement résilié
+        const subscriptionCancelled = localStorage.getItem('subscriptionCancelled');
+        if (subscriptionCancelled === 'true') {
+            return false;
+        }
+        
+        // Vérifier s'il y a un abonnement temporaire dans localStorage
+        const tempHasActive = localStorage.getItem('tempHasActiveSubscription');
+        const tempSubscription = localStorage.getItem('tempSubscription');
+        
+        if (tempHasActive === 'true' && tempSubscription) {
+            return true;
+        }
+        
+        // Vérifier si l'utilisateur a déjà un abonnement enregistré
+        const userSubscription = localStorage.getItem('userSubscription');
+        if (userSubscription) {
+            return true;
+        }
+        
+        // Utiliser la fonction utilitaire pour vérifier la configuration
+        const hasRealConfiguration = hasValidConfiguration();
+        
+        // Si l'utilisateur a une configuration réelle, il a un abonnement actif
+        return hasRealConfiguration;
+    });
+    
+    const [subscriptionType, setSubscriptionType] = useState(() => {
+        // Vérifier si l'abonnement a été explicitement résilié
+        const subscriptionCancelled = localStorage.getItem('subscriptionCancelled');
+        if (subscriptionCancelled === 'true') {
+            return 'aucun';
+        }
+        
+        // Vérifier s'il y a un abonnement temporaire dans localStorage
+        const tempSubscription = localStorage.getItem('tempSubscription');
+        if (tempSubscription) {
+            return tempSubscription;
+        }
+        
+        // Vérifier si l'utilisateur a déjà un abonnement enregistré
+        const userSubscription = localStorage.getItem('userSubscription');
+        if (userSubscription) {
+            return userSubscription;
+        }
+        
+        // Utiliser la fonction utilitaire pour vérifier la configuration
+        const hasRealConfiguration = hasValidConfiguration();
+        
+        // Si l'utilisateur a une configuration réelle, il a un abonnement entreprise
+        return hasRealConfiguration ? 'entreprise' : 'aucun';
+    });
+
+    const [isFirstTimeEnterpriseDashboard, setIsFirstTimeEnterpriseDashboard] = useState(() => {
+        // Vérifier si c'est la première fois qu'on accède au tableau de bord entreprise
+        return !localStorage.getItem('enterpriseDashboardConfigured');
+    });
 
     const [navigation, setNavigation] = useState([
         { name: 'Vue d\'ensemble', href: '#dashboard/overview', icon: Eye },
@@ -112,13 +219,38 @@ export default function Dashboard({ section = 'overview' }) {
         if (confirm('Êtes-vous sûr de vouloir résilier votre abonnement ?')) {
             setHasActiveSubscription(false);
             setSubscriptionType('aucun');
+            
+            // Nettoyer les données temporaires et l'abonnement enregistré du localStorage
+            localStorage.removeItem('tempSubscription');
+            localStorage.removeItem('tempHasActiveSubscription');
+            localStorage.removeItem('enterpriseDashboardConfigured');
+            localStorage.removeItem('userSubscription');
+            
+            // Marquer explicitement l'abonnement comme résilié
+            localStorage.setItem('subscriptionCancelled', 'true');
+            
             alert('Votre abonnement a été résilié avec succès ! Vous pouvez maintenant choisir un nouvel abonnement.');
+        }
+    };
+
+    const resetEnterpriseDashboard = () => {
+        if (confirm('Voulez-vous réinitialiser votre tableau de bord entreprise ? Cela vous permettra de le reconfigurer.')) {
+            localStorage.removeItem('enterpriseDashboardConfigured');
+            setIsFirstTimeEnterpriseDashboard(true);
+            alert('Tableau de bord entreprise réinitialisé. Vous pouvez maintenant le reconfigurer.');
         }
     };
 
     const handleActivateSubscription = (type) => {
         setHasActiveSubscription(true);
         setSubscriptionType(type);
+        
+        // Enregistrer l'abonnement dans localStorage
+        localStorage.setItem('userSubscription', type);
+        
+        // Supprimer le marqueur de résiliation
+        localStorage.removeItem('subscriptionCancelled');
+        
         alert(`Abonnement ${type} activé avec succès !`);
         // Rediriger vers la vue d'ensemble pour voir le tableau de bord complet
         setActiveSection('overview');
@@ -490,7 +622,7 @@ export default function Dashboard({ section = 'overview' }) {
                                         {/* Actions rapides */}
                                         <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-100">
                                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h3>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                                 <a
                                                     href="#vendre"
                                                     className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
@@ -498,6 +630,81 @@ export default function Dashboard({ section = 'overview' }) {
                                                     <Plus className="h-6 w-6 text-orange-600 mb-2" />
                                                     <span className="text-sm font-medium text-gray-700">Nouvelle annonce</span>
                                                 </a>
+                                                <button
+                                                    onClick={() => {
+                                                        // Récupérer le type d'abonnement actuel
+                                                        const currentSubscription = localStorage.getItem('userSubscription') || subscriptionType;
+                                                        
+                                                        console.log('🔍 Type d\'abonnement actuel:', currentSubscription);
+
+                                                        // Rediriger selon le type d'abonnement
+                                                        switch (currentSubscription) {
+                                                            case 'premium':
+                                                                // Premium : accès au tableau de bord standard
+                                                                setHasActiveSubscription(true);
+                                                                setSubscriptionType('premium');
+                                                                window.location.href = '/#dashboard/overview';
+                                                                break;
+                                                                
+                                                            case 'pro':
+                                                                // Pro : accès à l'espace pro
+                                                                setHasActiveSubscription(true);
+                                                                setSubscriptionType('pro');
+                                                                window.location.href = '/#pro';
+                                                                break;
+                                                                
+                                                            case 'entreprise':
+                                                                // Entreprise : configuration ou accès au tableau de bord
+                                                                setHasActiveSubscription(true);
+                                                                setSubscriptionType('entreprise');
+                                                                
+                                                                // Nettoyer les configurations invalides pour forcer la configuration
+                                                                const isConfigured = localStorage.getItem('enterpriseDashboardConfigured');
+                                                                if (isConfigured !== 'true') {
+                                                                    // Supprimer les configurations invalides
+                                                                    localStorage.removeItem('enterpriseDashboardConfig_vendeur');
+                                                                    localStorage.removeItem('enterpriseDashboardConfig');
+                                                                    console.log('🧹 Nettoyage des configurations invalides');
+                                                                }
+                                                                
+                                                                // Utiliser la fonction utilitaire pour vérifier la configuration
+                                                                const hasRealConfiguration = hasValidConfiguration();
+                                                                
+                                                                console.log('🔍 Debug configuration entreprise:', {
+                                                                    hasRealConfiguration,
+                                                                    vendeurConfig: localStorage.getItem('enterpriseDashboardConfig_vendeur'),
+                                                                    generalConfig: localStorage.getItem('enterpriseDashboardConfig'),
+                                                                    isConfigured: localStorage.getItem('enterpriseDashboardConfigured')
+                                                                });
+                                                                
+                                                                // Par défaut, rediriger vers la configuration
+                                                                // Seulement si une configuration valide existe, aller au dashboard
+                                                                if (hasRealConfiguration) {
+                                                                    console.log('✅ Utilisateur entreprise existant - redirection vers dashboard');
+                                                                    // L'utilisateur a déjà un tableau de bord configuré
+                                                                    // Rediriger directement vers son tableau de bord
+                                                                    window.location.href = '/#dashboard-entreprise-display';
+                                                                } else {
+                                                                    console.log('🚀 Nouvel utilisateur entreprise - redirection vers configuration');
+                                                                    // Rediriger vers la configuration par défaut
+                                                                    window.location.href = '/#dashboard-entreprise';
+                                                                }
+                                                                break;
+                                                                
+                                                            default:
+                                                                // Par défaut, rediriger vers la configuration
+                                                                console.log('🚀 Aucun abonnement détecté - redirection vers configuration');
+                                                                window.location.href = '/#dashboard-entreprise';
+                                                                break;
+                                                        }
+                                                    }}
+                                                    className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
+                                                >
+                                                    <Shield className="h-6 w-6 text-orange-600 mb-2" />
+                                                    <span className="text-sm font-medium text-gray-700">
+                                                        Accéder à mon service
+                                                    </span>
+                                                </button>
                                                 <a
                                                     href="#contact"
                                                     className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
@@ -505,20 +712,10 @@ export default function Dashboard({ section = 'overview' }) {
                                                     <MessageSquare className="h-6 w-6 text-orange-600 mb-2" />
                                                     <span className="text-sm font-medium text-gray-700">Contacter le support</span>
                                                 </a>
-                                                <a
-                                                    href="#settings"
-                                                    className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
-                                                >
-                                                    <Settings className="h-6 w-6 text-orange-600 mb-2" />
-                                                    <span className="text-sm font-medium text-gray-700">Paramètres</span>
-                                                </a>
-                                                <a
-                                                    href="#abonnement"
-                                                    className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
-                                                >
-                                                    <Wallet className="h-6 w-6 text-orange-600 mb-2" />
-                                                    <span className="text-sm font-medium text-gray-700">Gérer l'abonnement</span>
-                                                </a>
+                                                
+
+
+
                                             </div>
                                         </div>
                                     </>
@@ -796,14 +993,71 @@ export default function Dashboard({ section = 'overview' }) {
                                                 <div className="w-4 h-4 bg-gradient-to-r from-blue-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
                                                 <div>
                                                     <h5 className="font-semibold text-orange-900">Médias enrichis</h5>
-                                                    <p className="text-sm text-orange-700">Plus d'images, vidéos et vues 360°</p>
+                                                    <p className="text-sm text-orange-700">Jusqu'à 15 images par annonce + vidéos et vues 360°</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center p-4 bg-gradient-to-r from-purple-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
                                                 <div className="w-4 h-4 bg-gradient-to-r from-purple-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
                                                 <div>
-                                                    <h5 className="font-semibold text-orange-900">Description enrichie</h5>
-                                                    <p className="text-sm text-orange-700">Mise en forme avancée et champs supplémentaires</p>
+                                                    <h5 className="font-semibold text-orange-900">Tableau de bord personnalisé</h5>
+                                                    <p className="text-sm text-orange-700">Analytics complets et métriques avancées</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-red-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-red-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div>
+                                                    <h5 className="font-semibold text-orange-900">Support prioritaire 24/7</h5>
+                                                    <p className="text-sm text-orange-700">Assistance téléphonique, email et chat en direct</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-indigo-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-indigo-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div>
+                                                    <h5 className="font-semibold text-orange-900">API d'intégration</h5>
+                                                    <p className="text-sm text-orange-700">Connexion avec vos systèmes existants</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-yellow-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-yellow-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div>
+                                                    <h5 className="font-semibold text-orange-900">Gestion multi-utilisateurs</h5>
+                                                    <p className="text-sm text-orange-700">Accès pour toute votre équipe</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <h4 className="font-semibold text-gray-900 border-b border-orange-200 pb-3 text-lg">
+                                            Services Premium
+                                        </h4>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-emerald-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-emerald-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div>
+                                                    <h5 className="font-semibold text-orange-900">Réseau partenarial</h5>
+                                                    <p className="text-sm text-orange-700">Accès exclusif au réseau de partenaires</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-teal-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-teal-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div>
+                                                    <h5 className="font-semibold text-orange-900">Formation personnalisée</h5>
+                                                    <p className="text-sm text-orange-700">Sessions de formation dédiées à votre équipe</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-cyan-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-cyan-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div>
+                                                    <h5 className="font-semibold text-orange-900">Services de financement</h5>
+                                                    <p className="text-sm text-orange-700">Solutions de financement sur mesure</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-pink-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-pink-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div>
+                                                    <h5 className="font-semibold text-orange-900">Logistique intégrée</h5>
+                                                    <p className="text-sm text-orange-700">Services de transport et logistique</p>
                                                 </div>
                                             </div>
                                         </div>

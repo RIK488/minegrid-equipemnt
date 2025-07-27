@@ -2640,57 +2640,91 @@ export default function EnterpriseDashboard() {
   }, [autoRefreshInterval]);
 
   useEffect(() => {
+    // 1. Essayer de charger la configuration depuis le DashboardConfigurator
     const savedConfig = localStorage.getItem('enterpriseDashboardConfig');
     if (savedConfig) {
       const config = JSON.parse(savedConfig);
-      if (config.dashboardConfig && config.dashboardConfig.widgets) {
-        setDashboardConfig(config.dashboardConfig);
-        if (config.layouts) {
-          setLayout(config.layouts);
-        } else {
-          // Générer une disposition par défaut si aucune n'est sauvegardée
-          const defaultLayout = generateLayout(config.dashboardConfig.widgets);
-          setLayout({ lg: defaultLayout });
-        }
-      }
-      setSelectedMetier(config.metier || 'vendeur');
-    } else {
-      // Configuration par défaut - Utiliser les widgets définis dans VendeurWidgets.js
-      const widgets: Widget[] = VendeurWidgets.widgets.map((widget, index) => {
-        console.log("🔍 [DEBUG] Widget trouvé:", widget.id, "Type:", widget.type, "Titre:", widget.title);
-        
-        // Log spécial pour le widget sales-evolution
-        if (widget.id === 'sales-evolution') {
-          console.log("🎯 [DEBUG] Widget sales-evolution trouvé dans la configuration!");
-          console.log("🎯 [DEBUG] Détails du widget:", {
-            id: widget.id,
-            type: widget.type,
-            title: widget.title,
-            dataSource: widget.dataSource,
-            priority: widget.priority
-          });
-        }
-        
-        return {
+      console.log('🎯 [DEBUG] Configuration trouvée:', config.metier, 'Widgets:', config.widgets?.length);
+      
+      if (config.widgets && config.widgets.length > 0) {
+        // Configuration du DashboardConfigurator trouvée
+        const widgets: Widget[] = config.widgets.map((widget: any, index: number) => ({
           id: widget.id,
           type: widget.type as any,
           title: widget.title,
           description: widget.description,
-          icon: iconMap[widget.icon.name] || Target,
-          enabled: true, // Activer tous les widgets enrichis
+          icon: iconMap[widget.icon?.name] || Target,
+          enabled: widget.enabled !== false,
           dataSource: widget.dataSource,
           isCollapsed: false,
-          position: index
+          position: widget.position || index
+        }));
+        
+        const dashboardConfig: DashboardConfig = { 
+          widgets, 
+          theme: 'light', 
+          layout: 'grid', 
+          refreshInterval: 30, 
+          notifications: true 
         };
-      });
-      const defaultConfig: DashboardConfig = { widgets, theme: 'light', layout: 'grid', refreshInterval: 30, notifications: true };
-      setDashboardConfig(defaultConfig);
-      const defaultLayout = generateLayout(widgets);
-      setLayout({ lg: defaultLayout });
-      setSelectedMetier('vendeur');
+        
+        setDashboardConfig(dashboardConfig);
+        setSelectedMetier(config.metier || 'vendeur');
+        
+        // Générer le layout
+        if (config.layout?.lg) {
+          setLayout(config.layout);
+        } else {
+          const defaultLayout = generateLayout(widgets);
+          setLayout({ lg: defaultLayout });
+        }
+      } else {
+        // Fallback vers la configuration par défaut vendeur
+        loadDefaultVendeurConfig();
+      }
+    } else {
+      // Aucune configuration trouvée, charger la configuration par défaut vendeur
+      loadDefaultVendeurConfig();
     }
     setLoading(false);
   }, []);
+
+  // Fonction pour charger la configuration par défaut vendeur
+  const loadDefaultVendeurConfig = () => {
+    console.log('🔄 [DEBUG] Chargement de la configuration par défaut vendeur');
+    const widgets: Widget[] = VendeurWidgets.widgets.map((widget, index) => {
+      console.log("🔍 [DEBUG] Widget trouvé:", widget.id, "Type:", widget.type, "Titre:", widget.title);
+      
+      // Log spécial pour le widget sales-evolution
+      if (widget.id === 'sales-evolution') {
+        console.log("🎯 [DEBUG] Widget sales-evolution trouvé dans la configuration!");
+        console.log("🎯 [DEBUG] Détails du widget:", {
+          id: widget.id,
+          type: widget.type,
+          title: widget.title,
+          dataSource: widget.dataSource,
+          priority: widget.priority
+        });
+      }
+      
+      return {
+        id: widget.id,
+        type: widget.type as any,
+        title: widget.title,
+        description: widget.description,
+        icon: iconMap[widget.icon.name] || Target,
+        enabled: true, // Activer tous les widgets enrichis
+        dataSource: widget.dataSource,
+        isCollapsed: false,
+        position: index
+      };
+    });
+    const defaultConfig: DashboardConfig = { widgets, theme: 'light', layout: 'grid', refreshInterval: 30, notifications: true };
+    setDashboardConfig(defaultConfig);
+    const defaultLayout = generateLayout(widgets);
+    setLayout({ lg: defaultLayout });
+    setSelectedMetier('vendeur');
+  };
 
   useEffect(() => {
     const loadReferenceData = async () => {
@@ -4752,7 +4786,13 @@ const widgetConfigs = {
     { id: 'equipment-usage', type: 'chart', title: 'Utilisation équipements', enabled: true },
     { id: 'upcoming-rentals', type: 'calendar', title: 'Locations à venir', enabled: true },
     { id: 'preventive-maintenance', type: 'maintenance', title: 'Maintenance préventive', enabled: true },
-    { id: 'delivery-map', type: 'map', title: 'Carte des livraisons', enabled: true }
+    { id: 'delivery-map', type: 'map', title: 'Carte des livraisons', enabled: true },
+    { id: 'rental-pipeline', type: 'pipeline', title: 'Pipeline de location', enabled: true },
+    { id: 'rental-contracts', type: 'list', title: 'Contrats de location', enabled: true },
+    { id: 'delivery-schedule', type: 'calendar', title: 'Planning des livraisons', enabled: true },
+    { id: 'rental-analytics', type: 'chart', title: 'Analytics de location', enabled: true },
+    { id: 'daily-actions', type: 'daily-actions', title: 'Actions prioritaires du jour', enabled: true },
+    { id: 'rental-notifications', type: 'notifications', title: 'Notifications de location', enabled: true }
   ],
   mecanicien: [
     { id: 'daily-interventions', type: 'metric', title: 'Interventions du jour', enabled: true },
@@ -11976,6 +12016,8 @@ const getAdvancedKPIsData = (widgetId: string) => {
 
   return kpis[widgetId as keyof typeof kpis] || kpis['operational-efficiency'];
 };
+
+
 
 // Fonction pour récupérer les données de planification
 const getPlanningData = (widgetId: string) => {

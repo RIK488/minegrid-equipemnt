@@ -5,7 +5,7 @@ import {
   BarChart3, TrendingUp, Eye, Layout, PieChart, Activity, 
   DollarSign, Clock, Target, Rocket, ArrowLeft, Settings, 
   BarChart, LineChart, PieChart as PieChartIcon, MapPin, 
-  AlertTriangle, Plus, Minus, Maximize2, Minimize2
+  AlertTriangle, Plus, Minus, Maximize2, Minimize2, Bell
 } from 'lucide-react';
 import { WidthProvider, Responsive } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -27,12 +27,12 @@ const metiers = [
     ],
     widgets: [
       {
-        id: 'sales-metrics',
+        id: 'sales-performance-score',
         title: 'Score de Performance Commerciale',
         icon: Target,
         description: 'Score global sur 100, comparaison avec objectif, rang anonymisé, recommandations IA et suivi de la performance commerciale.',
-        type: 'metric',
-        dataSource: 'sales_performance',
+        type: 'performance',
+        dataSource: 'sales-performance-score',
         features: [
           'Score sur 100',
           'Comparaison avec objectif',
@@ -42,12 +42,12 @@ const metiers = [
         ]
       },
       {
-        id: 'inventory-status',
+        id: 'stock-status',
         title: "Plan d'action stock & revente",
         icon: Package,
         description: 'Statut du stock dormant, recommandations automatiques, actions rapides, alertes sur les invendus et planification des actions de revente.',
         type: 'list',
-        dataSource: 'inventory',
+        dataSource: 'stock-status',
         features: [
           'Détection du stock dormant',
           'Alertes sur les invendus',
@@ -62,7 +62,7 @@ const metiers = [
         icon: TrendingUp,
         description: 'Graphique des ventes sur 12 mois, analyse des tendances, prévisions, export des données et comparaison avec l’année précédente.',
         type: 'chart',
-        dataSource: 'sales_history',
+        dataSource: 'sales-evolution',
         features: [
           'Graphique dynamique sur 12 mois',
           'Analyse des tendances',
@@ -72,12 +72,12 @@ const metiers = [
         ]
       },
       {
-        id: 'leads-pipeline',
+        id: 'sales-pipeline',
         title: 'Pipeline commercial',
         icon: BarChart3,
         description: 'Suivi des prospects et opportunités à chaque étape du cycle de vente. Statistiques, taux de conversion, alertes IA, relances et priorisation.',
-        type: 'pipeline',
-        dataSource: 'leads',
+        type: 'list',
+        dataSource: 'sales-pipeline',
         features: [
           'Statistiques par étape (prospection, devis, négociation, conclu, perdu)',
           'Taux de conversion global et par étape',
@@ -93,7 +93,7 @@ const metiers = [
         icon: Calendar,
         description: 'Liste des actions du jour triées par impact/priorité, contacts rapides, relances, rappels et planification des tâches commerciales.',
         type: 'daily-actions',
-        dataSource: 'daily_actions',
+        dataSource: 'daily-actions',
         features: [
           'Actions urgentes et prioritaires',
           'Contacts rapides (téléphone, email)',
@@ -116,8 +116,11 @@ const metiers = [
       'Paiement en ligne',
     ],
     widgets: [
-      { id: 'calendar', title: 'Calendrier', icon: Calendar, description: 'Gestion des réservations', type: 'calendar', dataSource: 'bookings' },
-      { id: 'contracts', title: 'Contrats', icon: FileText, description: 'Contrats automatisés', type: 'list', dataSource: 'contracts' },
+      { id: 'rental-revenue', title: 'Revenus de location', icon: DollarSign, description: 'Chiffre d\'affaires des locations', type: 'metric', dataSource: 'rental-revenue' },
+      { id: 'equipment-availability', title: 'Disponibilité Équipements', icon: Building2, description: 'État de disponibilité des équipements', type: 'equipment', dataSource: 'equipment-availability' },
+      { id: 'upcoming-rentals', title: 'Locations à venir', icon: Calendar, description: 'Planning des locations et réservations', type: 'calendar', dataSource: 'upcoming-rentals' },
+      { id: 'rental-pipeline', title: 'Pipeline de location', icon: Users, description: 'Suivi des demandes de location par étape', type: 'pipeline', dataSource: 'rental-pipeline' },
+      { id: 'daily-actions', title: 'Actions prioritaires du jour', icon: Target, description: 'Tâches urgentes pour la gestion des locations', type: 'daily-actions', dataSource: 'daily-actions' }
     ],
   },
   {
@@ -305,6 +308,12 @@ const DashboardConfigurator: React.FC = () => {
   const [saveMessage, setSaveMessage] = useState('');
 
   const selectedMetierData = metiers.find(m => m.id === selectedMetier);
+  
+  // Debug pour vérifier le métier sélectionné
+  React.useEffect(() => {
+    console.log('🔍 [DEBUG] selectedMetier changé:', selectedMetier);
+    console.log('🔍 [DEBUG] selectedMetierData trouvé:', selectedMetierData?.name);
+  }, [selectedMetier, selectedMetierData]);
 
   const handleMetierSelect = (metierId: string) => {
     setSelectedMetier(metierId);
@@ -388,8 +397,12 @@ const DashboardConfigurator: React.FC = () => {
     // Sauvegarder la configuration
     localStorage.setItem(`enterpriseDashboardConfig_${selectedMetier}`, JSON.stringify(config));
     
-    // Rediriger vers le tableau de bord
-    window.location.hash = '#dashboard-entreprise-display';
+    // Rediriger vers le tableau de bord selon le métier
+    if (selectedMetier === 'loueur') {
+      window.location.hash = '#dashboard-loueur-display';
+    } else {
+      window.location.hash = '#dashboard-entreprise-display';
+    }
   };
 
   const handleSaveConfig = () => {
@@ -419,6 +432,19 @@ const DashboardConfigurator: React.FC = () => {
   // Adapter la logique de navigation
   const nextStep = () => setActiveStep(prev => Math.min(prev + 1, 3));
   const prevStep = () => setActiveStep(prev => Math.max(prev - 1, 1));
+
+  // Debug pour l'étape 3
+  React.useEffect(() => {
+    if (activeStep === 3) {
+      console.log('🎯 [DEBUG] Étape 3 - Métier sélectionné:', selectedMetier);
+      console.log('🎯 [DEBUG] Étape 3 - Widgets sélectionnés:', selectedWidgets);
+      console.log('🎯 [DEBUG] Étape 3 - Données métier:', selectedMetierData);
+      console.log('🎯 [DEBUG] Étape 3 - Nombre de widgets:', selectedWidgets.length);
+      console.log('🎯 [DEBUG] Étape 3 - ID du métier trouvé:', selectedMetierData?.id);
+      console.log('🎯 [DEBUG] Étape 3 - Nom du métier trouvé:', selectedMetierData?.name);
+      console.log('🎯 [DEBUG] Étape 3 - Widgets du métier trouvé:', selectedMetierData?.widgets?.map(w => w.title));
+    }
+  }, [activeStep, selectedMetier, selectedWidgets, selectedMetierData]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -634,8 +660,8 @@ const DashboardConfigurator: React.FC = () => {
                       }}
                     >
                       {selectedWidgets.map((id) => {
-                        const widget = selectedMetierData.widgets.find(w => w.id === id);
-                        if (!widget) return null;
+                        const widget = selectedMetierData?.widgets?.find(w => w.id === id);
+                        if (!widget || !selectedMetierData) return null;
                         const Icon = widget.icon;
                         const size = widgetSizes[id] || '1/3';
                         return (
@@ -687,9 +713,15 @@ const DashboardConfigurator: React.FC = () => {
             </div>
           )}
 
-          {/* Étape 3: Finalisation */}
-          {activeStep === 3 && (
+                    {/* Étape 3: Finalisation */}
+          {activeStep === 3 && selectedMetier && selectedMetierData && (
             <div>
+              {/* Debug info */}
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <strong>Debug:</strong> Métier: {selectedMetier} | Nom: {selectedMetierData.name} | Widgets: {selectedWidgets.length}
+                </p>
+              </div>
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-bold text-gray-900">Votre tableau de bord personnalisé est prêt !</h2>
                 <button
@@ -750,8 +782,8 @@ const DashboardConfigurator: React.FC = () => {
                       compactType="vertical"
                     >
                       {selectedWidgets.map((id) => {
-                        const widget = selectedMetierData.widgets.find(w => w.id === id);
-                        if (!widget) return null;
+                        const widget = selectedMetierData?.widgets?.find(w => w.id === id);
+                        if (!widget || !selectedMetierData) return null;
                         const Icon = widget.icon;
                         const size = widgetSizes[id] || '1/3';
                         return (

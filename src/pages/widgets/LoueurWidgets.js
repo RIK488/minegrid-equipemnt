@@ -1,10 +1,10 @@
 import React from 'react';
-import { DollarSign, Building2, TrendingUp, Calendar } from 'lucide-react';
+import { DollarSign, Building2, TrendingUp, Calendar, MapPin, Wrench, Truck, Users, FileText, Bell, Target, BarChart3 } from 'lucide-react';
 
-// Widgets pour le métier Loueur
+// Widgets pour le métier Loueur - Configuration complète
 export const LoueurWidgets = {
   metier: 'Loueur',
-  description: 'Location d\'équipements et matériels',
+  description: 'Location d\'équipements et matériels avec gestion complète',
   widgets: [
     {
       id: 'rental-revenue',
@@ -35,20 +35,6 @@ export const LoueurWidgets = {
       }
     },
     {
-      id: 'equipment-usage',
-      type: 'chart',
-      title: 'Utilisation équipements',
-      description: 'Taux d\'utilisation des équipements',
-      icon: TrendingUp,
-      dataSource: 'equipment-usage',
-      features: {
-        periodSelector: true,
-        export: true,
-        analytics: true,
-        alerts: false
-      }
-    },
-    {
       id: 'upcoming-rentals',
       type: 'calendar',
       title: 'Locations à venir',
@@ -60,6 +46,36 @@ export const LoueurWidgets = {
         export: true,
         analytics: false,
         alerts: true
+      }
+    },
+    {
+      id: 'rental-pipeline',
+      type: 'pipeline',
+      title: 'Pipeline de location',
+      description: 'Suivi des demandes de location par étape',
+      icon: Users,
+      dataSource: 'rental-pipeline',
+      features: {
+        periodSelector: true,
+        export: true,
+        analytics: true,
+        alerts: true
+      }
+    },
+    {
+      id: 'daily-actions',
+      type: 'daily-actions',
+      title: 'Actions prioritaires du jour',
+      description: 'Tâches urgentes pour la gestion des locations',
+      icon: Target,
+      dataSource: 'daily-actions',
+      features: {
+        periodSelector: false,
+        export: false,
+        analytics: false,
+        alerts: true,
+        aiGenerated: true,
+        dynamicContent: true
       }
     }
   ]
