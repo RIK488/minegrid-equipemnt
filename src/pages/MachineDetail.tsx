@@ -24,7 +24,10 @@ interface ContactFormData {
   email: string;
   phone: string;
   message: string;
+  offerAmount?: number;
 }
+
+
 
 export default function MachineDetail({ machineId }: MachineDetailProps) {
   const [machineData, setMachineData] = useState<MachineWithPremium | null>(null);
@@ -39,11 +42,17 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
     name: '',
     email: '',
     phone: '',
-    message: ''
+    message: '',
+    offerAmount: undefined
   });
+
+
+
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  
+
   
   // 🔄 Récupération de la devise sélectionnée pour forcer le re-render
   const { currentCurrency } = useCurrencyStore();
@@ -222,12 +231,14 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
   };
 
   // Fonction pour gérer les changements dans le formulaire de contact
-  const handleContactFormChange = (field: keyof ContactFormData, value: string) => {
+  const handleContactFormChange = (field: keyof ContactFormData, value: string | number | undefined) => {
     setContactForm(prev => ({
       ...prev,
       [field]: value
     }));
   };
+
+
 
   // Fonction pour envoyer l'email de contact
   const handleSendContactEmail = async (e: React.FormEvent) => {
@@ -248,6 +259,56 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
     setEmailError(null);
 
     try {
+      // Si un montant d'offre est fourni, créer une offre
+      if (contactForm.offerAmount && contactForm.offerAmount > 0) {
+        // Récupérer l'utilisateur connecté ou créer un profil temporaire
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        let buyerId = user?.id;
+        
+        // Si pas d'utilisateur connecté, créer un profil temporaire
+        if (!user) {
+          const { data: tempProfile, error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              email: contactForm.email,
+              firstname: contactForm.name.split(' ')[0] || contactForm.name,
+              lastname: contactForm.name.split(' ').slice(1).join(' ') || '',
+              phone: contactForm.phone || null
+            })
+            .select()
+            .single();
+
+          if (profileError) {
+            console.error('Erreur création profil temporaire:', profileError);
+            throw new Error('Erreur lors de la création du profil');
+          }
+
+          buyerId = tempProfile.id;
+        }
+
+        // Créer l'offre dans la base de données
+        const { data: offer, error: offerError } = await supabase
+          .from('offers')
+          .insert({
+            machine_id: machineId,
+            buyer_id: buyerId,
+            seller_id: (machineData as any)?.sellerid,
+            amount: contactForm.offerAmount,
+            message: contactForm.message,
+            status: 'pending'
+          })
+          .select()
+          .single();
+
+        if (offerError) {
+          console.error('Erreur création offre:', offerError);
+          throw new Error('Erreur lors de la création de l\'offre');
+        }
+
+        console.log('✅ Offre créée avec succès:', offer);
+      }
+
       // 1. Sauvegarder le message dans la base de données
       const { data: messageData, error: messageError } = await supabase
         .from('messages')
@@ -332,7 +393,8 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
           name: '',
           email: '',
           phone: '',
-          message: ''
+          message: '',
+          offerAmount: undefined
         });
         
         // Fermer le formulaire après 3 secondes
@@ -659,6 +721,27 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Montant de votre offre (MAD) <span className="text-gray-400">(optionnel)</span>
+                    </label>
+                    <input 
+                      type="number" 
+                      min="1"
+                      step="1000"
+                      value={contactForm.offerAmount || ''}
+                      onChange={(e) => handleContactFormChange('offerAmount', parseFloat(e.target.value) || undefined)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500" 
+                      placeholder="Ex: 140000 (si vous voulez faire une offre)"
+                    />
+                    {contactForm.offerAmount && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Prix de vente : {machineData?.price?.toLocaleString()} MAD | 
+                        Votre offre : {contactForm.offerAmount.toLocaleString()} MAD
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Message <span className="text-red-500">*</span>
                     </label>
                     <textarea
@@ -699,6 +782,8 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
               )}
             </div>
           )}
+
+
 
           {/* Services Premium (si propriétaire) */}
           {canEdit && (

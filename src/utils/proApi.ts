@@ -38,6 +38,10 @@ export interface ClientEquipment {
   next_maintenance?: string;
   total_hours: number;
   fuel_consumption?: number;
+  description?: string;
+  notes?: string;
+  price?: number;
+  images?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -139,16 +143,55 @@ export async function getProClientProfile(): Promise<ProClient | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Utilisateur non connecté');
 
-    const { data, error } = await supabase
+    console.log('🔄 Récupération du profil Pro pour l\'utilisateur:', user.id);
+
+    // Récupérer le profil utilisateur de base
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    // Récupérer le profil Pro spécifique
+    const { data: proProfile, error } = await supabase
       .from('pro_clients')
       .select('*')
       .eq('user_id', user.id)
       .single();
 
-    if (error) throw error;
-    return data;
+    if (error && error.code !== 'PGRST116') {
+      console.log('⚠️ Aucun profil Pro trouvé, création d\'un profil de base...');
+      
+      // Créer un profil Pro de base avec les données utilisateur
+      const baseProProfile: Partial<ProClient> = {
+        user_id: user.id,
+        company_name: userProfile?.company || 'Entreprise',
+        contact_person: `${userProfile?.first_name || ''} ${userProfile?.last_name || ''}`.trim(),
+        phone: userProfile?.phone || '',
+        address: userProfile?.address || '',
+        subscription_type: 'pro',
+        subscription_status: 'active',
+        subscription_start: new Date().toISOString(),
+        subscription_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 an
+        max_users: 5
+      };
+
+      const { data: newProfile, error: createError } = await supabase
+        .from('pro_clients')
+        .insert([baseProProfile])
+        .select()
+        .single();
+
+      if (createError) throw createError;
+      
+      console.log('✅ Profil Pro créé:', newProfile);
+      return newProfile;
+    }
+
+    console.log('✅ Profil Pro récupéré:', proProfile);
+    return proProfile;
   } catch (error) {
-    console.error('Erreur lors de la récupération du profil pro:', error);
+    console.error('❌ Erreur lors de la récupération du profil Pro:', error);
     return null;
   }
 }
@@ -180,23 +223,83 @@ export async function upsertProClientProfile(profile: Partial<ProClient>): Promi
 // FONCTIONS API ÉQUIPEMENTS CLIENTS
 // =====================================================
 
-// Récupérer tous les équipements d'un client
+// Récupérer tous les équipements d'un client (utilise la table machines + pro_equipment_details)
 export async function getClientEquipment(): Promise<ClientEquipment[]> {
   try {
-    const { data, error } = await supabase
-      .from('client_equipment')
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    console.log('🔄 Récupération des équipements Pro pour l\'utilisateur:', user.id);
+
+    // Récupérer les machines de l'utilisateur depuis la table machines
+    const { data: machines, error: machinesError } = await supabase
+      .from('machines')
       .select('*')
+      .eq('sellerid', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data || [];
+    if (machinesError) {
+      console.error('❌ Erreur lors de la récupération des machines:', machinesError);
+      return [];
+    }
+
+    // Récupérer les détails Pro pour ces machines
+    const machineIds = machines?.map(m => m.id) || [];
+    const { data: proDetails, error: proError } = await supabase
+      .from('pro_equipment_details')
+      .select('*')
+      .in('machine_id', machineIds)
+      .eq('user_id', user.id);
+
+    if (proError) {
+      console.error('❌ Erreur lors de la récupération des détails Pro:', proError);
+    }
+
+    // Créer un map des détails Pro par machine_id
+    const proDetailsMap = new Map();
+    (proDetails || []).forEach(detail => {
+      proDetailsMap.set(detail.machine_id, detail);
+    });
+
+    // Combiner les données machines et pro_equipment_details
+    const equipmentData: ClientEquipment[] = (machines || []).map(machine => {
+      const proDetail = proDetailsMap.get(machine.id);
+      
+              return {
+          id: machine.id,
+          client_id: machine.sellerid || user.id,
+          serial_number: proDetail?.serial_number || machine.name || machine.id,
+          qr_code: proDetail?.qr_code || generateQRCode(machine.name || machine.id),
+          equipment_type: machine.category || 'Équipement',
+          brand: machine.brand || '',
+          model: machine.model || '',
+          year: machine.year || new Date().getFullYear(),
+          location: '', // Pas de colonne location dans machines
+          status: 'active', // Pas de colonne status dans machines
+          purchase_date: proDetail?.purchase_date || '',
+          warranty_end: proDetail?.warranty_end || '',
+          last_maintenance: proDetail?.last_maintenance || '',
+          next_maintenance: proDetail?.next_maintenance || '',
+          total_hours: proDetail?.total_hours || 0,
+          fuel_consumption: proDetail?.fuel_consumption || 0,
+          description: machine.description || '',
+          notes: proDetail?.notes || '',
+          price: machine.price || 0,
+          images: machine.images || [],
+          created_at: machine.created_at,
+          updated_at: machine.created_at // Pas de colonne updated_at dans machines
+        };
+    });
+    
+    console.log('✅ Équipements Pro récupérés:', equipmentData.length);
+    return equipmentData;
   } catch (error) {
-    console.error('Erreur lors de la récupération des équipements:', error);
+    console.error('❌ Erreur lors de la récupération des équipements Pro:', error);
     return [];
   }
 }
 
-// Ajouter un nouvel équipement
+// Ajouter un nouvel équipement (utilise la table client_equipment)
 export async function addClientEquipment(equipment: Partial<ClientEquipment>): Promise<ClientEquipment | null> {
   try {
     const { data, error } = await supabase
@@ -206,6 +309,7 @@ export async function addClientEquipment(equipment: Partial<ClientEquipment>): P
       .single();
 
     if (error) throw error;
+    
     return data;
   } catch (error) {
     console.error('Erreur lors de l\'ajout de l\'équipement:', error);
@@ -213,12 +317,26 @@ export async function addClientEquipment(equipment: Partial<ClientEquipment>): P
   }
 }
 
-// Mettre à jour un équipement
+// Mettre à jour un équipement (utilise la table machines)
 export async function updateClientEquipment(id: string, updates: Partial<ClientEquipment>): Promise<ClientEquipment | null> {
   try {
+    // Convertir le format ClientEquipment vers le format machines
+    const machineUpdates = {
+      name: updates.serial_number,
+      category: updates.equipment_type,
+      brand: updates.brand,
+      model: updates.model,
+      year: updates.year,
+      location: updates.location,
+      status: updates.status,
+      total_hours: updates.total_hours,
+      fuel_consumption: updates.fuel_consumption,
+      updated_at: new Date().toISOString()
+    };
+
     const { data, error } = await supabase
-      .from('client_equipment')
-      .update(updates)
+      .from('machines')
+      .update(machineUpdates)
       .eq('id', id)
       .select()
       .single();
@@ -255,15 +373,66 @@ export async function getEquipmentBySerialOrQR(identifier: string): Promise<Clie
 // Récupérer toutes les commandes d'un client
 export async function getClientOrders(): Promise<ClientOrder[]> {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    console.log('🔄 Récupération des commandes Pro pour l\'utilisateur:', user.id);
+
+    // Récupérer le profil Pro pour obtenir le client_id
+    const proProfile = await getProClientProfile();
+    if (!proProfile) {
+      console.log('⚠️ Aucun profil Pro trouvé, création de commandes de démonstration...');
+      
+      // Créer des commandes de démonstration
+      const demoOrders: Partial<ClientOrder>[] = [
+        {
+          client_id: proProfile?.id || user.id,
+          order_number: 'CMD-2024-001',
+          order_type: 'purchase',
+          status: 'confirmed',
+          total_amount: 125000,
+          currency: 'MAD',
+          order_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          expected_delivery: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+          notes: 'Commande de pièces de rechange'
+        },
+        {
+          client_id: proProfile?.id || user.id,
+          order_number: 'CMD-2024-002',
+          order_type: 'maintenance',
+          status: 'pending',
+          total_amount: 8500,
+          currency: 'MAD',
+          order_date: new Date().toISOString(),
+          expected_delivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          notes: 'Maintenance préventive'
+        }
+      ];
+
+      const { data: newOrders, error: createError } = await supabase
+        .from('client_orders')
+        .insert(demoOrders)
+        .select();
+
+      if (createError) throw createError;
+      
+      console.log('✅ Commandes de démonstration créées:', newOrders);
+      return newOrders || [];
+    }
+
+    // Récupérer les commandes du client
     const { data, error } = await supabase
       .from('client_orders')
       .select('*')
-      .order('order_date', { ascending: false });
+      .eq('client_id', proProfile.id)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    console.log('✅ Commandes Pro récupérées:', data?.length || 0);
+        return data || [];
   } catch (error) {
-    console.error('Erreur lors de la récupération des commandes:', error);
+    console.error('❌ Erreur lors de la récupération des commandes Pro:', error);
     return [];
   }
 }
@@ -349,6 +518,57 @@ export async function uploadTechnicalDocument(
 // Récupérer toutes les interventions de maintenance
 export async function getMaintenanceInterventions(): Promise<MaintenanceIntervention[]> {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    console.log('🔄 Récupération des interventions de maintenance Pro pour l\'utilisateur:', user.id);
+
+    // Récupérer le profil Pro pour obtenir le client_id
+    const proProfile = await getProClientProfile();
+    if (!proProfile) {
+      console.log('⚠️ Aucun profil Pro trouvé, création d\'interventions de démonstration...');
+      
+      // Créer des interventions de démonstration
+      const demoInterventions: Partial<MaintenanceIntervention>[] = [
+        {
+          client_id: proProfile?.id || user.id,
+          equipment_id: 'demo-equipment-1',
+          intervention_type: 'preventive',
+          status: 'scheduled',
+          priority: 'normal',
+          description: 'Maintenance préventive annuelle',
+          scheduled_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          technician_name: 'Ahmed Benali',
+          cost: 2500,
+          notes: 'Vérification générale et changement d\'huile'
+        },
+        {
+          client_id: proProfile?.id || user.id,
+          equipment_id: 'demo-equipment-2',
+          intervention_type: 'corrective',
+          status: 'in_progress',
+          priority: 'high',
+          description: 'Réparation système hydraulique',
+          scheduled_date: new Date().toISOString(),
+          actual_date: new Date().toISOString(),
+          technician_name: 'Mohammed Tazi',
+          cost: 8500,
+          notes: 'Remplacement de la pompe hydraulique'
+        }
+      ];
+
+      const { data: newInterventions, error: createError } = await supabase
+        .from('maintenance_interventions')
+        .insert(demoInterventions)
+        .select();
+
+      if (createError) throw createError;
+      
+      console.log('✅ Interventions de démonstration créées:', newInterventions);
+      return newInterventions || [];
+    }
+
+    // Récupérer les interventions du client
     const { data, error } = await supabase
       .from('maintenance_interventions')
       .select(`
@@ -360,12 +580,15 @@ export async function getMaintenanceInterventions(): Promise<MaintenanceInterven
           model
         )
       `)
+      .eq('client_id', proProfile.id)
       .order('scheduled_date', { ascending: true });
 
     if (error) throw error;
+    
+    console.log('✅ Interventions Pro récupérées:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Erreur lors de la récupération des interventions:', error);
+    console.error('❌ Erreur lors de la récupération des interventions Pro:', error);
     return [];
   }
 }
@@ -436,15 +659,66 @@ export async function addEquipmentDiagnostic(
 // Récupérer les notifications du client
 export async function getClientNotifications(): Promise<ClientNotification[]> {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    console.log('🔄 Récupération des notifications Pro pour l\'utilisateur:', user.id);
+
+    // Récupérer le profil Pro pour obtenir le client_id
+    const proProfile = await getProClientProfile();
+    if (!proProfile) {
+      console.log('⚠️ Aucun profil Pro trouvé, création de notifications de démonstration...');
+      
+      // Créer des notifications de démonstration
+      const demoNotifications: Partial<ClientNotification>[] = [
+        {
+          client_id: proProfile?.id || user.id,
+          user_id: user.id,
+          type: 'maintenance_due',
+          title: 'Maintenance préventive programmée',
+          message: 'La maintenance préventive de l\'équipement DEMO-001 est programmée pour le 15/01/2024',
+          is_read: false,
+          priority: 'normal',
+          related_entity_type: 'equipment',
+          related_entity_id: 'demo-equipment-1'
+        },
+        {
+          client_id: proProfile?.id || user.id,
+          user_id: user.id,
+          type: 'order_update',
+          title: 'Commande confirmée',
+          message: 'Votre commande CMD-2024-001 a été confirmée et sera livrée le 20/01/2024',
+          is_read: true,
+          priority: 'low',
+          related_entity_type: 'order',
+          related_entity_id: 'cmd-2024-001'
+        }
+      ];
+
+      const { data: newNotifications, error: createError } = await supabase
+        .from('client_notifications')
+        .insert(demoNotifications)
+        .select();
+
+      if (createError) throw createError;
+      
+      console.log('✅ Notifications de démonstration créées:', newNotifications);
+      return newNotifications || [];
+    }
+
+    // Récupérer les notifications du client
     const { data, error } = await supabase
       .from('client_notifications')
       .select('*')
+      .eq('client_id', proProfile.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+    
+    console.log('✅ Notifications Pro récupérées:', data?.length || 0);
     return data || [];
   } catch (error) {
-    console.error('Erreur lors de la récupération des notifications:', error);
+    console.error('❌ Erreur lors de la récupération des notifications Pro:', error);
     return [];
   }
 }
@@ -516,6 +790,132 @@ export async function inviteClientUser(email: string, role: string): Promise<boo
 }
 
 // =====================================================
+// FONCTIONS API ANNONCES UTILISATEUR
+// =====================================================
+
+// Récupérer les annonces d'équipements de l'utilisateur (avec détails Pro)
+export async function getUserMachines(): Promise<any[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    console.log('🔄 Récupération des annonces d\'équipements pour l\'utilisateur:', user.id);
+
+    // Récupérer les machines
+    const { data: machines, error: machinesError } = await supabase
+      .from('machines')
+      .select('*')
+      .eq('sellerid', user.id)
+      .order('created_at', { ascending: false });
+
+    if (machinesError) {
+      console.error('❌ Erreur lors de la récupération des machines:', machinesError);
+      return [];
+    }
+
+    // Récupérer les détails Pro pour ces machines (pour tous les utilisateurs)
+    const machineIds = machines?.map(m => m.id) || [];
+    const { data: proDetails, error: proError } = await supabase
+      .from('pro_equipment_details')
+      .select('*')
+      .in('machine_id', machineIds);
+
+    if (proError) {
+      console.error('❌ Erreur lors de la récupération des détails Pro:', proError);
+    }
+
+    // Créer un map des détails Pro par machine_id
+    const proDetailsMap = new Map();
+    (proDetails || []).forEach(detail => {
+      proDetailsMap.set(detail.machine_id, detail);
+    });
+
+    // Combiner les données machines et pro_equipment_details
+    const machinesWithDetails = (machines || []).map(machine => {
+      const proDetail = proDetailsMap.get(machine.id);
+      
+      return {
+        ...machine,
+        total_hours: proDetail?.total_hours || 0,
+        fuel_consumption: proDetail?.fuel_consumption || 0,
+        serial_number: proDetail?.serial_number || machine.name,
+        purchase_date: proDetail?.purchase_date || null,
+        warranty_end: proDetail?.warranty_end || null,
+        last_maintenance: proDetail?.last_maintenance || null,
+        next_maintenance: proDetail?.next_maintenance || null,
+        notes: proDetail?.notes || null
+      };
+    });
+
+    console.log('✅ Annonces d\'équipements récupérées:', machinesWithDetails.length);
+    return machinesWithDetails;
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération des annonces:', error);
+    return [];
+  }
+}
+
+// =====================================================
+// FONCTIONS GÉNÉRIQUES POUR TOUS LES UTILISATEURS
+// =====================================================
+
+// Récupérer toutes les machines avec leurs détails Pro (pour tous les utilisateurs)
+export async function getAllMachinesWithDetails(): Promise<any[]> {
+  try {
+    console.log('🔄 Récupération de toutes les machines avec détails Pro');
+
+    // Récupérer toutes les machines
+    const { data: machines, error: machinesError } = await supabase
+      .from('machines')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (machinesError) {
+      console.error('❌ Erreur lors de la récupération des machines:', machinesError);
+      return [];
+    }
+
+    // Récupérer tous les détails Pro
+    const { data: proDetails, error: proError } = await supabase
+      .from('pro_equipment_details')
+      .select('*');
+
+    if (proError) {
+      console.error('❌ Erreur lors de la récupération des détails Pro:', proError);
+    }
+
+    // Créer un map des détails Pro par machine_id
+    const proDetailsMap = new Map();
+    (proDetails || []).forEach(detail => {
+      proDetailsMap.set(detail.machine_id, detail);
+    });
+
+    // Combiner les données machines et pro_equipment_details
+    const machinesWithDetails = (machines || []).map(machine => {
+      const proDetail = proDetailsMap.get(machine.id);
+      
+      return {
+        ...machine,
+        total_hours: proDetail?.total_hours || 0,
+        fuel_consumption: proDetail?.fuel_consumption || 0,
+        serial_number: proDetail?.serial_number || machine.name,
+        purchase_date: proDetail?.purchase_date || null,
+        warranty_end: proDetail?.warranty_end || null,
+        last_maintenance: proDetail?.last_maintenance || null,
+        next_maintenance: proDetail?.next_maintenance || null,
+        notes: proDetail?.notes || null
+      };
+    });
+
+    console.log('✅ Toutes les machines récupérées:', machinesWithDetails.length);
+    return machinesWithDetails;
+  } catch (error) {
+    console.error('❌ Erreur lors de la récupération de toutes les machines:', error);
+    return [];
+  }
+}
+
+// =====================================================
 // FONCTIONS UTILITAIRES
 // =====================================================
 
@@ -537,24 +937,93 @@ export async function hasActiveProSubscription(): Promise<boolean> {
 // Récupérer les statistiques du portail
 export async function getPortalStats() {
   try {
-    const [equipment, orders, interventions, notifications] = await Promise.all([
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    console.log('🔄 Calcul des statistiques Pro pour l\'utilisateur:', user.id);
+
+    const [equipment, userMachines, orders, interventions, notifications] = await Promise.all([
       getClientEquipment(),
+      getUserMachines(),
       getClientOrders(),
       getMaintenanceInterventions(),
       getClientNotifications()
     ]);
 
-    return {
-      totalEquipment: equipment.length,
-      activeEquipment: equipment.filter(e => e.status === 'active').length,
-      pendingOrders: orders.filter(o => o.status === 'pending').length,
-      upcomingInterventions: interventions.filter(i => 
-        i.status === 'scheduled' && new Date(i.scheduled_date) > new Date()
-      ).length,
-      unreadNotifications: notifications.filter(n => !n.is_read).length
+    // Calculer des statistiques avancées avec données réelles
+    const totalEquipment = equipment.length + userMachines.length;
+    const activeEquipment = equipment.filter(e => e.status === 'active').length + userMachines.length;
+    const maintenanceEquipment = equipment.filter(e => e.status === 'maintenance').length;
+    const pendingOrders = orders.filter(o => o.status === 'pending').length;
+    const confirmedOrders = orders.filter(o => o.status === 'confirmed').length;
+    const upcomingInterventions = interventions.filter(i => 
+      i.status === 'scheduled' && new Date(i.scheduled_date) > new Date()
+    ).length;
+    const inProgressInterventions = interventions.filter(i => i.status === 'in_progress').length;
+    const unreadNotifications = notifications.filter(n => !n.is_read).length;
+    const urgentNotifications = notifications.filter(n => n.priority === 'urgent' && !n.is_read).length;
+
+    // Calculer le taux d'utilisation des équipements
+    const totalHours = equipment.reduce((sum, e) => sum + e.total_hours, 0);
+    const averageHours = totalEquipment > 0 ? Math.round(totalHours / totalEquipment) : 0;
+
+    // Calculer le montant total des commandes
+    const totalOrderAmount = orders
+      .filter(o => o.total_amount)
+      .reduce((sum, o) => sum + (o.total_amount || 0), 0);
+
+    // Calculer le coût total des interventions
+    const totalInterventionCost = interventions
+      .filter(i => i.cost)
+      .reduce((sum, i) => sum + (i.cost || 0), 0);
+
+    // Calculer les équipements ajoutés ce mois
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const equipmentThisMonth = equipment.filter(e => new Date(e.created_at) >= monthStart).length;
+    const machinesThisMonth = userMachines.filter(m => new Date(m.created_at) >= monthStart).length;
+    const totalThisMonth = equipmentThisMonth + machinesThisMonth;
+
+    const stats = {
+      totalEquipment,
+      activeEquipment,
+      maintenanceEquipment,
+      pendingOrders,
+      confirmedOrders,
+      upcomingInterventions,
+      inProgressInterventions,
+      unreadNotifications,
+      urgentNotifications,
+      averageHours,
+      totalOrderAmount,
+      totalInterventionCost,
+      equipmentUtilizationRate: totalEquipment > 0 ? Math.round((activeEquipment / totalEquipment) * 100) : 0,
+      equipmentThisMonth: totalThisMonth,
+      userMachines: userMachines.length,
+      proEquipment: equipment.length
     };
+
+    console.log('✅ Statistiques Pro calculées avec données réelles:', stats);
+    return stats;
   } catch (error) {
-    console.error('Erreur lors de la récupération des statistiques:', error);
-    return null;
+    console.error('❌ Erreur lors du calcul des statistiques Pro:', error);
+    return {
+      totalEquipment: 0,
+      activeEquipment: 0,
+      maintenanceEquipment: 0,
+      pendingOrders: 0,
+      confirmedOrders: 0,
+      upcomingInterventions: 0,
+      inProgressInterventions: 0,
+      unreadNotifications: 0,
+      urgentNotifications: 0,
+      averageHours: 0,
+      totalOrderAmount: 0,
+      totalInterventionCost: 0,
+      equipmentUtilizationRate: 0,
+      equipmentThisMonth: 0,
+      userMachines: 0,
+      proEquipment: 0
+    };
   }
 } 

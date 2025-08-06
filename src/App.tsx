@@ -38,6 +38,13 @@ import WidgetTest from './WidgetTest';
 import VendeurDashboardRestored from './pages/VendeurDashboardRestored';
 import EnterpriseDashboardVendeurDisplay from './pages/EnterpriseDashboardVendeurDisplay';
 import EnterpriseDashboardLoueurDisplay from './pages/EnterpriseDashboardLoueurDisplay';
+import EnterpriseDashboardMecanicienDisplay from './pages/EnterpriseDashboardMecanicienDisplay';
+import EnterpriseDashboardTransporteurDisplay from './pages/EnterpriseDashboardTransporteurDisplay';
+import EnterpriseDashboardTransitaireDisplay from './pages/EnterpriseDashboardTransitaireDisplay';
+import EnterpriseDashboardLogisticienDisplay from './pages/EnterpriseDashboardLogisticienDisplay';
+import EnterpriseDashboardInvestisseurDisplay from './pages/EnterpriseDashboardInvestisseurDisplay';
+import EnterpriseDashboardCourtierDisplay from './pages/EnterpriseDashboardCourtierDisplay';
+import PremiumDashboard from './pages/PremiumDashboard';
 
 console.log('🔥 App.tsx: import EnterpriseDashboard principal');
 
@@ -140,6 +147,27 @@ function AppContent() {
 
       case 'dashboard-loueur-display':
         return <EnterpriseDashboardLoueurDisplay />;
+
+      case 'dashboard-mecanicien-display':
+        return <EnterpriseDashboardMecanicienDisplay />;
+
+      case 'dashboard-transporteur-display':
+        return <EnterpriseDashboardTransporteurDisplay />;
+
+      case 'dashboard-transitaire-display':
+        return <EnterpriseDashboardTransitaireDisplay />;
+
+      case 'dashboard-logisticien-display':
+        return <EnterpriseDashboardLogisticienDisplay />;
+
+      case 'dashboard-investisseur-display':
+        return <EnterpriseDashboardInvestisseurDisplay />;
+
+      case 'dashboard-courtier-display':
+        return <EnterpriseDashboardCourtierDisplay />;
+
+      case 'premium-dashboard':
+        return <PremiumDashboard />;
 
       case 'dashboard-configurator':
         return <DashboardConfigurator />;

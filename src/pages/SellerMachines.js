@@ -35,7 +35,7 @@ export default function SellerMachines({ sellerId }) {
                     const { data: machinesData, error: machinesError } = await supabase
                         .from('machines')
                         .select('*')
-                        .eq('sellerId', sellerId)
+                        .eq('sellerid', sellerId)
                         .order('created_at', { ascending: false });
                     if (machinesError) {
                         console.error('Erreur chargement machines:', machinesError);

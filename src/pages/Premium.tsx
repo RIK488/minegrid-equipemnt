@@ -113,6 +113,15 @@ export default function Premium() {
               >
                 Sélectionner
               </button>
+              
+              {selectedPlan === plan.id && (
+                <button
+                  onClick={() => window.location.hash = '#premium-dashboard'}
+                  className="w-full mt-2 py-2 px-4 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                >
+                  Accéder au tableau de bord Premium
+                </button>
+              )}
             </div>
           </div>
         ))}

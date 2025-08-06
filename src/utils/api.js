@@ -68,7 +68,7 @@ export async function getSellerMachines() {
     const { data, error } = await supabase
         .from('machines')
         .select('*')
-        .eq('sellerId', user.id);
+        .eq('sellerid', user.id);
     if (error)
         throw error;
     return data;
@@ -182,7 +182,7 @@ export async function getWeeklyActivityData() {
     const { data: machines } = await supabase
         .from('machines')
         .select('id')
-        .eq('sellerId', user.id);
+        .eq('sellerid', user.id);
     const machineIds = machines?.map(m => m.id) || [];
     if (machineIds.length === 0) {
         return Array(7).fill(0);

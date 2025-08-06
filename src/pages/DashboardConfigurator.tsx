@@ -135,8 +135,10 @@ const metiers = [
       'Suivi SAV',
     ],
     widgets: [
-      { id: 'planning', title: 'Planning interventions', icon: Calendar, description: 'Planification des interventions', type: 'calendar', dataSource: 'interventions' },
-      { id: 'diagnostic', title: 'Diagnostic IA', icon: Zap, description: 'Diagnostic assisté par IA', type: 'metric', dataSource: 'diagnostic' },
+      { id: 'interventions-today', title: 'Interventions du jour', icon: Clock, description: 'Nombre d\'interventions planifiées', type: 'chart', dataSource: 'interventions-today' },
+      { id: 'repair-status', title: 'État des réparations', icon: Wrench, description: 'Équipements en réparation', type: 'list', dataSource: 'repair-status' },
+      { id: 'parts-inventory', title: 'Stock pièces détachées', icon: Package, description: 'Niveau de stock par catégorie', type: 'chart', dataSource: 'parts-inventory' },
+      { id: 'technician-workload', title: 'Charge de travail', icon: Users, description: 'Répartition des tâches par technicien', type: 'chart', dataSource: 'technician-workload' },
     ],
   },
   {
@@ -151,8 +153,10 @@ const metiers = [
       'Suivi GPS',
     ],
     widgets: [
-      { id: 'simulator', title: 'Simulateur coûts', icon: DollarSign, description: 'Simulation des coûts de transport', type: 'metric', dataSource: 'costs' },
-      { id: 'gps', title: 'Suivi GPS', icon: MapPin, description: 'Localisation en temps réel', type: 'map', dataSource: 'gps' },
+      { id: 'active-deliveries', title: 'Livraisons en cours', icon: Truck, description: 'Nombre de livraisons actives', type: 'metric', dataSource: 'active-deliveries' },
+      { id: 'delivery-map', title: 'Carte des livraisons', icon: Globe, description: 'Localisation des véhicules', type: 'map', dataSource: 'delivery-map' },
+      { id: 'transport-costs', title: 'Coûts de transport', icon: DollarSign, description: 'Analyse des coûts par trajet', type: 'chart', dataSource: 'transport-costs' },
+      { id: 'driver-schedule', title: 'Planning chauffeurs', icon: Calendar, description: 'Planning des équipes', type: 'calendar', dataSource: 'driver-schedule' },
     ],
   },
   {
@@ -167,8 +171,10 @@ const metiers = [
       'Calcul coûts logistiques',
     ],
     widgets: [
-      { id: 'customs', title: 'Gestion douane', icon: Shield, description: 'Gestion des formalités douanières', type: 'list', dataSource: 'customs' },
-      { id: 'containers', title: 'Suivi conteneurs', icon: Truck, description: 'Suivi des conteneurs', type: 'metric', dataSource: 'containers' },
+      { id: 'customs-clearance', title: 'Déclarations en cours', icon: FileText, description: 'Nombre de déclarations douanières', type: 'metric', dataSource: 'customs-clearance' },
+      { id: 'container-tracking', title: 'Suivi conteneurs', icon: Globe, description: 'Localisation des conteneurs', type: 'map', dataSource: 'container-tracking' },
+      { id: 'import-export-stats', title: 'Statistiques I/E', icon: BarChart3, description: 'Volumes import/export', type: 'chart', dataSource: 'import-export-stats' },
+      { id: 'document-status', title: 'État des documents', icon: FileText, description: 'Documents en attente de validation', type: 'list', dataSource: 'document-status' },
     ],
   },
   {
@@ -183,8 +189,10 @@ const metiers = [
       'Analytics logistiques',
     ],
     widgets: [
-      { id: 'stock-planning', title: 'Planification stock', icon: Package, description: 'Planification des stocks', type: 'list', dataSource: 'stock' },
-      { id: 'analytics', title: 'Analytics logistiques', icon: BarChart3, description: 'Analyse logistique', type: 'chart', dataSource: 'analytics' },
+      { id: 'warehouse-occupancy', title: 'Taux d\'occupation', icon: Building2, description: 'Occupation des entrepôts', type: 'metric', dataSource: 'warehouse-occupancy' },
+      { id: 'route-optimization', title: 'Optimisation routes', icon: Truck, description: 'Routes optimisées', type: 'map', dataSource: 'route-optimization' },
+      { id: 'supply-chain-kpis', title: 'KPIs Supply Chain', icon: Target, description: 'Indicateurs de performance', type: 'chart', dataSource: 'supply-chain-kpis' },
+      { id: 'inventory-alerts', title: 'Alertes stock', icon: Package, description: 'Produits en rupture ou excédent', type: 'list', dataSource: 'inventory-alerts' },
     ],
   },
   {
@@ -216,7 +224,29 @@ const metiers = [
     ],
     widgets: [
       { id: 'opportunities', title: 'Analyse des opportunités', icon: Star, description: 'Analyse des opportunités d’investissement', type: 'metric', dataSource: 'opportunities' },
-      { id: 'returns', title: 'Suivi des rendements', icon: TrendingUp, description: 'Suivi des rendements financiers', type: 'chart', dataSource: 'returns' },
+      { id: 'portfolio-value', title: 'Valeur portefeuille', icon: DollarSign, description: 'Valeur totale des investissements', type: 'metric', dataSource: 'portfolio-value' },
+      { id: 'investment-opportunities', title: 'Opportunités', icon: Target, description: 'Projets d\'investissement', type: 'list', dataSource: 'investment-opportunities' },
+      { id: 'roi-analysis', title: 'Analyse ROI', icon: TrendingUp, description: 'Retour sur investissement', type: 'chart', dataSource: 'roi-analysis' },
+      { id: 'risk-assessment', title: 'Évaluation risques', icon: Shield, description: 'Analyse des risques par projet', type: 'chart', dataSource: 'risk-assessment' },
+    ],
+  },
+  {
+    id: 'courtier',
+    name: 'Courtier',
+    icon: Shield,
+    description: 'Courtage en crédit et assurances',
+    features: [
+      'Gestion des demandes de crédit',
+      'Suivi des polices d\'assurance',
+      'Calcul des commissions',
+      'Portefeuille clients',
+    ],
+    widgets: [
+      { id: 'credit-applications', title: 'Demandes de crédit', icon: FileText, description: 'Suivi des demandes de crédit en cours', type: 'list', dataSource: 'credit-applications' },
+      { id: 'insurance-policies', title: 'Polices d\'assurance', icon: Shield, description: 'Gestion des polices d\'assurance clients', type: 'list', dataSource: 'insurance-policies' },
+      { id: 'commission-tracking', title: 'Suivi des commissions', icon: DollarSign, description: 'Commissions générées par produit', type: 'metric', dataSource: 'commission-tracking' },
+      { id: 'client-portfolio', title: 'Portefeuille clients', icon: Users, description: 'Base de données clients et prospects', type: 'list', dataSource: 'client-portfolio' },
+      { id: 'performance-analytics', title: 'Analytics de performance', icon: TrendingUp, description: 'Analyse des performances commerciales', type: 'chart', dataSource: 'performance-analytics' },
     ],
   },
 ];
@@ -400,6 +430,18 @@ const DashboardConfigurator: React.FC = () => {
     // Rediriger vers le tableau de bord selon le métier
     if (selectedMetier === 'loueur') {
       window.location.hash = '#dashboard-loueur-display';
+    } else if (selectedMetier === 'mecanicien') {
+      window.location.hash = '#dashboard-mecanicien-display';
+    } else if (selectedMetier === 'transporteur') {
+      window.location.hash = '#dashboard-transporteur-display';
+    } else if (selectedMetier === 'transitaire') {
+      window.location.hash = '#dashboard-transitaire-display';
+    } else if (selectedMetier === 'logisticien') {
+      window.location.hash = '#dashboard-logisticien-display';
+    } else if (selectedMetier === 'investisseur') {
+      window.location.hash = '#dashboard-investisseur-display';
+    } else if (selectedMetier === 'courtier') {
+      window.location.hash = '#dashboard-courtier-display';
     } else {
       window.location.hash = '#dashboard-entreprise-display';
     }
