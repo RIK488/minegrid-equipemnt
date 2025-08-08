@@ -30,6 +30,7 @@ export default function SellEquipment() {
     year: new Date().getFullYear(),
     price: '',
     condition: 'used',
+    total_hours: '',
     description: '',
     specifications: {
       weight: '',
@@ -750,6 +751,19 @@ export default function SellEquipment() {
                   <option value="new">Neuf</option>
                   <option value="used">Occasion</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Nombre d'heures</label>
+                <input
+                  type="number"
+                  value={formData.total_hours}
+                  onChange={(e) => setFormData({ ...formData, total_hours: e.target.value })}
+                  min="0"
+                  placeholder="Ex: 2500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">Nombre total d'heures d'utilisation de la machine</p>
               </div>
             </div>
           </div>

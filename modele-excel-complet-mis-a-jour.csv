@@ -1,0 +1,77 @@
+# MODÈLE EXCEL COMPLET MIS À JOUR - MINEGRID ÉQUIPEMENT
+# 
+# ⚠️ IMPORTANT : Ce fichier inclut TOUS les nouveaux champs GPS et total_hours
+# Compatible avec la nouvelle structure Supabase optimisée
+#
+# COLONNES OBLIGATOIRES (doivent être remplies) :
+# - nom : Nom complet de la machine
+# - marque : Marque du fabricant
+# - modele : Modèle spécifique
+# - categorie : Doit être une des valeurs suivantes : Pelles hydrauliques, Bulldozers, Chargeurs, Concasseurs, Cribles, Foreuses, Grues, Niveleuses, Compacteurs, Outils de démolition, Matériel de Voirie
+# - type : Doit être "sale" (vente), "rental" (location) ou "both" (vente et location)
+# - annee : Année de fabrication (nombre entre 1950 et 2025)
+# - prix_euros : Prix en euros (nombre positif sans devise)
+# - condition : Doit être "new" (neuf) ou "used" (occasion)
+# - description : Description détaillée de la machine
+#
+# NOUVEAUX CHAMPS GPS (optionnels mais recommandés) :
+# - latitude : Coordonnée GPS latitude (ex: 33.5731 pour Casablanca)
+# - longitude : Coordonnée GPS longitude (ex: -7.5898 pour Casablanca)
+# - adresse : Adresse complète de la machine
+# - ville : Ville de localisation
+# - pays : Pays de localisation
+# - code_postal : Code postal
+#
+# NOUVEAU CHAMP HEURES :
+# - total_hours : Nombre total d'heures d'utilisation de la machine
+#
+# COLONNES OPTIONNELLES (peuvent être laissées vides) :
+# - poids : Poids en kg
+# - puissance_valeur : Valeur de la puissance (nombre)
+# - puissance_unite : Unité de puissance ("kW" ou "CV")
+# - capacite_operationnelle : Capacité en kg
+# - poids_de_travail : Poids de travail en kg
+# - dimensions : Dimensions au format "L x l x H"
+# - images : URLs des images séparées par des points-virgules (;)
+# - videos : URLs des vidéos séparées par des points-virgules (;)
+# - view360 : URL de la vue 360°
+# - is_premium : "true" ou "false" pour le statut premium
+# - rental_price_daily : Prix location journalier en euros
+# - rental_price_weekly : Prix location hebdomadaire en euros
+# - rental_price_monthly : Prix location mensuel en euros
+# - fuel_consumption : Consommation carburant (ex: "15L/h")
+# - operator_required : "true" ou "false" si opérateur requis
+# - delivery_available : "true" ou "false" si livraison disponible
+# - delivery_cost : Coût de livraison en euros
+#
+# 🎯 MAPPING SUPABASE AUTOMATIQUE :
+# - prix_euros → price (Supabase)
+# - total_hours → total_hours (Supabase) - NOUVEAU !
+# - latitude → latitude (Supabase) - NOUVEAU !
+# - longitude → longitude (Supabase) - NOUVEAU !
+# - adresse → address (Supabase) - NOUVEAU !
+# - ville → city (Supabase) - NOUVEAU !
+# - pays → country (Supabase) - NOUVEAU !
+# - code_postal → postal_code (Supabase) - NOUVEAU !
+# - poids_de_travail → specifications.workingWeight (Supabase)
+# - sellerid → automatiquement assigné par n8n
+#
+# 📍 EXEMPLES DE COORDONNÉES GPS :
+# - Casablanca, Maroc : 33.5731, -7.5898
+# - Rabat, Maroc : 34.0209, -6.8416
+# - Dakar, Sénégal : 14.7167, -17.4677
+# - Bamako, Mali : 12.6392, -8.0029
+# - Abidjan, Côte d'Ivoire : 5.3600, -4.0083
+# - Lubumbashi, RDC : -11.6647, 27.4793
+#
+# EXEMPLES DE DONNÉES CI-DESSOUS :
+
+nom,marque,modele,categorie,type,annee,prix_euros,condition,total_hours,latitude,longitude,adresse,ville,pays,code_postal,description,poids,puissance_valeur,puissance_unite,capacite_operationnelle,poids_de_travail,dimensions,images,videos,view360,is_premium,rental_price_daily,rental_price_weekly,rental_price_monthly,fuel_consumption,operator_required,delivery_available,delivery_cost
+"Pelle hydraulique CAT 320D","Caterpillar","320D","Pelles hydrauliques","sale","2018","125000","used","2500","33.5731","-7.5898","123 Rue Mohammed V, Casablanca","Casablanca","Maroc","20000","Pelle hydraulique Caterpillar 320D en excellent état. Machine bien entretenue, prête à travailler. Idéale pour travaux de terrassement et extraction.","19500","127","kW","18500","19500","6.1m x 2.55m x 3.0m","https://example.com/image1.jpg;https://example.com/image2.jpg","https://example.com/video1.mp4","https://example.com/360view.html","false","","","","15L/h","true","true","500"
+"Bulldozer Komatsu D65","Komatsu","D65","Bulldozers","both","2019","180000","used","1800","34.0209","-6.8416","456 Avenue Hassan II, Rabat","Rabat","Maroc","10000","Bulldozer Komatsu D65 en très bon état. Parfait pour travaux de déblaiement et nivellement.","18000","145","kW","22000","18000","5.8m x 2.4m x 2.9m","https://example.com/bulldozer1.jpg","https://example.com/bulldozer_video.mp4","","true","1200","8000","30000","20L/h","true","true","800"
+"Chargeur frontal JCB 3CX","JCB","3CX","Chargeurs","both","2020","85000","used","1200","14.7167","-17.4677","789 Boulevard de la Corniche, Dakar","Dakar","Sénégal","10000","Chargeur frontal JCB 3CX polyvalent. Vente ou location possible. Excellent pour travaux urbains.","8500","55","kW","12000","8500","4.2m x 1.9m x 2.4m","https://example.com/chargeur1.jpg","","","false","800","5000","20000","12L/h","true","true","300"
+"Concasseur mobile Metso LT1213","Metso","LT1213","Concasseurs","sale","2017","320000","used","4500","5.3600","-4.0083","321 Route des Lagunes, Abidjan","Abidjan","Côte d'Ivoire","10000","Concasseur mobile Metso LT1213 pour concassage primaire et secondaire. Très productif.","42000","310","kW","35000","42000","12.5m x 3.0m x 3.4m","https://example.com/concasseur1.jpg","https://example.com/concasseur_video.mp4","","true","","","","25L/h","true","true","1200"
+"Foreuse rotative Atlas Copco ROC L8","Atlas Copco","ROC L8","Foreuses","sale","2016","280000","used","3800","-11.6647","27.4793","654 Avenue du Commerce, Lubumbashi","Lubumbashi","RDC","10000","Foreuse rotative Atlas Copco ROC L8 pour forage de production. Très fiable.","28000","200","kW","25000","28000","8.5m x 2.5m x 2.8m","https://example.com/foreuse1.jpg","","","false","","","","18L/h","true","true","900"
+"Grue mobile Liebherr LTM 1100","Liebherr","LTM 1100","Grues","both","2021","450000","used","800","12.6392","-8.0029","987 Avenue de l'Indépendance, Bamako","Bamako","Mali","10000","Grue mobile Liebherr LTM 1100 de 100 tonnes. Parfaite pour chantiers de construction.","45000","400","kW","100000","45000","12.8m x 2.75m x 3.9m","https://example.com/grue1.jpg","https://example.com/grue_video.mp4","","true","2500","15000","60000","30L/h","true","true","1500"
+"Niveleuse CAT 140K","Caterpillar","140K","Niveleuses","sale","2018","220000","used","2200","33.5731","-7.5898","456 Boulevard de la Corniche, Casablanca","Casablanca","Maroc","20000","Niveleuse Caterpillar 140K en excellent état. Idéale pour finition de routes et terrassements.","16000","180","kW","28000","16000","8.2m x 2.5m x 3.2m","https://example.com/niveleuse1.jpg","","","false","","","","22L/h","true","true","700"
+"Compacteur Bomag BW 213","Bomag","BW 213","Compacteurs","both","2019","95000","used","1500","34.0209","-6.8416","789 Rue des Ministères, Rabat","Rabat","Maroc","10000","Compacteur Bomag BW 213 pour compactage de sols et asphalte. Très efficace.","12000","120","kW","20000","12000","5.5m x 2.2m x 2.8m","https://example.com/compacteur1.jpg","","","false","600","4000","18000","15L/h","true","true","400" 

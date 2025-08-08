@@ -34,6 +34,7 @@ interface MachineFormData {
   type: string;
   year: number;
   price: number;
+  total_hours: number;
   description: string;
   location: string;
   specifications: {
@@ -78,6 +79,7 @@ export default function PublicationRapide() {
     type: '',
     year: new Date().getFullYear(),
     price: 0,
+    total_hours: 0,
     description: '',
     location: '',
     specifications: {
@@ -269,6 +271,7 @@ export default function PublicationRapide() {
       type: machine.type || '',
       year: machine.year || new Date().getFullYear(),
       price: machine.price || 0,
+      total_hours: machine.total_hours || 0,
       description: machine.description || '',
       location: machine.location || '',
       specifications: {
@@ -498,6 +501,7 @@ export default function PublicationRapide() {
         type: '',
         year: new Date().getFullYear(),
         price: 0,
+        total_hours: 0,
         description: '',
         location: '',
         specifications: {
@@ -618,7 +622,7 @@ export default function PublicationRapide() {
   };
 
   const downloadTemplate = () => {
-    // En-têtes avec TOUTES les colonnes nécessaires et compatibles
+    // En-têtes avec TOUTES les colonnes nécessaires et compatibles (MIS À JOUR)
     const headers = [
       // Colonnes obligatoires (mapping exact avec n8n)
       'nom',
@@ -629,8 +633,16 @@ export default function PublicationRapide() {
       'annee',
       'prix_euros',  // ✅ Nom exact pour n8n
       'condition',
-      'localisation',
       'description',
+      
+      // NOUVEAUX CHAMPS GPS (optionnels mais recommandés)
+      'total_hours',      // ✅ NOUVEAU : Nombre d'heures d'utilisation
+      'latitude',         // ✅ NOUVEAU : Coordonnée GPS latitude
+      'longitude',        // ✅ NOUVEAU : Coordonnée GPS longitude
+      'adresse',          // ✅ NOUVEAU : Adresse complète
+      'ville',            // ✅ NOUVEAU : Ville de localisation
+      'pays',             // ✅ NOUVEAU : Pays de localisation
+      'code_postal',      // ✅ NOUVEAU : Code postal
       
       // Spécifications techniques (mapping exact avec n8n)
       'poids',
@@ -639,7 +651,6 @@ export default function PublicationRapide() {
       'capacite_operationnelle',
       'poids_de_travail',  // ✅ Nom exact pour n8n
       'dimensions',
-      'heures_estimees',   // ✅ Nom exact pour n8n
       
       // Images et médias
       'images',
@@ -657,7 +668,7 @@ export default function PublicationRapide() {
       'delivery_cost'
     ];
 
-    // Exemples de données réelles avec TOUTES les colonnes
+    // Exemples de données réelles avec TOUTES les colonnes (MIS À JOUR)
     const examples = [
       [
         'Pelle hydraulique CAT 320D',
@@ -668,15 +679,20 @@ export default function PublicationRapide() {
         '2018',
         '125000',
         'used',
-        'Bamako, Mali',
         'Pelle hydraulique Caterpillar 320D en excellent état. Machine bien entretenue, prête à travailler. Idéale pour travaux de terrassement et extraction.',
+        '2500',           // ✅ NOUVEAU : total_hours
+        '33.5731',        // ✅ NOUVEAU : latitude (Casablanca)
+        '-7.5898',        // ✅ NOUVEAU : longitude (Casablanca)
+        '123 Rue Mohammed V, Casablanca',  // ✅ NOUVEAU : adresse
+        'Casablanca',     // ✅ NOUVEAU : ville
+        'Maroc',          // ✅ NOUVEAU : pays
+        '20000',          // ✅ NOUVEAU : code_postal
         '19500',
         '127',
         'kW',
         '18500',
         '19500',
         '6.1m x 2.55m x 3.0m',
-        '2500',
         'https://example.com/image1.jpg;https://example.com/image2.jpg',
         'https://example.com/video1.mp4',
         'https://example.com/360view.html',
@@ -698,15 +714,20 @@ export default function PublicationRapide() {
         '2019',
         '180000',
         'used',
-        'Casablanca, Maroc',
         'Bulldozer Komatsu D65 en très bon état. Parfait pour travaux de déblaiement et nivellement.',
+        '1800',           // ✅ NOUVEAU : total_hours
+        '34.0209',        // ✅ NOUVEAU : latitude (Rabat)
+        '-6.8416',        // ✅ NOUVEAU : longitude (Rabat)
+        '456 Avenue Hassan II, Rabat',  // ✅ NOUVEAU : adresse
+        'Rabat',          // ✅ NOUVEAU : ville
+        'Maroc',          // ✅ NOUVEAU : pays
+        '10000',          // ✅ NOUVEAU : code_postal
         '18000',
         '145',
         'kW',
         '22000',
         '18000',
         '5.8m x 2.4m x 2.9m',
-        '1800',
         'https://example.com/bulldozer1.jpg',
         'https://example.com/bulldozer_video.mp4',
         '',
@@ -728,15 +749,20 @@ export default function PublicationRapide() {
         '2020',
         '85000',
         'used',
-        'Dakar, Sénégal',
         'Chargeur frontal JCB 3CX polyvalent. Vente ou location possible. Excellent pour travaux urbains.',
+        '1200',           // ✅ NOUVEAU : total_hours
+        '14.7167',        // ✅ NOUVEAU : latitude (Dakar)
+        '-17.4677',       // ✅ NOUVEAU : longitude (Dakar)
+        '789 Boulevard de la Corniche, Dakar',  // ✅ NOUVEAU : adresse
+        'Dakar',          // ✅ NOUVEAU : ville
+        'Sénégal',        // ✅ NOUVEAU : pays
+        '10000',          // ✅ NOUVEAU : code_postal
         '8500',
         '55',
         'kW',
         '12000',
         '8500',
         '4.2m x 1.9m x 2.4m',
-        '1200',
         'https://example.com/chargeur1.jpg',
         '',
         '',
@@ -758,15 +784,20 @@ export default function PublicationRapide() {
         '2017',
         '320000',
         'used',
-        'Abidjan, Côte d\'Ivoire',
         'Concasseur mobile Metso LT1213 pour concassage primaire et secondaire. Très productif.',
+        '4500',           // ✅ NOUVEAU : total_hours
+        '5.3600',         // ✅ NOUVEAU : latitude (Abidjan)
+        '-4.0083',        // ✅ NOUVEAU : longitude (Abidjan)
+        '321 Route des Lagunes, Abidjan',  // ✅ NOUVEAU : adresse
+        'Abidjan',        // ✅ NOUVEAU : ville
+        'Côte d\'Ivoire', // ✅ NOUVEAU : pays
+        '10000',          // ✅ NOUVEAU : code_postal
         '42000',
         '310',
         'kW',
         '35000',
         '42000',
         '12.5m x 3.0m x 3.4m',
-        '4500',
         'https://example.com/concasseur1.jpg',
         'https://example.com/concasseur_video.mp4',
         '',
@@ -788,15 +819,20 @@ export default function PublicationRapide() {
         '2016',
         '280000',
         'used',
-        'Lubumbashi, RDC',
         'Foreuse rotative Atlas Copco ROC L8 pour forage de production. Très fiable.',
+        '3800',           // ✅ NOUVEAU : total_hours
+        '-11.6647',       // ✅ NOUVEAU : latitude (Lubumbashi)
+        '27.4793',        // ✅ NOUVEAU : longitude (Lubumbashi)
+        '654 Avenue du Commerce, Lubumbashi',  // ✅ NOUVEAU : adresse
+        'Lubumbashi',     // ✅ NOUVEAU : ville
+        'RDC',            // ✅ NOUVEAU : pays
+        '10000',          // ✅ NOUVEAU : code_postal
         '28000',
         '200',
         'kW',
         '25000',
         '28000',
         '8.5m x 2.5m x 2.8m',
-        '3800',
         'https://example.com/foreuse1.jpg',
         '',
         '',
@@ -811,11 +847,11 @@ export default function PublicationRapide() {
       ]
     ];
 
-    // Instructions détaillées et précises
-    const instructions = `# INSTRUCTIONS D'IMPORT EN LOT - MINEGRID ÉQUIPEMENT
+    // Instructions détaillées et précises (MIS À JOUR)
+    const instructions = `# INSTRUCTIONS D'IMPORT EN LOT - MINEGRID ÉQUIPEMENT (MIS À JOUR)
 # 
-# ⚠️ IMPORTANT : Ce fichier est optimisé pour l'import automatique via n8n
-# Les noms de colonnes correspondent exactement au mapping n8n
+# ⚠️ IMPORTANT : Ce fichier inclut TOUS les nouveaux champs GPS et total_hours
+# Compatible avec la nouvelle structure Supabase optimisée
 #
 # COLONNES OBLIGATOIRES (doivent être remplies) :
 # - nom : Nom complet de la machine
@@ -826,8 +862,16 @@ export default function PublicationRapide() {
 # - annee : Année de fabrication (nombre entre 1950 et ${new Date().getFullYear()})
 # - prix_euros : Prix en euros (nombre positif sans devise) - ⚠️ NOM EXACT POUR N8N
 # - condition : Doit être "new" (neuf) ou "used" (occasion)
-# - localisation : Lieu de l'équipement
 # - description : Description détaillée de la machine
+#
+# NOUVEAUX CHAMPS GPS (optionnels mais recommandés) :
+# - total_hours : Nombre total d'heures d'utilisation de la machine - ✅ NOUVEAU !
+# - latitude : Coordonnée GPS latitude (ex: 33.5731 pour Casablanca) - ✅ NOUVEAU !
+# - longitude : Coordonnée GPS longitude (ex: -7.5898 pour Casablanca) - ✅ NOUVEAU !
+# - adresse : Adresse complète de la machine - ✅ NOUVEAU !
+# - ville : Ville de localisation - ✅ NOUVEAU !
+# - pays : Pays de localisation - ✅ NOUVEAU !
+# - code_postal : Code postal - ✅ NOUVEAU !
 #
 # COLONNES OPTIONNELLES (peuvent être laissées vides) :
 # - poids : Poids en kg
@@ -836,7 +880,6 @@ export default function PublicationRapide() {
 # - capacite_operationnelle : Capacité en kg
 # - poids_de_travail : Poids de travail en kg - ⚠️ NOM EXACT POUR N8N
 # - dimensions : Dimensions au format "L x l x H"
-# - heures_estimees : Heures d'utilisation estimées - ⚠️ NOM EXACT POUR N8N
 # - images : URLs des images séparées par des points-virgules (;)
 # - videos : URLs des vidéos séparées par des points-virgules (;)
 # - view360 : URL de la vue 360°
@@ -849,11 +892,25 @@ export default function PublicationRapide() {
 # - delivery_available : "true" ou "false" si livraison disponible
 # - delivery_cost : Coût de livraison en euros
 #
-# 🎯 MAPPING N8N AUTOMATIQUE :
+# 🎯 MAPPING SUPABASE AUTOMATIQUE :
 # - prix_euros → price (Supabase)
+# - total_hours → total_hours (Supabase) - ✅ NOUVEAU !
+# - latitude → latitude (Supabase) - ✅ NOUVEAU !
+# - longitude → longitude (Supabase) - ✅ NOUVEAU !
+# - adresse → address (Supabase) - ✅ NOUVEAU !
+# - ville → city (Supabase) - ✅ NOUVEAU !
+# - pays → country (Supabase) - ✅ NOUVEAU !
+# - code_postal → postal_code (Supabase) - ✅ NOUVEAU !
 # - poids_de_travail → specifications.workingWeight (Supabase)
-# - heures_estimees → specifications.heures (Supabase)
 # - sellerid → automatiquement assigné par n8n
+#
+# 📍 EXEMPLES DE COORDONNÉES GPS :
+# - Casablanca, Maroc : 33.5731, -7.5898
+# - Rabat, Maroc : 34.0209, -6.8416
+# - Dakar, Sénégal : 14.7167, -17.4677
+# - Bamako, Mali : 12.6392, -8.0029
+# - Abidjan, Côte d'Ivoire : 5.3600, -4.0083
+# - Lubumbashi, RDC : -11.6647, 27.4793
 #
 # EXEMPLES DE DONNÉES CI-DESSOUS :
 `;
@@ -871,7 +928,7 @@ export default function PublicationRapide() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'modele_import_machines_minegrid_complet.csv';
+    a.download = 'modele_import_machines_minegrid_complet_mis_a_jour.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -1245,6 +1302,20 @@ export default function PublicationRapide() {
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                       required
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nombre d'heures
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.total_hours}
+                      onChange={(e) => handleFormChange('total_hours', parseInt(e.target.value))}
+                      min="0"
+                      placeholder="Ex: 2500"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Nombre total d'heures d'utilisation de la machine</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -34,7 +34,11 @@ import {
   X,
   Check,
   Truck,
-  MessageSquare
+  MessageSquare,
+  Archive,
+  Save,
+  Shield,
+  Home
 } from 'lucide-react';
 import { 
   getProClientProfile, 
@@ -47,8 +51,24 @@ import {
   addClientEquipment,
   createClientOrder,
   createMaintenanceIntervention,
-  inviteClientUser
+  inviteClientUser,
+  getUserInvitations,
+  cancelUserInvitation,
+  type UserInvitation,
+  upsertProClientProfile,
+  markNotificationAsRead
 } from '../utils/proApi';
+import { 
+  usePermissions, 
+  canInviteUsers, 
+  canManageEquipment, 
+  canManageOrders, 
+  canManageMaintenance,
+  canManageDocuments,
+  canSendMessages,
+  canAccessSettings,
+  canExportReports
+} from '../utils/permissions';
 import supabase from '../utils/supabaseClient';
 import type { 
   ProClient, 
@@ -77,9 +97,11 @@ export default function ProDashboard() {
   const [notifications, setNotifications] = useState<ClientNotification[]>([]);
   const [stats, setStats] = useState<PortalStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showNewMenu, setShowNewMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'equipment' | 'order' | 'maintenance' | 'user' | null>(null);
+  
+  // Gestion des permissions
+  const { permissions, loading: permissionsLoading } = usePermissions();
 
   useEffect(() => {
     loadDashboardData();
@@ -113,6 +135,8 @@ export default function ProDashboard() {
 
   const loadDashboardData = async () => {
     try {
+      console.log('🔄 Chargement des données du dashboard...');
+      
       const [
         profile,
         equipmentData,
@@ -133,6 +157,8 @@ export default function ProDashboard() {
         getPortalStats()
       ]);
 
+      console.log('📊 Données chargées:', { profile, equipmentData, userMachinesData, ordersData, messagesData, interventionsData, notificationsData, statsData });
+      
       setProProfile(profile);
       setEquipment(equipmentData);
       setUserMachines(userMachinesData);
@@ -142,35 +168,13 @@ export default function ProDashboard() {
       setNotifications(notificationsData);
       setStats(statsData);
     } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
+      console.error('❌ Erreur lors du chargement des données:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleNewButtonClick = () => {
-    setShowNewMenu(!showNewMenu);
-  };
 
-  const handleNewItem = (type: 'equipment' | 'order' | 'maintenance' | 'user') => {
-    setModalType(type);
-    setShowModal(true);
-    setShowNewMenu(false);
-  };
-
-  const getNewMenuItems = () => {
-    const baseItems = [
-      { type: 'equipment', label: 'Nouvel équipement', icon: Package },
-      { type: 'order', label: 'Nouvelle commande', icon: FileText },
-      { type: 'maintenance', label: 'Intervention maintenance', icon: Wrench },
-    ];
-
-    if (activeTab === 'users') {
-      baseItems.push({ type: 'user', label: 'Inviter utilisateur', icon: Users });
-    }
-
-    return baseItems;
-  };
 
   if (loading) {
     return (
@@ -183,17 +187,43 @@ export default function ProDashboard() {
     );
   }
 
-  const tabs = [
-    { id: 'overview', label: 'Vue d\'ensemble', icon: Activity },
-    { id: 'equipment', label: 'Équipements', icon: Package },
-    { id: 'orders', label: 'Commandes', icon: FileText },
-    { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-    { id: 'documents', label: 'Documents', icon: FileText },
-    { id: 'users', label: 'Utilisateurs', icon: Users },
-    { id: 'messages', label: 'Messages', icon: MessageSquare },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-  ];
+  const getTabs = () => {
+    const baseTabs = [
+      { id: 'overview', label: 'Vue d\'ensemble', icon: Activity },
+    ];
 
+    // Équipements - accessible à tous
+    baseTabs.push({ id: 'equipment', label: 'Équipements', icon: Package });
+
+    // Commandes - accessible à tous
+    baseTabs.push({ id: 'orders', label: 'Commandes', icon: FileText });
+
+    // Maintenance - accessible à tous
+    baseTabs.push({ id: 'maintenance', label: 'Maintenance', icon: Wrench });
+
+    // Documents - accessible à tous
+    baseTabs.push({ id: 'documents', label: 'Documents', icon: Download });
+
+    // Utilisateurs - seulement pour les administrateurs
+    if (permissions?.isAdmin) {
+      baseTabs.push({ id: 'users', label: 'Utilisateurs', icon: Users });
+    }
+
+    // Messages - accessible à tous (placé près des notifications)
+    baseTabs.push({ id: 'messages', label: 'Messages', icon: MessageSquare });
+
+    // Notifications - accessible à tous
+    baseTabs.push({ id: 'notifications', label: 'Notifications', icon: Bell });
+
+
+
+    return baseTabs;
+  };
+
+  const tabs = getTabs();
+
+  console.log('🎯 Rendu du ProDashboard, loading:', loading, 'proProfile:', proProfile);
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -214,37 +244,13 @@ export default function ProDashboard() {
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="relative">
-                <button 
-                  onClick={handleNewButtonClick}
-                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouveau
-                  {/* ChevronDown is removed from imports, so this will cause an error */}
-                  {/* <ChevronDown className="h-4 w-4 ml-2" /> */}
-                </button>
-                
-                {showNewMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <div className="py-2">
-                      {getNewMenuItems().map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <button
-                            key={item.type}
-                            onClick={() => handleNewItem(item.type as any)}
-                            className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                          >
-                            <Icon className="h-4 w-4 mr-3" />
-                            {item.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
+              >
+                <Home className="w-4 h-4" />
+                <span>Retourner à l'accueil</span>
+              </button>
             </div>
           </div>
         </div>
@@ -259,6 +265,7 @@ export default function ProDashboard() {
               return (
                 <button
                   key={tab.id}
+                  data-tab={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
@@ -282,9 +289,10 @@ export default function ProDashboard() {
         {activeTab === 'orders' && <OrdersTab orders={orders} onRefresh={loadDashboardData} />}
         {activeTab === 'messages' && <MessagesTab messages={messages} onRefresh={loadDashboardData} />}
         {activeTab === 'maintenance' && <MaintenanceTab interventions={interventions} equipment={equipment} onRefresh={loadDashboardData} />}
-        {activeTab === 'documents' && <DocumentsTab />}
+        {activeTab === 'documents' && <DocumentsTab onRefresh={loadDashboardData} />}
         {activeTab === 'users' && <UsersTab />}
         {activeTab === 'notifications' && <NotificationsTab notifications={notifications} />}
+
       </main>
 
       {/* Modal pour ajouter un nouvel élément */}
@@ -303,13 +311,7 @@ export default function ProDashboard() {
         />
       )}
 
-      {/* Overlay pour fermer le menu */}
-      {showNewMenu && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setShowNewMenu(false)}
-        />
-      )}
+
     </div>
   );
 }
@@ -419,6 +421,8 @@ function OverviewTab({ stats }: { stats: PortalStats | null }) {
           </div>
         </div>
       </div>
+
+
     </div>
   );
 }
@@ -3578,82 +3582,1068 @@ function MaintenanceTab({ interventions, equipment, onRefresh }: { interventions
 }
 
 // Composant Documents
-function DocumentsTab() {
+function DocumentsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [documentData, setDocumentData] = useState({
+    title: '',
+    document_type: 'manual',
+    is_public: false
+  });
+
+  const { permissions } = usePermissions();
+
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+
+  const loadDocuments = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('technical_documents')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erreur lors du chargement des documents:', error);
+      } else {
+        setDocuments(data || []);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des documents:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile || !documentData.title) {
+      alert('Veuillez sélectionner un fichier et saisir un titre');
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // Récupérer l'utilisateur connecté
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        alert('Erreur: Utilisateur non connecté');
+        return;
+      }
+
+      // Upload du fichier vers Supabase Storage
+      const fileName = `${Date.now()}_${selectedFile.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, selectedFile);
+
+      if (uploadError) {
+        console.error('Erreur lors de l\'upload:', uploadError);
+        alert('Erreur lors de l\'upload du fichier: ' + uploadError.message);
+        return;
+      }
+
+      // Créer l'entrée dans la base de données
+      const { error: dbError } = await supabase
+        .from('technical_documents')
+        .insert({
+          title: documentData.title,
+          document_type: documentData.document_type,
+          file_path: uploadData.path,
+          file_size: selectedFile.size,
+          mime_type: selectedFile.type,
+          is_public: documentData.is_public,
+          user_id: user.id,
+          created_at: new Date().toISOString()
+        });
+
+      if (dbError) {
+        console.error('Erreur lors de la création du document:', dbError);
+        alert('Erreur lors de la création du document: ' + dbError.message);
+        return;
+      }
+
+      // Succès
+      alert('Document ajouté avec succès !');
+      setShowUploadModal(false);
+      setSelectedFile(null);
+      setDocumentData({ title: '', document_type: 'manual', is_public: false });
+      await loadDocuments();
+      await onRefresh();
+    } catch (error) {
+      console.error('Erreur lors de l\'upload:', error);
+      alert('Erreur lors de l\'upload: ' + (error as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('technical_documents')
+        .delete()
+        .eq('id', documentId);
+
+      if (error) {
+        console.error('Erreur lors de la suppression:', error);
+      } else {
+        await loadDocuments();
+        await onRefresh();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+    }
+  };
+
+  const handleDownload = async (doc: any) => {
+    try {
+      // Vérifier si le bucket existe et essayer le téléchargement
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .download(doc.file_path);
+
+      if (error) {
+        // Si le bucket n'existe pas ou erreur, afficher les infos du document
+        console.log('Bucket Storage non configuré, affichage des informations:', error);
+        alert(`📄 Informations du document "${doc.title}"\n\n` +
+              `📁 Fichier: ${doc.file_path}\n` +
+              `📏 Taille: ${Math.round(doc.file_size / 1024)} KB\n` +
+              `📋 Type: ${doc.mime_type}\n\n` +
+              `ℹ️  Pour télécharger le fichier réel, configurez le bucket Storage "documents" dans Supabase.`);
+        return;
+      }
+
+      // Téléchargement réussi - créer le lien de téléchargement
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.title || 'document';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      console.log('Téléchargement réussi:', doc.title);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      alert('Erreur lors du téléchargement: ' + (error as Error).message);
+    }
+  };
+
+  const getDocumentTypeIcon = (type: string) => {
+    switch (type) {
+      case 'manual': return '📖';
+      case 'certificate': return '📜';
+      case 'warranty': return '🛡️';
+      case 'invoice': return '🧾';
+      case 'maintenance_report': return '🔧';
+      default: return '📄';
+    }
+  };
+
+  const getDocumentTypeText = (type: string) => {
+    switch (type) {
+      case 'manual': return 'Manuel';
+      case 'certificate': return 'Certificat';
+      case 'warranty': return 'Garantie';
+      case 'invoice': return 'Facture';
+      case 'maintenance_report': return 'Rapport maintenance';
+      default: return 'Document';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-900">Documents</h2>
+        </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+            <span className="ml-3 text-gray-600">Chargement des documents...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900">Documents Techniques</h2>
-        <button className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors">
-          <Plus className="h-4 w-4 mr-2" />
-          Uploader un document
+        <h2 className="text-xl font-semibold text-gray-900">Documents</h2>
+        <button 
+          onClick={() => setShowUploadModal(true)}
+          className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+        >
+          Ajouter un document
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Gestion des documents techniques, manuels, certificats...</p>
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        {documents.length === 0 ? (
+          <div className="p-6 text-center">
+            <p className="text-gray-600">Aucun document disponible pour le moment.</p>
+            <button 
+              onClick={() => setShowUploadModal(true)}
+              className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Ajouter votre premier document
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Titre
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Taille
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Visibilité
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {documents.map((doc) => (
+                  <tr key={doc.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="text-2xl mr-3">{getDocumentTypeIcon(doc.document_type)}</span>
+                        <span className="text-sm text-gray-900">{getDocumentTypeText(doc.document_type)}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">{doc.title}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {doc.file_size ? `${Math.round(doc.file_size / 1024)} KB` : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        doc.is_public 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {doc.is_public ? 'Public' : 'Privé'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(doc.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleDownload(doc)}
+                          className="text-orange-600 hover:text-orange-900"
+                          title="Télécharger"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                        {(permissions?.isAdmin || permissions?.isManager) && (
+                          <button
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* Modal d'upload */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">Ajouter un document</h2>
+              <button
+                onClick={() => setShowUploadModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpload} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Titre du document *
+                </label>
+                <input
+                  type="text"
+                  value={documentData.title}
+                  onChange={(e) => setDocumentData(prev => ({ ...prev, title: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Titre du document"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Type de document
+                </label>
+                <select
+                  value={documentData.document_type}
+                  onChange={(e) => setDocumentData(prev => ({ ...prev, document_type: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                >
+                  <option value="manual">Manuel</option>
+                  <option value="certificate">Certificat</option>
+                  <option value="warranty">Garantie</option>
+                  <option value="invoice">Facture</option>
+                  <option value="maintenance_report">Rapport maintenance</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fichier *
+                </label>
+                <input
+                  type="file"
+                  onChange={handleFileSelect}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={documentData.is_public}
+                    onChange={(e) => setDocumentData(prev => ({ ...prev, is_public: e.target.checked }))}
+                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Document public</span>
+                </label>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowUploadModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploading || !selectedFile || !documentData.title}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center"
+                >
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Upload...
+                    </>
+                  ) : (
+                    'Uploader'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // Composant Utilisateurs
 function UsersTab() {
+  // Vérifier les permissions
+  const { permissions } = usePermissions();
+
+  // Si l'utilisateur n'est pas admin, afficher un message d'accès refusé
+  if (!permissions?.isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <AlertTriangle className="h-6 w-6 text-red-600 mr-3" />
+            <div>
+              <h3 className="text-lg font-medium text-red-900">Accès refusé</h3>
+              <p className="text-red-700 mt-1">
+                Vous n'avez pas les permissions nécessaires pour accéder à cette section.
+                Seuls les administrateurs peuvent gérer les utilisateurs.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteFormData, setInviteFormData] = useState({ email: '', role: '' });
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [invitations, setInvitations] = useState<UserInvitation[]>([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(true);
+
+  // Charger les invitations au montage du composant
+  useEffect(() => {
+    loadInvitations();
+  }, []);
+
+  const loadInvitations = async () => {
+    try {
+      setLoadingInvitations(true);
+      const invitationsData = await getUserInvitations();
+      setInvitations(invitationsData);
+    } catch (error) {
+      console.error('Erreur lors du chargement des invitations:', error);
+    } finally {
+      setLoadingInvitations(false);
+    }
+  };
+
+  const handleInviteUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteLoading(true);
+    setInviteError('');
+
+    try {
+      const success = await inviteClientUser(inviteFormData.email, inviteFormData.role);
+      if (success) {
+        setInviteSuccess(true);
+        setInviteFormData({ email: '', role: '' });
+        // Recharger les invitations après une nouvelle invitation
+        await loadInvitations();
+        setTimeout(() => {
+          setShowInviteModal(false);
+          setInviteSuccess(false);
+        }, 2000);
+      } else {
+        setInviteError('Erreur lors de l\'invitation. Veuillez réessayer.');
+      }
+    } catch (error) {
+      setInviteError('Erreur lors de l\'invitation. Veuillez réessayer.');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const handleCancelInvitation = async (invitationId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir annuler cette invitation ?')) return;
+
+    try {
+      const success = await cancelUserInvitation(invitationId);
+      if (success) {
+        await loadInvitations(); // Recharger la liste
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'annulation:', error);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setInviteFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'accepted': return 'bg-green-100 text-green-800 border-green-200';
+      case 'expired': return 'bg-red-100 text-red-800 border-red-200';
+      case 'cancelled': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'pending': return 'En attente';
+      case 'accepted': return 'Acceptée';
+      case 'expired': return 'Expirée';
+      case 'cancelled': return 'Annulée';
+      default: return status;
+    }
+  };
+
+  const getRoleText = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Administrateur';
+      case 'manager': return 'Manager';
+      case 'technician': return 'Technicien';
+      case 'viewer': return 'Lecteur';
+      default: return role;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-900">Utilisateurs</h2>
-        <button className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors">
+        <button 
+          onClick={() => setShowInviteModal(true)}
+          className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Inviter un utilisateur
         </button>
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Gestion des utilisateurs du portail client...</p>
+        <div className="mb-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Gestion des utilisateurs</h3>
+          <p className="text-gray-600">Invitez des utilisateurs à accéder à l'espace Pro avec différents niveaux de permissions.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-center mb-2">
+              <User className="h-5 w-5 text-orange-600 mr-2" />
+              <h4 className="font-medium text-orange-900">Administrateur</h4>
+            </div>
+            <p className="text-sm text-orange-700 mb-2">Accès complet à toutes les fonctionnalités</p>
+            <ul className="text-xs text-orange-600 space-y-1">
+              <li>• Gestion complète des utilisateurs</li>
+              <li>• Accès à tous les modules</li>
+              <li>• Configuration du compte</li>
+              <li>• Rapports et analytics</li>
+            </ul>
+          </div>
+
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-center mb-2">
+              <User className="h-5 w-5 text-orange-600 mr-2" />
+              <h4 className="font-medium text-orange-900">Manager</h4>
+            </div>
+            <p className="text-sm text-orange-700 mb-2">Gestion opérationnelle</p>
+            <ul className="text-xs text-orange-600 space-y-1">
+              <li>• Gestion des équipements</li>
+              <li>• Suivi des commandes</li>
+              <li>• Planification maintenance</li>
+              <li>• Gestion des documents</li>
+            </ul>
+          </div>
+
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-center mb-2">
+              <User className="h-5 w-5 text-orange-600 mr-2" />
+              <h4 className="font-medium text-orange-900">Technicien</h4>
+            </div>
+            <p className="text-sm text-orange-700 mb-2">Interventions techniques</p>
+            <ul className="text-xs text-orange-600 space-y-1">
+              <li>• Interventions de maintenance</li>
+              <li>• Diagnostic équipements</li>
+              <li>• Rapports techniques</li>
+              <li>• Consultation documents</li>
+            </ul>
+          </div>
+
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-center mb-2">
+              <User className="h-5 w-5 text-orange-600 mr-2" />
+              <h4 className="font-medium text-orange-900">Lecteur</h4>
+            </div>
+            <p className="text-sm text-orange-700 mb-2">Consultation uniquement</p>
+            <ul className="text-xs text-orange-600 space-y-1">
+              <li>• Consultation équipements</li>
+              <li>• Lecture des documents</li>
+              <li>• Suivi des commandes</li>
+              <li>• Pas de modifications</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Liste des invitations */}
+        <div className="mt-8">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Invitations envoyées</h3>
+          
+          {loadingInvitations ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+              <span className="ml-2 text-gray-600">Chargement des invitations...</span>
+            </div>
+          ) : invitations.length === 0 ? (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+              <User className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600">Aucune invitation envoyée</p>
+              <p className="text-sm text-gray-500 mt-1">Les invitations que vous envoyez apparaîtront ici</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {invitations.map((invitation) => (
+                <div key={invitation.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{invitation.email}</p>
+                          <p className="text-sm text-gray-600">
+                            Rôle: {getRoleText(invitation.role)} • 
+                            Invitée le {new Date(invitation.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(invitation.status)}`}>
+                            {getStatusText(invitation.status)}
+                          </span>
+                          {invitation.status === 'pending' && (
+                            <button
+                              onClick={() => handleCancelInvitation(invitation.id)}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium"
+                            >
+                              Annuler
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {invitation.status === 'pending' && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Expire le {new Date(invitation.expires_at).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Modal d'invitation */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">Inviter un utilisateur</h2>
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleInviteUser} className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={inviteFormData.email}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="utilisateur@entreprise.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rôle *
+                  </label>
+                  <select
+                    required
+                    value={inviteFormData.role}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    onChange={(e) => handleInputChange('role', e.target.value)}
+                  >
+                    <option value="">Sélectionner un rôle</option>
+                    <option value="admin">Administrateur</option>
+                    <option value="manager">Manager</option>
+                    <option value="technician">Technicien</option>
+                    <option value="viewer">Lecteur</option>
+                  </select>
+                </div>
+
+                {inviteError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-sm text-red-600">{inviteError}</p>
+                  </div>
+                )}
+
+                {inviteSuccess && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-sm text-green-600">Utilisateur invité avec succès !</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={inviteLoading}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center"
+                >
+                  {inviteLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Invitation...
+                    </>
+                  ) : (
+                    'Inviter'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // Composant Notifications
 function NotificationsTab({ notifications }: { notifications: ClientNotification[] }) {
+  const [loading, setLoading] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<ClientNotification | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // Vérifier les permissions
+  const { permissions } = usePermissions();
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      setLoading(true);
+      const success = await markNotificationAsRead(notificationId);
+      if (success) {
+        // Recharger les données du dashboard pour mettre à jour les notifications
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Erreur lors du marquage comme lu:', error);
+      alert('Erreur lors du marquage de la notification');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      setLoading(true);
+      const unreadNotifications = notifications.filter(n => !n.is_read);
+      
+      // Marquer toutes les notifications non lues comme lues
+      const promises = unreadNotifications.map(n => markNotificationAsRead(n.id));
+      await Promise.all(promises);
+      
+      // Recharger les données du dashboard
+      window.location.reload();
+    } catch (error) {
+      console.error('Erreur lors du marquage de toutes les notifications:', error);
+      alert('Erreur lors du marquage des notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewDetails = (notification: ClientNotification) => {
+    setSelectedNotification(notification);
+    setShowDetailsModal(true);
+  };
+
+  const handleNavigateToEntity = (notification: ClientNotification) => {
+    if (!notification.related_entity_type || !notification.related_entity_id) {
+      alert('Aucune entité liée à cette notification');
+      return;
+    }
+
+    // Marquer comme lu avant la navigation
+    handleMarkAsRead(notification.id);
+
+    // Naviguer vers l'entité liée
+    switch (notification.related_entity_type) {
+      case 'equipment':
+        // Aller vers l'onglet équipements
+        const equipmentTab = document.querySelector('[data-tab="equipment"]') as HTMLElement;
+        if (equipmentTab) {
+          equipmentTab.click();
+        }
+        break;
+      case 'order':
+        // Aller vers l'onglet commandes
+        const ordersTab = document.querySelector('[data-tab="orders"]') as HTMLElement;
+        if (ordersTab) {
+          ordersTab.click();
+        }
+        break;
+      case 'maintenance':
+        // Aller vers l'onglet maintenance
+        const maintenanceTab = document.querySelector('[data-tab="maintenance"]') as HTMLElement;
+        if (maintenanceTab) {
+          maintenanceTab.click();
+        }
+        break;
+      default:
+        alert('Type d\'entité non reconnu');
+    }
+  };
+
+  const getPriorityIcon = (priority: string) => {
+    switch (priority) {
+      case 'urgent':
+        return '🔴';
+      case 'high':
+        return '🟡';
+      case 'normal':
+        return '🔵';
+      case 'low':
+        return '⚪';
+      default:
+        return '🔵';
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'maintenance_due':
+        return '🔧';
+      case 'order_update':
+        return '📦';
+      case 'diagnostic_alert':
+        return '⚠️';
+      case 'warranty_expiry':
+        return '🛡️';
+      default:
+        return '📢';
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
-        <button className="text-gray-600 hover:text-gray-900">
-          Marquer tout comme lu
-        </button>
+        <div className="flex items-center space-x-3">
+          <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
+          {unreadCount > 0 && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+              {unreadCount} non lue{unreadCount > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        {unreadCount > 0 && (
+          <button 
+            onClick={handleMarkAllAsRead}
+            disabled={loading}
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Marquage...</span>
+              </>
+            ) : (
+              <>
+                <span>✓</span>
+                <span>Marquer tout comme lu</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
-      <div className="space-y-4">
-        {notifications.map((notification) => (
-          <div key={notification.id} className={`bg-white rounded-lg shadow p-4 border-l-4 ${
-            notification.priority === 'urgent' ? 'border-red-500' :
-            notification.priority === 'high' ? 'border-yellow-500' :
-            'border-blue-500'
-          }`}>
-            <div className="flex justify-between items-start">
+      {notifications.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-gray-400 text-6xl mb-4">🔔</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune notification</h3>
+          <p className="text-gray-500">Vous n'avez aucune notification pour le moment.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {notifications.map((notification) => (
+            <div key={notification.id} className={`bg-white rounded-lg shadow p-4 border-l-4 ${
+              notification.priority === 'urgent' ? 'border-red-500' :
+              notification.priority === 'high' ? 'border-yellow-500' :
+              notification.priority === 'normal' ? 'border-blue-500' :
+              'border-gray-300'
+            } hover:shadow-md transition-shadow`}>
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className="text-lg">{getTypeIcon(notification.type)}</span>
+                    <span className="text-sm">{getPriorityIcon(notification.priority)}</span>
+                    <h3 className="text-sm font-medium text-gray-900">
+                      {notification.title}
+                    </h3>
+                    {!notification.is_read && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                        Nouveau
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {notification.message}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {new Date(notification.created_at).toLocaleString('fr-FR')}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2 ml-4">
+                  {!notification.is_read && (
+                    <button
+                      onClick={() => handleMarkAsRead(notification.id)}
+                      disabled={loading}
+                      className="p-2 text-gray-400 hover:text-green-600 transition-colors disabled:opacity-50"
+                      title="Marquer comme lu"
+                    >
+                      <span className="text-sm">✓</span>
+                    </button>
+                  )}
+                  {notification.related_entity_type && (
+                    <button
+                      onClick={() => handleNavigateToEntity(notification)}
+                      disabled={loading}
+                      className="p-2 text-gray-400 hover:text-orange-600 transition-colors disabled:opacity-50"
+                      title="Voir les détails"
+                    >
+                      <span className="text-sm">👁️</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleViewDetails(notification)}
+                    disabled={loading}
+                    className="p-2 text-gray-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+                    title="Voir les détails"
+                  >
+                    <span className="text-sm">ℹ️</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal de détails */}
+      {showDetailsModal && selectedNotification && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Détails de la notification</h3>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-gray-900">
-                  {notification.title}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {notification.message}
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  {new Date(notification.created_at).toLocaleString()}
+                <label className="block text-sm font-medium text-gray-700">Type</label>
+                <p className="text-sm text-gray-900 mt-1">
+                  {getTypeIcon(selectedNotification.type)} {selectedNotification.type.replace('_', ' ')}
                 </p>
               </div>
-              {!notification.is_read && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                  Nouveau
-                </span>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Priorité</label>
+                <p className="text-sm text-gray-900 mt-1">
+                  {getPriorityIcon(selectedNotification.priority)} {selectedNotification.priority}
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Titre</label>
+                <p className="text-sm text-gray-900 mt-1">{selectedNotification.title}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Message</label>
+                <p className="text-sm text-gray-900 mt-1">{selectedNotification.message}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Date de création</label>
+                <p className="text-sm text-gray-900 mt-1">
+                  {new Date(selectedNotification.created_at).toLocaleString('fr-FR')}
+                </p>
+              </div>
+              
+              {selectedNotification.related_entity_type && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Entité liée</label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {selectedNotification.related_entity_type} - {selectedNotification.related_entity_id}
+                  </p>
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Statut</label>
+                <p className="text-sm text-gray-900 mt-1">
+                  {selectedNotification.is_read ? '✅ Lu' : '🆕 Non lu'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Fermer
+              </button>
+              {selectedNotification.related_entity_type && (
+                <button
+                  onClick={() => {
+                    handleNavigateToEntity(selectedNotification);
+                    setShowDetailsModal(false);
+                  }}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                >
+                  Voir l'entité
+                </button>
               )}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3663,11 +4653,76 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showViewMessageModal, setShowViewMessageModal] = useState(false);
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
+  const [replyText, setReplyText] = useState('');
+  const [replyLoading, setReplyLoading] = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  
+
+  
+  // Vérifier les permissions
+  const { permissions } = usePermissions();
 
   const handleViewMessage = (message: any) => {
     setSelectedMessage(message);
     setShowViewMessageModal(true);
+  };
+
+  const handleReplyToMessage = (message: any) => {
+    setSelectedMessage(message);
+    setShowReplyModal(true);
+    setReplyText('');
+  };
+
+  const handleArchiveMessageModal = (message: any) => {
+    setSelectedMessage(message);
+    setShowArchiveModal(true);
+  };
+
+  const handleSendReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyText.trim() || !selectedMessage) return;
+
+    setReplyLoading(true);
+    try {
+      // Créer la réponse
+      const { error: replyError } = await supabase
+        .from('messages')
+        .insert({
+          subject: `Re: ${selectedMessage.subject}`,
+          content: replyText,
+          sender_id: (await supabase.auth.getUser()).data.user?.id,
+          recipient_id: selectedMessage.sender_id,
+          parent_message_id: selectedMessage.id,
+          status: 'sent'
+        });
+
+      if (replyError) {
+        console.error('Erreur envoi réponse:', replyError);
+        return;
+      }
+
+      // Marquer le message original comme répondu
+      const { error: updateError } = await supabase
+        .from('messages')
+        .update({ status: 'replied' })
+        .eq('id', selectedMessage.id);
+
+      if (updateError) {
+        console.error('Erreur mise à jour statut:', updateError);
+      }
+
+      setShowReplyModal(false);
+      setReplyText('');
+      setSelectedMessage(null);
+      await onRefresh();
+    } catch (error) {
+      console.error('Erreur envoi réponse:', error);
+    } finally {
+      setReplyLoading(false);
+    }
   };
 
   const handleMarkAsRead = async (messageId: string) => {
@@ -3706,11 +4761,85 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
     }
   };
 
+  const handleArchiveMessage = async (messageId: string) => {
+    try {
+      setArchiveLoading(true);
+      const { error } = await supabase
+        .from('messages')
+        .update({ status: 'archived' })
+        .eq('id', messageId);
+
+      if (error) {
+        console.error('Erreur archivage message:', error);
+      } else {
+        await onRefresh();
+        setShowArchiveModal(false);
+      }
+    } catch (error) {
+      console.error('Erreur archivage message:', error);
+    } finally {
+      setArchiveLoading(false);
+    }
+  };
+
+  const handleArchiveSelectedMessages = async () => {
+    const selectedMessages = filteredMessages.filter(msg => msg.selected);
+    if (selectedMessages.length === 0) return;
+
+    try {
+      setArchiveLoading(true);
+      const messageIds = selectedMessages.map(msg => msg.id);
+      
+      const { error } = await supabase
+        .from('messages')
+        .update({ status: 'archived' })
+        .in('id', messageIds);
+
+      if (error) {
+        console.error('Erreur archivage messages:', error);
+      } else {
+        await onRefresh();
+      }
+    } catch (error) {
+      console.error('Erreur archivage messages:', error);
+    } finally {
+      setArchiveLoading(false);
+    }
+  };
+
+  const handleDeleteSelectedMessages = async () => {
+    const selectedMessages = filteredMessages.filter(msg => msg.selected);
+    if (selectedMessages.length === 0) return;
+
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer ${selectedMessages.length} message(s) ?`)) return;
+
+    try {
+      const messageIds = selectedMessages.map(msg => msg.id);
+      
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .in('id', messageIds);
+
+      if (error) {
+        console.error('Erreur suppression messages:', error);
+      } else {
+        await onRefresh();
+      }
+    } catch (error) {
+      console.error('Erreur suppression messages:', error);
+    }
+  };
+
+
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'new': return 'bg-blue-100 text-blue-800';
       case 'read': return 'bg-gray-100 text-gray-800';
       case 'replied': return 'bg-green-100 text-green-800';
+      case 'sent': return 'bg-orange-100 text-orange-800';
+      case 'archived': return 'bg-purple-100 text-purple-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -3720,6 +4849,8 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
       case 'new': return 'Nouveau';
       case 'read': return 'Lu';
       case 'replied': return 'Répondu';
+      case 'sent': return 'Envoyé';
+      case 'archived': return 'Archivé';
       default: return 'Inconnu';
     }
   };
@@ -3760,8 +4891,12 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
             <option value="new">Nouveaux</option>
             <option value="read">Lus</option>
             <option value="replied">Répondus</option>
+            <option value="sent">Envoyés</option>
+            <option value="archived">Archivés</option>
           </select>
         </div>
+        
+
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -3769,6 +4904,16 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                      <input
+                      type="checkbox"
+                      onChange={(e) => {
+                        // Fonctionnalité de sélection multiple non implémentée pour l'instant
+                        console.log('Sélection multiple:', e.target.checked);
+                      }}
+                      className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                    />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Expéditeur
                 </th>
@@ -3792,6 +4937,17 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredMessages.map((message) => (
                 <tr key={message.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={(e) => {
+                        // Fonctionnalité de sélection individuelle non implémentée pour l'instant
+                        console.log('Sélection message:', message.id, e.target.checked);
+                      }}
+                      className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
@@ -3844,28 +5000,43 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
                     {new Date(message.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleViewMessage(message)}
-                        className="text-orange-600 hover:text-orange-900"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      {message.status === 'new' && (
+                                          <div className="flex space-x-1">
+                        {/* Onglet Voir */}
                         <button
-                          onClick={() => handleMarkAsRead(message.id)}
-                          className="text-green-600 hover:text-green-900"
+                          onClick={() => handleViewMessage(message)}
+                          className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-t-lg border border-orange-200 hover:bg-orange-200 transition-colors"
+                          title="Voir le message"
                         >
-                          <Check className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
                         </button>
-                      )}
-                      <button
-                        onClick={() => handleDeleteMessage(message.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                        
+                        {/* Onglet Répondre */}
+                        <button
+                          onClick={() => handleReplyToMessage(message)}
+                          className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-t-lg border border-orange-200 hover:bg-orange-200 transition-colors"
+                          title="Répondre au message"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </button>
+                        
+                        {/* Onglet Archiver */}
+                        <button
+                          onClick={() => handleArchiveMessageModal(message)}
+                          className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-t-lg border border-orange-200 hover:bg-orange-200 transition-colors"
+                          title="Archiver le message"
+                        >
+                          <Archive className="h-4 w-4" />
+                        </button>
+                        
+                        {/* Onglet Supprimer */}
+                        <button
+                          onClick={() => handleDeleteMessage(message.id)}
+                          className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-t-lg border border-orange-200 hover:bg-orange-200 transition-colors"
+                          title="Supprimer le message"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                   </td>
                 </tr>
               ))}
@@ -3874,81 +5045,213 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
         </div>
       </div>
 
-      {/* Modal de détail du message */}
+      {/* Modal de visualisation du message */}
       {showViewMessageModal && selectedMessage && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Détail du message</h3>
-                <button
-                  onClick={() => setShowViewMessageModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">Expéditeur</h4>
-                  <p className="text-sm text-gray-900">{selectedMessage.sender_name}</p>
-                  <p className="text-sm text-gray-600">{selectedMessage.sender_email}</p>
-                  {selectedMessage.sender_phone && (
-                    <p className="text-sm text-gray-600">{selectedMessage.sender_phone}</p>
-                  )}
-                </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">Détails du message</h2>
+              <button
+                onClick={() => setShowViewMessageModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
 
-                {selectedMessage.machine && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700">Équipement concerné</h4>
-                    <div className="flex items-center mt-2">
-                      {selectedMessage.machine.images && selectedMessage.machine.images[0] && (
-                        <img
-                          src={selectedMessage.machine.images[0]}
-                          alt={selectedMessage.machine.name}
-                          className="h-12 w-12 rounded object-cover mr-3"
-                        />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{selectedMessage.machine.name}</p>
-                        <p className="text-sm text-gray-600">{selectedMessage.machine.brand} {selectedMessage.machine.model}</p>
-                      </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  De : {selectedMessage.sender_name}
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  Email : {selectedMessage.sender_email}
+                </p>
+                {selectedMessage.sender_phone && (
+                  <p className="text-sm text-gray-600 mb-1">
+                    Téléphone : {selectedMessage.sender_phone}
+                  </p>
+                )}
+                <p className="text-sm text-gray-600">
+                  Date : {new Date(selectedMessage.created_at).toLocaleString()}
+                </p>
+              </div>
+
+              {selectedMessage.machine && (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Équipement concerné</h4>
+                  <div className="flex items-center">
+                    {selectedMessage.machine.images && selectedMessage.machine.images[0] && (
+                      <img
+                        src={selectedMessage.machine.images[0]}
+                        alt={selectedMessage.machine.name}
+                        className="h-12 w-12 rounded object-cover mr-3"
+                      />
+                    )}
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedMessage.machine.name}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedMessage.machine.brand} {selectedMessage.machine.model}
+                      </p>
                     </div>
                   </div>
-                )}
-
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">Message</h4>
-                  <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedMessage.message}</p>
-                  </div>
                 </div>
+              )}
 
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700">Date de réception</h4>
-                  <p className="text-sm text-gray-600">{new Date(selectedMessage.created_at).toLocaleString()}</p>
+              <div className="border-t pt-4">
+                <h4 className="font-medium text-gray-900 mb-2">Message</h4>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-900 whitespace-pre-wrap">{selectedMessage.message}</p>
                 </div>
+              </div>
+            </div>
 
-                <div className="flex justify-end space-x-3 pt-4 border-t">
-                  {selectedMessage.status === 'new' && (
-                    <button
-                      onClick={() => {
-                        handleMarkAsRead(selectedMessage.id);
-                        setShowViewMessageModal(false);
-                      }}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      Marquer comme lu
-                    </button>
+            <div className="flex justify-end space-x-3 p-6 border-t">
+              <button
+                onClick={() => setShowViewMessageModal(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Fermer
+              </button>
+              {(permissions?.isAdmin || permissions?.isManager || permissions?.isTechnician) && (
+                <button
+                  onClick={() => {
+                    setShowViewMessageModal(false);
+                    handleReplyToMessage(selectedMessage);
+                  }}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                >
+                  Répondre
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de réponse */}
+      {showReplyModal && selectedMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">Répondre au message</h2>
+              <button
+                onClick={() => setShowReplyModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendReply} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Répondre à : {selectedMessage.sender_name}
+                </label>
+                <p className="text-sm text-gray-600 mb-4">
+                  Message original : {selectedMessage.message.substring(0, 100)}...
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Votre réponse *
+                </label>
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  rows={6}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Tapez votre réponse..."
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowReplyModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={replyLoading || !replyText.trim()}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center"
+                >
+                  {replyLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Envoi...
+                    </>
+                  ) : (
+                    'Envoyer la réponse'
                   )}
-                  <button
-                    onClick={() => setShowViewMessageModal(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
-                  >
-                    Fermer
-                  </button>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'archivage */}
+      {showArchiveModal && selectedMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">Archiver le message</h2>
+              <button
+                onClick={() => setShowArchiveModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="flex items-center">
+                <Archive className="h-8 w-8 text-purple-600 mr-3" />
+                <div>
+                  <h3 className="font-medium text-gray-900">Confirmer l'archivage</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Êtes-vous sûr de vouloir archiver ce message ? Il sera déplacé dans les archives.
+                  </p>
                 </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-900 font-medium">Message :</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedMessage.message.substring(0, 150)}...
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowArchiveModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => handleArchiveMessage(selectedMessage.id)}
+                  disabled={archiveLoading}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center"
+                >
+                  {archiveLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Archivage...
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="h-4 w-4 mr-2" />
+                      Archiver
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -3960,7 +5263,7 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
 
 // Composant Modal pour ajouter un nouvel élément
 interface NewItemModalProps {
-  type: 'equipment' | 'order' | 'maintenance' | 'user';
+  type: 'equipment' | 'order' | 'maintenance' | 'user' | 'document';
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -4006,6 +5309,7 @@ function NewItemModal({ type, onClose, onSuccess }: NewItemModalProps) {
       case 'order': return 'Nouvelle commande';
       case 'maintenance': return 'Intervention maintenance';
       case 'user': return 'Inviter utilisateur';
+      case 'document': return 'Nouveau document';
       default: return 'Nouvel élément';
     }
   };
@@ -4187,6 +5491,62 @@ function NewItemModal({ type, onClose, onSuccess }: NewItemModalProps) {
           </div>
         );
 
+      case 'document':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Titre du document *
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                onChange={(e) => handleInputChange('title', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Type de document *
+              </label>
+              <select
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                onChange={(e) => handleInputChange('document_type', e.target.value)}
+              >
+                <option value="">Sélectionner un type</option>
+                <option value="manual">Manuel</option>
+                <option value="specification">Spécification</option>
+                <option value="contract">Contrat</option>
+                <option value="invoice">Facture</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fichier *
+              </label>
+              <input
+                type="file"
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                onChange={(e) => handleInputChange('file', e.target.files?.[0])}
+              />
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="is_public"
+                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                onChange={(e) => handleInputChange('is_public', e.target.checked)}
+              />
+              <label htmlFor="is_public" className="ml-2 block text-sm text-gray-900">
+                Document public
+              </label>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -4229,3 +5589,5 @@ function NewItemModal({ type, onClose, onSuccess }: NewItemModalProps) {
     </div>
   );
 } 
+
+

@@ -12,6 +12,7 @@ export interface ProClient {
   address?: string;
   phone?: string;
   contact_person?: string;
+  email?: string;
   subscription_type: 'pro' | 'premium' | 'enterprise';
   subscription_status: 'active' | 'inactive' | 'suspended';
   subscription_start: string;
@@ -759,32 +760,118 @@ export async function getClientUsers(): Promise<ClientUser[]> {
   }
 }
 
-// Inviter un nouvel utilisateur
+// Interface pour les invitations d'utilisateurs
+export interface UserInvitation {
+  id: string;
+  email: string;
+  role: string;
+  invited_by: string;
+  status: 'pending' | 'accepted' | 'expired' | 'cancelled';
+  expires_at: string;
+  accepted_at?: string;
+  accepted_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Inviter un nouvel utilisateur à l'espace Pro
 export async function inviteClientUser(email: string, role: string): Promise<boolean> {
   try {
-    // Créer l'utilisateur dans Supabase Auth
-    const { data: { user }, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password: 'temp-password-' + Math.random().toString(36).substring(7),
-      email_confirm: true
-    });
+    // Vérifier que l'utilisateur actuel a les permissions
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('Utilisateur non connecté');
+      return false;
+    }
 
-    if (authError) throw authError;
-    if (!user) throw new Error('Utilisateur non créé');
-
-    // Ajouter l'utilisateur au client
-    const { error: clientError } = await supabase
+    // Vérifier que l'utilisateur actuel est un admin de l'espace Pro
+    const { data: currentUserRole } = await supabase
       .from('client_users')
-      .insert({
-        user_id: user.id,
-        role
-      });
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
 
-    if (clientError) throw clientError;
+    if (!currentUserRole || currentUserRole.role !== 'admin') {
+      console.error('Permissions insuffisantes pour inviter un utilisateur à l\'espace Pro');
+      return false;
+    }
+
+    // Créer une invitation dans la table invitations
+    const { data: invitation, error: invitationError } = await supabase
+      .from('user_invitations')
+      .insert({
+        email,
+        role,
+        invited_by: user.id,
+        status: 'pending',
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 jours
+      })
+      .select()
+      .single();
+
+    if (invitationError) {
+      console.error('Erreur lors de la création de l\'invitation:', invitationError);
+      return false;
+    }
+
+    // Envoyer un email d'invitation (optionnel - peut être implémenté plus tard)
+    console.log('Invitation créée pour:', email, 'avec le rôle:', role);
 
     return true;
   } catch (error) {
     console.error('Erreur lors de l\'invitation de l\'utilisateur:', error);
+    return false;
+  }
+}
+
+// Récupérer les invitations d'utilisateurs de l'espace Pro
+export async function getUserInvitations(): Promise<UserInvitation[]> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('Utilisateur non connecté');
+      return [];
+    }
+
+    const { data: invitations, error } = await supabase
+      .from('user_invitations')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erreur lors de la récupération des invitations de l\'espace Pro:', error);
+      return [];
+    }
+
+    return invitations || [];
+  } catch (error) {
+    console.error('Erreur lors de la récupération des invitations de l\'espace Pro:', error);
+    return [];
+  }
+}
+
+// Annuler une invitation
+export async function cancelUserInvitation(invitationId: string): Promise<boolean> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('Utilisateur non connecté');
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('user_invitations')
+      .update({ status: 'cancelled' })
+      .eq('id', invitationId);
+
+    if (error) {
+      console.error('Erreur lors de l\'annulation de l\'invitation:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de l\'annulation de l\'invitation:', error);
     return false;
   }
 }
@@ -1025,5 +1112,351 @@ export async function getPortalStats() {
       userMachines: 0,
       proEquipment: 0
     };
+  }
+} 
+
+// =====================================================
+// FONCTIONS DE CONFIGURATION
+// =====================================================
+
+export interface UserSettings {
+  id: string;
+  user_id: string;
+  notifications: {
+    email: boolean;
+    push: boolean;
+    maintenance: boolean;
+    orders: boolean;
+    security: boolean;
+  };
+  security: {
+    twoFactor: boolean;
+    sessionTimeout: number;
+    passwordExpiry: number;
+    loginAttempts: number;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getUserSettings(): Promise<UserSettings | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Erreur lors de la récupération des paramètres:', error);
+      return null;
+    }
+
+    if (!data) {
+      // Créer des paramètres par défaut
+      const defaultSettings: Partial<UserSettings> = {
+        user_id: user.id,
+        notifications: {
+          email: true,
+          push: true,
+          maintenance: true,
+          orders: true,
+          security: true
+        },
+        security: {
+          twoFactor: false,
+          sessionTimeout: 30,
+          passwordExpiry: 90,
+          loginAttempts: 5
+        }
+      };
+
+      const { data: newSettings, error: createError } = await supabase
+        .from('user_settings')
+        .insert(defaultSettings)
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Erreur lors de la création des paramètres par défaut:', createError);
+        return null;
+      }
+
+      return newSettings;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des paramètres:', error);
+    return null;
+  }
+}
+
+export async function updateUserSettings(settings: Partial<UserSettings>): Promise<UserSettings | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('user_settings')
+      .update(settings)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erreur lors de la mise à jour des paramètres:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des paramètres:', error);
+    return null;
+  }
+}
+
+export async function exportUserData(): Promise<string | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    // Récupérer toutes les données de l'utilisateur
+    const [
+      profileResult,
+      equipmentResult,
+      ordersResult,
+      interventionsResult,
+      documentsResult
+    ] = await Promise.all([
+      supabase
+        .from('pro_clients')
+        .select('*')
+        .eq('user_id', user.id)
+        .single(),
+      supabase
+        .from('client_equipment')
+        .select('*')
+        .eq('client_id', user.id),
+      supabase
+        .from('client_orders')
+        .select('*')
+        .eq('client_id', user.id),
+      supabase
+        .from('maintenance_interventions')
+        .select('*')
+        .eq('client_id', user.id),
+      supabase
+        .from('technical_documents')
+        .select('*')
+        .eq('client_id', user.id)
+    ]);
+
+    const exportData = {
+      profile: profileResult.data,
+      equipment: equipmentResult.data,
+      orders: ordersResult.data,
+      interventions: interventionsResult.data,
+      documents: documentsResult.data,
+      exportDate: new Date().toISOString()
+    };
+
+    // Créer un fichier JSON téléchargeable
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    return url;
+  } catch (error) {
+    console.error('Erreur lors de l\'export des données:', error);
+    return null;
+  }
+}
+
+export async function deleteUserAccount(): Promise<boolean> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    // Supprimer toutes les données de l'utilisateur
+    const tables = [
+      'pro_clients',
+      'client_equipment',
+      'client_orders',
+      'maintenance_interventions',
+      'technical_documents',
+      'client_notifications',
+      'client_users',
+      'user_settings'
+    ];
+
+    for (const table of tables) {
+      const { error } = await supabase
+        .from(table)
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error(`Erreur lors de la suppression de ${table}:`, error);
+      }
+    }
+
+    // Supprimer le compte utilisateur
+    const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
+    
+    if (deleteError) {
+      console.error('Erreur lors de la suppression du compte:', deleteError);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de la suppression du compte:', error);
+    return false;
+  }
+} 
+
+// Créer une notification pour un client
+export async function createClientNotification(
+  notification: Partial<ClientNotification>
+): Promise<ClientNotification | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    // Récupérer le profil Pro pour obtenir le client_id
+    const proProfile = await getProClientProfile();
+    if (!proProfile) {
+      console.error('Aucun profil Pro trouvé');
+      return null;
+    }
+
+    // Préparer la notification avec les valeurs par défaut
+    const newNotification: Partial<ClientNotification> = {
+      client_id: proProfile.id,
+      user_id: user.id,
+      is_read: false,
+      priority: 'normal',
+      ...notification
+    };
+
+    const { data, error } = await supabase
+      .from('client_notifications')
+      .insert([newNotification])
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    console.log('✅ Notification créée:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Erreur lors de la création de la notification:', error);
+    return null;
+  }
+}
+
+// Créer une notification de maintenance
+export async function createMaintenanceNotification(
+  equipmentId: string,
+  equipmentName: string,
+  maintenanceDate: string,
+  priority: 'low' | 'normal' | 'high' | 'urgent' = 'normal'
+): Promise<ClientNotification | null> {
+  return createClientNotification({
+    type: 'maintenance_due',
+    title: `Maintenance préventive - ${equipmentName}`,
+    message: `La maintenance préventive de l'équipement ${equipmentName} est programmée pour le ${maintenanceDate}. Veuillez planifier l'intervention.`,
+    priority,
+    related_entity_type: 'equipment',
+    related_entity_id: equipmentId
+  });
+}
+
+// Créer une notification de commande
+export async function createOrderNotification(
+  orderId: string,
+  orderNumber: string,
+  status: string,
+  priority: 'low' | 'normal' | 'high' | 'urgent' = 'normal'
+): Promise<ClientNotification | null> {
+  return createClientNotification({
+    type: 'order_update',
+    title: `Commande ${orderNumber} - ${status}`,
+    message: `Votre commande ${orderNumber} a été mise à jour avec le statut: ${status}.`,
+    priority,
+    related_entity_type: 'order',
+    related_entity_id: orderId
+  });
+}
+
+// Créer une notification d'alerte diagnostic
+export async function createDiagnosticAlertNotification(
+  equipmentId: string,
+  equipmentName: string,
+  alertMessage: string,
+  priority: 'low' | 'normal' | 'high' | 'urgent' = 'high'
+): Promise<ClientNotification | null> {
+  return createClientNotification({
+    type: 'diagnostic_alert',
+    title: `Alerte diagnostic - ${equipmentName}`,
+    message: `Le diagnostic automatique a détecté: ${alertMessage}`,
+    priority,
+    related_entity_type: 'equipment',
+    related_entity_id: equipmentId
+  });
+}
+
+// Créer une notification d'expiration de garantie
+export async function createWarrantyExpiryNotification(
+  equipmentId: string,
+  equipmentName: string,
+  expiryDate: string,
+  daysUntilExpiry: number,
+  priority: 'low' | 'normal' | 'high' | 'urgent' = 'normal'
+): Promise<ClientNotification | null> {
+  const urgencyText = daysUntilExpiry <= 7 ? 'URGENT' : daysUntilExpiry <= 30 ? 'PROCHE' : 'INFORMATION';
+  
+  return createClientNotification({
+    type: 'warranty_expiry',
+    title: `Garantie ${urgencyText} - ${equipmentName}`,
+    message: `La garantie de l'équipement ${equipmentName} expire le ${expiryDate} (dans ${daysUntilExpiry} jours).`,
+    priority: daysUntilExpiry <= 7 ? 'urgent' : daysUntilExpiry <= 30 ? 'high' : priority,
+    related_entity_type: 'equipment',
+    related_entity_id: equipmentId
+  });
+}
+
+// Supprimer une notification
+export async function deleteClientNotification(notificationId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('client_notifications')
+      .delete()
+      .eq('id', notificationId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la notification:', error);
+    return false;
+  }
+}
+
+// Supprimer toutes les notifications lues
+export async function deleteReadNotifications(): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('client_notifications')
+      .delete()
+      .eq('is_read', true);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de la suppression des notifications lues:', error);
+    return false;
   }
 } 
