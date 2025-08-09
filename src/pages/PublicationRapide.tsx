@@ -25,6 +25,7 @@ import {
 import supabase from '../utils/supabaseClient';
 import { getSellerMachines } from '../utils/api';
 import { getCurrentUser } from '../utils/auth';
+import { fetchModelSpecs, fetchModelSpecsFull, toPublicationRapideForm, summarizeSpecs, missingForPublication } from '../services/autoSpecsService';
 
 interface MachineFormData {
   name: string;
@@ -45,6 +46,39 @@ interface MachineFormData {
     operatingCapacity: number;
   };
   images: File[];
+}
+
+// Détermine le tableau de bord cible selon la formule d'abonnement
+async function navigateBackToDashboard(): Promise<void> {
+  try {
+    // 1) Session/Local hints (rapide et sans appel réseau)
+    const savedHash = sessionStorage.getItem('returnToHash');
+    if (savedHash) {
+      window.location.hash = savedHash;
+      return;
+    }
+    const planLS = (localStorage.getItem('subscriptionPlan') || localStorage.getItem('userPlan') || localStorage.getItem('plan') || '').toLowerCase();
+    if (planLS.includes('enterprise') || planLS.includes('entreprise')) {
+      window.location.hash = '#dashboard-entreprise-display';
+      return;
+    }
+
+    // 2) Fallback: lire le plan depuis les métadonnées utilisateur si disponible
+    try {
+      const user = await getCurrentUser();
+      const metaPlan = String((user as any)?.user_metadata?.plan || (user as any)?.app_metadata?.plan || '').toLowerCase();
+      if (metaPlan.includes('enterprise') || metaPlan.includes('entreprise')) {
+        window.location.hash = '#dashboard-entreprise-display';
+        return;
+      }
+    } catch {}
+
+    // 3) Défaut: Espace Pro
+    window.location.hash = '#pro';
+  } catch {
+    // En dernier recours, revenir en arrière
+    window.history.back();
+  }
 }
 
 export default function PublicationRapide() {
@@ -941,26 +975,26 @@ export default function PublicationRapide() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <a 
-                href="#dashboard-entreprise-display"
+              <button
+                onClick={() => { void navigateBackToDashboard(); }}
                 className="text-gray-600 hover:text-gray-900"
                 title="Retourner au tableau de bord"
               >
                 <ArrowLeft className="h-5 w-5" />
-              </a>
+              </button>
               <div className="h-6 w-px bg-gray-300"></div>
               <h1 className="text-2xl font-bold text-gray-900">
                 Service Enterprise - Gestion des Annonces
               </h1>
             </div>
             <div className="flex items-center space-x-3">
-              <a
-                href="#dashboard-entreprise-display"
+              <button
+                onClick={() => { void navigateBackToDashboard(); }}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium flex items-center"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Retourner au tableau de bord
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -1242,6 +1276,46 @@ export default function PublicationRapide() {
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                       required
                     />
+                  </div>
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
+                      onClick={async () => {
+                        if (!formData.brand || !formData.model) {
+                          alert('Renseignez la marque et le modèle');
+                          return;
+                        }
+                        try {
+                          const context = {
+                            name: formData.name,
+                            brand: formData.brand,
+                            model: formData.model,
+                            category: formData.category,
+                            type: formData.type,
+                            year: formData.year,
+                            price: formData.price,
+                            total_hours: formData.total_hours,
+                            description: formData.description,
+                            location: formData.location,
+                            specifications: formData.specifications
+                          };
+                                                      const { specs } = await fetchModelSpecsFull(formData.brand, formData.model, context); // context complet, champs vides inclus
+                          if (!specs) { alert('Aucune spécification trouvée'); return; }
+                          const mapped = toPublicationRapideForm(specs);
+                          setFormData(prev => ({ ...prev, specifications: { ...prev.specifications, ...mapped.specifications }}));
+                          const summary = summarizeSpecs(specs);
+                          const missing = missingForPublication(specs);
+                          const msg = `Spécifications pré-remplies.\n${summary}${missing.length ? `\nChamps manquants: ${missing.join(', ')}` : ''}`;
+                          alert(msg);
+                        } catch (e) {
+                          console.error(e);
+                          alert('Erreur lors de la récupération des spécifications');
+                        }
+                      }}
+                    >
+                      Remplir automatiquement (IA)
+                    </button>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

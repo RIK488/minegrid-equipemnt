@@ -123,29 +123,66 @@ const ChatWidget = () => {
                 console.error('❌ Erreur HTTP:', response.status, errorText);
                 throw new Error(`Erreur HTTP ${response.status}: La réponse du serveur est vide ou erronée.`);
             }
-            const responseText = await response.text();
-            let botResponseText = "Désolé, je n'ai pas pu traiter votre demande (format de réponse inconnu).";
-            if (!responseText) {
-                botResponseText = "Le serveur a renvoyé une réponse vide.";
-            }
-            else {
-                try {
-                    const data = JSON.parse(responseText);
-                    const dataToProcess = Array.isArray(data) ? data[0] : data;
-                    if (dataToProcess && typeof dataToProcess.response === 'string') {
-                        botResponseText = dataToProcess.response;
-                    }
-                    else if (dataToProcess && dataToProcess.choices && Array.isArray(dataToProcess.choices) && dataToProcess.choices.length > 0 && dataToProcess.choices[0].message && typeof dataToProcess.choices[0].message.content === 'string') {
-                        botResponseText = dataToProcess.choices[0].message.content;
-                    }
-                    else {
-                        botResponseText = `Format de réponse inattendu. Reçu: ${JSON.stringify(data, null, 2)}`;
-                    }
+            // Lire le body une seule fois
+            const raw = await response.text();
+            console.log('📄 Réponse brute:', raw);
+            
+            let data;
+            try {
+                data = JSON.parse(raw); // ← si n8n renvoie du JSON (recommandé)
+                console.log('📦 Données JSON reçues:', data);
+            } catch (e) {
+                console.log('⚠️ Réponse non-JSON, tentative de parsing manuel...');
+                
+                // nettoie et tente de parser quand même
+                let cleaned = raw.trim().replace(/^=\s*/, '');
+                
+                // Nettoyage supplémentaire pour les réponses avec double préfixe
+                if (cleaned.includes('"response":"=')) {
+                    cleaned = cleaned.replace('"response":"=', '"response":"');
                 }
-                catch (e) {
-                    botResponseText = `Erreur de parsing JSON. Réponse brute: ${responseText}`;
+                
+                // Nettoyage des retours à la ligne dans la réponse
+                cleaned = cleaned.replace(/\\n/g, ' ');
+                try { 
+                    data = JSON.parse(cleaned); 
+                    console.log('✅ Parsing manuel réussi:', data);
+                } catch (parseError) { 
+                    console.log('❌ Parsing manuel échoué, utilisation du texte brut');
+                    data = { response: cleaned }; 
                 }
             }
+
+            // Extraction simple de la réponse
+            let botResponseText;
+            
+            console.log('🔍 Données reçues pour extraction:', data);
+            console.log('🔍 Type de données:', typeof data);
+            console.log('🔍 Est un tableau?', Array.isArray(data));
+            
+            // Gestion du format tableau de n8n
+            if (Array.isArray(data) && data.length > 0) {
+                console.log('📦 Traitement tableau - Premier élément:', data[0]);
+                botResponseText = data[0]?.response ?? String(data[0] ?? 'Je n\'ai pas pu traiter votre demande. Veuillez réessayer.');
+            } else {
+                console.log('📦 Traitement objet simple:', data);
+                botResponseText = data?.response ?? String(data ?? 'Je n\'ai pas pu traiter votre demande. Veuillez réessayer.');
+            }
+            
+            console.log('💬 Texte extrait:', botResponseText);
+            
+            // Vérification finale pour éviter les messages d'erreur techniques
+            console.log('🔍 Vérification finale - Texte avant filtrage:', botResponseText);
+            
+            if (botResponseText.includes('Erreur de parsing') || 
+                botResponseText.includes('Format de réponse') || 
+                botResponseText.includes('JSON') ||
+                botResponseText.includes('[object Object]')) {
+                console.log('⚠️ Message d\'erreur technique détecté, remplacement par message générique');
+                botResponseText = "Bonjour ! Je suis l'assistant virtuel de Minegrid Équipement. Comment puis-je vous aider ?";
+            }
+            
+            console.log('✅ Texte final à afficher:', botResponseText);
             const botMessage = {
                 id: Date.now() + 1,
                 text: botResponseText,

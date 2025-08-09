@@ -77,6 +77,7 @@ import type {
   MaintenanceIntervention, 
   ClientNotification 
 } from '../utils/proApi';
+import { fetchModelSpecsFull } from '../services/autoSpecsService';
 
 interface PortalStats {
   totalEquipment: number;
@@ -1144,7 +1145,7 @@ function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment: Clien
                 <h4 className="text-lg font-medium text-gray-900 mb-4">Type d'équipement</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <button
-                    onClick={() => window.location.hash = '#publication'}
+                    onClick={() => { try { sessionStorage.setItem('returnToHash', '#pro'); sessionStorage.setItem('publicationContext', 'pro'); } catch {} window.location.hash = '#publication'; }}
                     className="p-4 border-2 border-orange-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors text-left"
                   >
                     <div className="flex items-center">
@@ -1272,6 +1273,56 @@ function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment: Clien
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     placeholder="ex: 320D, L120H"
                   />
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
+                      onClick={async () => {
+                        if (!proEquipmentForm.brand || !proEquipmentForm.model) {
+                          alert('Renseignez la marque et le modèle');
+                          return;
+                        }
+                        try {
+                          const context = {
+                            name: proEquipmentForm.equipment_type || '',
+                            brand: proEquipmentForm.brand || '',
+                            model: proEquipmentForm.model || '',
+                            category: '',
+                            type: proEquipmentForm.equipment_type || '',
+                            year: proEquipmentForm.year || null,
+                            price: 0,
+                            condition: '',
+                            total_hours: proEquipmentForm.total_hours || 0,
+                            description: '',
+                            location: proEquipmentForm.location || '',
+                            specifications: {
+                              weight: '',
+                              dimensions: { length: '', width: '', height: '' },
+                              power: { value: '', unit: 'kW' },
+                              operatingCapacity: { value: '', unit: 'kg' },
+                              workingWeight: ''
+                            }
+                          };
+                          const { specs } = await fetchModelSpecsFull(proEquipmentForm.brand, proEquipmentForm.model, context);
+                          if (!specs) { alert('Aucune spécification trouvée'); return; }
+                          const parts: string[] = [];
+                          const d = specs.dimensions;
+                          if (d) parts.push(`Dimensions: ${d.length_mm ?? '-'} x ${d.width_mm ?? '-'} x ${d.height_mm ?? '-'} mm`);
+                          if (specs.weight_kg) parts.push(`Poids: ${specs.weight_kg} kg`);
+                          const pkw = specs.engine?.power_kw; const php = specs.engine?.power_hp;
+                          if (pkw || php) parts.push(`Puissance: ${pkw ?? ''}${pkw ? ' kW' : ''}${pkw && php ? ' / ' : ''}${php ?? ''}${php ? ' HP' : ''}`);
+                          const summary = parts.join(' | ');
+                          setProEquipmentForm(prev => ({ ...prev, description: prev as any && (prev as any).description ? `${(prev as any).description}\n${summary}` : summary } as any));
+                          alert('Spécifications récupérées et ajoutées à la description');
+                        } catch (e) {
+                          console.error(e);
+                          alert('Erreur lors de la récupération des spécifications');
+                        }
+                      }}
+                    >
+                      Remplir automatiquement (IA)
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -1562,6 +1613,36 @@ function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment: Clien
                     onChange={(e) => handleEditInputChange('model', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
+                      onClick={async () => {
+                        if (!editEquipmentForm.brand || !editEquipmentForm.model) {
+                          alert('Renseignez la marque et le modèle');
+                          return;
+                        }
+                        try {
+                          const { specs } = await fetchModelSpecsFull(editEquipmentForm.brand, editEquipmentForm.model, { name: editEquipmentForm.equipment_type || '', brand: editEquipmentForm.brand || '', model: editEquipmentForm.model || '', year: editEquipmentForm.year || null, total_hours: editEquipmentForm.total_hours || 0, location: editEquipmentForm.location || '', specifications: { weight: '', dimensions: { length: '', width: '', height: '' }, power: { value: '', unit: 'kW' }, operatingCapacity: { value: '', unit: 'kg' }, workingWeight: '' } });
+                          if (!specs) { alert('Aucune spécification trouvée'); return; }
+                          const parts: string[] = [];
+                          const d = specs.dimensions;
+                          if (d) parts.push(`Dimensions: ${d.length_mm ?? '-'} x ${d.width_mm ?? '-'} x ${d.height_mm ?? '-'} mm`);
+                          if (specs.weight_kg) parts.push(`Poids: ${specs.weight_kg} kg`);
+                          const pkw = specs.engine?.power_kw; const php = specs.engine?.power_hp;
+                          if (pkw || php) parts.push(`Puissance: ${pkw ?? ''}${pkw ? ' kW' : ''}${pkw && php ? ' / ' : ''}${php ?? ''}${php ? ' HP' : ''}`);
+                          const summary = parts.join(' | ');
+                          setEditEquipmentForm(prev => ({ ...prev, description: prev.description ? `${prev.description}\n${summary}` : summary }));
+                          alert('Spécifications récupérées et ajoutées à la description');
+                        } catch (e) {
+                          console.error(e);
+                          alert('Erreur lors de la récupération des spécifications');
+                        }
+                      }}
+                    >
+                      Remplir automatiquement (IA)
+                    </button>
+                  </div>
                 </div>
 
                 {/* Année */}

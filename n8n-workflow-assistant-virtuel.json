@@ -1,0 +1,101 @@
+{
+  "name": "Assistant Virtuel Minegrid",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "assistant_virtuel",
+        "responseMode": "responseNode",
+        "options": {
+          "cors": {
+            "enabled": true,
+            "origin": "*",
+            "methods": "GET,POST,PUT,DELETE,OPTIONS"
+          }
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "assistant_virtuel"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraction du message de la requête\nconst message = $input.first().json.message;\n\n// Log pour debug\nconsole.log('Message reçu:', message);\n\n// Validation du message\nif (!message || typeof message !== 'string') {\n  throw new Error('Message invalide ou manquant');\n}\n\n// Préparation de la réponse\nconst response = {\n  message: message,\n  timestamp: new Date().toISOString(),\n  processed: true\n};\n\nreturn response;"
+      },
+      "id": "process-message",
+      "name": "Traiter le Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Logique de l'assistant virtuel\nconst message = $input.first().json.message.toLowerCase();\n\n// Réponses prédéfinies\nconst responses = {\n  // Salutations\n  'bonjour': 'Bonjour ! Je suis l\'assistant virtuel de Minegrid Équipement. Comment puis-je vous aider ?',\n  'salut': 'Salut ! Comment puis-je vous aider aujourd\'hui ?',\n  'hello': 'Hello ! Bienvenue chez Minegrid Équipement. Que recherchez-vous ?',\n  \n  // Informations sur l'entreprise\n  'qui êtes-vous': 'Minegrid Équipement est une plateforme spécialisée dans la vente et location d\'équipements miniers et de construction en Afrique.',\n  'minegrid': 'Minegrid Équipement est votre partenaire de confiance pour tous vos besoins en équipements industriels.',\n  \n  // Équipements\n  'équipements': 'Nous proposons une large gamme d\'équipements : excavatrices, bulldozers, chargeurs, camions, etc.',\n  'machines': 'Nos machines incluent des équipements de construction, miniers et agricoles de qualité professionnelle.',\n  \n  // Services\n  'services': 'Nos services incluent : vente, location, maintenance, formation et support technique.',\n  'maintenance': 'Nous proposons des services de maintenance préventive et curative pour tous nos équipements.',\n  \n  // Contact\n  'contact': 'Vous pouvez nous contacter par téléphone, email ou via notre formulaire en ligne.',\n  'téléphone': 'Notre numéro de téléphone est disponible sur notre site web.',\n  'email': 'Vous pouvez nous envoyer un email via le formulaire de contact sur notre site.',\n  \n  // Localisation\n  'où': 'Minegrid Équipement opère principalement en Afrique de l\'Ouest.',\n  'localisation': 'Nous sommes présents dans plusieurs pays d\'Afrique de l\'Ouest.',\n  \n  // Prix\n  'prix': 'Nos prix varient selon l\'équipement et les conditions. Contactez-nous pour un devis personnalisé.',\n  'devis': 'Pour obtenir un devis, contactez-nous avec les détails de vos besoins.',\n  \n  // Aide générale\n  'aide': 'Je peux vous aider avec : informations sur nos équipements, services, contact, devis, etc.',\n  'help': 'Je peux vous aider avec : informations sur nos équipements, services, contact, devis, etc.'\n};\n\n// Recherche de la réponse appropriée\nlet response = 'Je ne comprends pas votre demande. Pouvez-vous reformuler ou me poser une question sur nos équipements, services ou contact ?';\n\nfor (const [keyword, reply] of Object.entries(responses)) {\n  if (message.includes(keyword)) {\n    response = reply;\n    break;\n  }\n}\n\n// Si c'est une question sur les équipements spécifiques\nif (message.includes('excavatrice') || message.includes('bulldozer') || message.includes('chargeur')) {\n  response = 'Nous avons ces équipements en stock. Pouvez-vous me donner plus de détails sur vos besoins (capacité, utilisation, budget) ?';\n}\n\n// Si c'est une demande de devis\nif (message.includes('devis') || message.includes('prix') || message.includes('coût')) {\n  response = 'Pour un devis précis, j\'ai besoin de plus d\'informations : type d\'équipement, durée d\'utilisation, localisation. Pouvez-vous me donner ces détails ?';\n}\n\nreturn {\n  response: response,\n  originalMessage: message,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "assistant-logic",
+      "name": "Logique Assistant",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "Content-Type": "application/json"
+          }
+        }
+      },
+      "id": "response",
+      "name": "Réponse HTTP",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Traiter le Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traiter le Message": {
+      "main": [
+        [
+          {
+            "node": "Logique Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logique Assistant": {
+      "main": [
+        [
+          {
+            "node": "Réponse HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1"
+} 

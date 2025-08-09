@@ -5,6 +5,7 @@ import supabase from '../utils/supabaseClient';
 import { brands } from '../data/brands';
 import { categories } from '../data/categories';
 import * as XLSX from 'xlsx';
+import { fetchModelSpecs, fetchModelSpecsFull, toSellEquipmentForm, summarizeSpecs, missingForSell } from '../services/autoSpecsService';
 
 function cleanImagePath(img: string): string {
   const match = img.match(/(?:.*\/)?([^\/]+\.png|jpg|jpeg|webp)/i);
@@ -692,6 +693,54 @@ export default function SellEquipment() {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500"
                   required
                 />
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!formData.brand || !formData.model) {
+                        alert('Renseignez la marque et le modèle');
+                        return;
+                      }
+                      try {
+                        const context = {
+                          name: formData.name,
+                          brand: formData.brand,
+                          model: formData.model,
+                          category: formData.category,
+                          type: formData.type,
+                          year: formData.year,
+                          price: formData.price,
+                          condition: formData.condition,
+                          total_hours: formData.total_hours,
+                          specifications: formData.specifications
+                        };
+                                                 const { specs } = await fetchModelSpecsFull(formData.brand, formData.model, context); // context sérialisé avec champs vides transmis
+                        if (!specs) {
+                          alert('Aucune spécification trouvée');
+                          return;
+                        }
+                        const mapped = toSellEquipmentForm(specs);
+                        setFormData(prev => ({
+                          ...prev,
+                          specifications: {
+                            ...prev.specifications,
+                            ...mapped.specifications
+                          }
+                        }));
+                        const summary = summarizeSpecs(specs);
+                        const missing = missingForSell(specs);
+                        const msg = `Spécifications pré-remplies.\n${summary}${missing.length ? `\nChamps manquants: ${missing.join(', ')}` : ''}`;
+                        alert(msg);
+                      } catch (e) {
+                        alert('Erreur lors de la récupération des spécifications');
+                        console.error(e);
+                      }
+                    }}
+                    className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
+                  >
+                    Remplir automatiquement (IA)
+                  </button>
+                </div>
               </div>
 
               <div>
