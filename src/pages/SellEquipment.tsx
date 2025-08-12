@@ -722,6 +722,7 @@ export default function SellEquipment() {
                         const mapped = toSellEquipmentForm(specs);
                         setFormData(prev => ({
                           ...prev,
+                          description: mapped.description || prev.description,
                           specifications: {
                             ...prev.specifications,
                             ...mapped.specifications

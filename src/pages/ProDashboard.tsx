@@ -77,7 +77,7 @@ import type {
   MaintenanceIntervention, 
   ClientNotification 
 } from '../utils/proApi';
-import { fetchModelSpecsFull } from '../services/autoSpecsService';
+import { fetchModelSpecsFull, summarizeSpecs } from '../services/autoSpecsService';
 
 interface PortalStats {
   totalEquipment: number;
@@ -442,6 +442,7 @@ function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment: Clien
     status: 'active' as 'active' | 'maintenance' | 'inactive' | 'sold',
     total_hours: 0,
     fuel_consumption: 0,
+    description: '',
     create_public_announcement: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -857,18 +858,19 @@ function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment: Clien
         
         setShowProEquipmentForm(false);
         setShowAddEquipmentModal(false);
-        setProEquipmentForm({
-          serial_number: '',
-          equipment_type: '',
-          brand: '',
-          model: '',
-          year: new Date().getFullYear(),
-          location: '',
-          status: 'active',
-          total_hours: 0,
-          fuel_consumption: 0,
-          create_public_announcement: false
-        });
+            setProEquipmentForm({
+      serial_number: '',
+      equipment_type: '',
+      brand: '',
+      model: '',
+      year: new Date().getFullYear(),
+      location: '',
+      status: 'active',
+      total_hours: 0,
+      fuel_consumption: 0,
+      description: '',
+      create_public_announcement: false
+    });
         
         // Recharger les données
         await onRefresh();
@@ -1305,14 +1307,11 @@ function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment: Clien
                           };
                           const { specs } = await fetchModelSpecsFull(proEquipmentForm.brand, proEquipmentForm.model, context);
                           if (!specs) { alert('Aucune spécification trouvée'); return; }
-                          const parts: string[] = [];
-                          const d = specs.dimensions;
-                          if (d) parts.push(`Dimensions: ${d.length_mm ?? '-'} x ${d.width_mm ?? '-'} x ${d.height_mm ?? '-'} mm`);
-                          if (specs.weight_kg) parts.push(`Poids: ${specs.weight_kg} kg`);
-                          const pkw = specs.engine?.power_kw; const php = specs.engine?.power_hp;
-                          if (pkw || php) parts.push(`Puissance: ${pkw ?? ''}${pkw ? ' kW' : ''}${pkw && php ? ' / ' : ''}${php ?? ''}${php ? ' HP' : ''}`);
-                          const summary = parts.join(' | ');
-                          setProEquipmentForm(prev => ({ ...prev, description: prev as any && (prev as any).description ? `${(prev as any).description}\n${summary}` : summary } as any));
+                          const summary = summarizeSpecs(specs);
+                          setProEquipmentForm(prev => ({ 
+                            ...prev, 
+                            description: prev.description ? `${prev.description}\n\n${summary}` : summary 
+                          }));
                           alert('Spécifications récupérées et ajoutées à la description');
                         } catch (e) {
                           console.error(e);

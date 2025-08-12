@@ -1,0 +1,122 @@
+{
+  "name": "Assistant IA Spécifications Équipements",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "auto_specs",
+        "responseMode": "responseNode",
+        "options": {
+          "cors": {
+            "enabled": true,
+            "origin": "*",
+            "methods": "GET,POST,PUT,DELETE,OPTIONS"
+          }
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "auto_specs"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraction des données de la requête\nconst { brand, model, context } = $input.first().json;\n\n// Log pour debug\nconsole.log('Données reçues:', { brand, model, context });\n\n// Validation des données requises\nif (!brand || !model) {\n  throw new Error('Brand et Model sont requis');\n}\n\n// Préparation pour l'API externe\nconst searchQuery = `${brand} ${model}`;\nconst searchContext = {\n  brand,\n  model,\n  ...context\n};\n\nreturn {\n  searchQuery,\n  searchContext,\n  originalRequest: $input.first().json\n};"
+      },
+      "id": "extract-data",
+      "name": "Extraction des Données",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simulation de données d'équipement (remplacez par votre API réelle)\nconst { searchQuery, searchContext } = $input.first().json;\nconst { brand, model } = searchContext;\n\n// Base de données simulée d'équipements\nconst equipmentDatabase = {\n  'caterpillar 320d': {\n    brand: 'caterpillar',\n    model: '320d',\n    year_range: '2015-2020',\n    dimensions_mm: {\n      length: 8500,\n      width: 2800,\n      height: 2900\n    },\n    operating_weight_kg: 22000,\n    engine_power_kw: 103,\n    engine_power_hp: 138,\n    engine_model: 'Cat C7.1',\n    bucket_capacity_m3: 1.2,\n    max_dig_depth_mm: 6600,\n    max_reach_mm: 9800,\n    source_url: 'https://www.cat.com/fr_MA/products/new/equipment/excavators/mini-excavators/320d.html'\n  },\n  'caterpillar 330d': {\n    brand: 'caterpillar',\n    model: '330d',\n    year_range: '2018-2023',\n    dimensions_mm: {\n      length: 9500,\n      width: 3000,\n      height: 3100\n    },\n    operating_weight_kg: 28000,\n    engine_power_kw: 125,\n    engine_power_hp: 168,\n    engine_model: 'Cat C7.1',\n    bucket_capacity_m3: 1.5,\n    max_dig_depth_mm: 7200,\n    max_reach_mm: 10500,\n    source_url: 'https://www.cat.com/fr_MA/products/new/equipment/excavators/mini-excavators/330d.html'\n  },\n  'hitachi zx200': {\n    brand: 'hitachi',\n    model: 'zx200',\n    year_range: '2016-2021',\n    dimensions_mm: {\n      length: 8200,\n      width: 2750,\n      height: 2850\n    },\n    operating_weight_kg: 20000,\n    engine_power_kw: 98,\n    engine_power_hp: 131,\n    engine_model: 'Isuzu AL-4HK1X',\n    bucket_capacity_m3: 1.1,\n    max_dig_depth_mm: 6400,\n    max_reach_mm: 9600,\n    source_url: 'https://www.hitachicm.com/global/products/excavators/mini-excavators/zx200-5a/'\n  }\n};\n\n// Recherche dans la base de données\nconst searchKey = searchQuery.toLowerCase();\nlet equipmentData = null;\n\n// Recherche exacte d'abord\nif (equipmentDatabase[searchKey]) {\n  equipmentData = equipmentDatabase[searchKey];\n} else {\n  // Recherche partielle\n  for (const [key, data] of Object.entries(equipmentDatabase)) {\n    if (key.includes(brand.toLowerCase()) && key.includes(model.toLowerCase())) {\n      equipmentData = data;\n      break;\n    }\n  }\n}\n\n// Si pas trouvé, retourner des données génériques\nif (!equipmentData) {\n  equipmentData = {\n    brand,\n    model,\n    year_range: null,\n    dimensions_mm: null,\n    operating_weight_kg: null,\n    engine_power_kw: null,\n    engine_power_hp: null,\n    engine_model: null,\n    bucket_capacity_m3: null,\n    max_dig_depth_mm: null,\n    max_reach_mm: null,\n    source_url: null\n  };\n}\n\nreturn {\n  equipmentData,\n  searchQuery,\n  searchContext\n};"
+      },
+      "id": "fetch-equipment-data",
+      "name": "Récupération Données Équipement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalisation des données\nconst { equipmentData, searchQuery, searchContext } = $input.first().json;\nconst { brand, model } = searchContext;\n\n// Normalisation des données\nconst normalizedSpecs = {\n  brand: equipmentData.brand || brand,\n  model: equipmentData.model || model,\n  year_range: equipmentData.year_range || null,\n  dimensions: {\n    length_mm: equipmentData.dimensions_mm?.length || null,\n    width_mm: equipmentData.dimensions_mm?.width || null,\n    height_mm: equipmentData.dimensions_mm?.height || null\n  },\n  weight_kg: equipmentData.operating_weight_kg || null,\n  engine: {\n    power_kw: equipmentData.engine_power_kw || null,\n    power_hp: equipmentData.engine_power_hp || null,\n    engine_model: equipmentData.engine_model || null\n  },\n  performance: {\n    bucket_capacity_m3: equipmentData.bucket_capacity_m3 || null,\n    max_dig_depth_mm: equipmentData.max_dig_depth_mm || null,\n    max_reach_mm: equipmentData.max_reach_mm || null\n  },\n  source_url: equipmentData.source_url || null\n};\n\n// Identification des champs manquants\nconst missing = [];\nif (!normalizedSpecs.dimensions.length_mm) missing.push('dimensions.length_mm');\nif (!normalizedSpecs.dimensions.width_mm) missing.push('dimensions.width_mm');\nif (!normalizedSpecs.dimensions.height_mm) missing.push('dimensions.height_mm');\nif (!normalizedSpecs.weight_kg) missing.push('weight_kg');\nif (!normalizedSpecs.engine.power_kw && !normalizedSpecs.engine.power_hp) missing.push('engine.power');\nif (!normalizedSpecs.engine.engine_model) missing.push('engine.model');\nif (!normalizedSpecs.performance.bucket_capacity_m3) missing.push('performance.bucket_capacity');\nif (!normalizedSpecs.year_range) missing.push('year_range');\nif (!normalizedSpecs.source_url) missing.push('source_url');\n\n// Suggestions pour les champs manquants\nconst suggestions = {};\nif (!normalizedSpecs.year_range) {\n  suggestions.year_range = '2015-2020';\n}\nif (!normalizedSpecs.source_url) {\n  suggestions.source_url = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;\n}\n\nreturn {\n  specs: normalizedSpecs,\n  missing: missing.length > 0 ? missing : undefined,\n  suggestions: Object.keys(suggestions).length > 0 ? suggestions : undefined\n};"
+      },
+      "id": "normalize-data",
+      "name": "Normalisation des Données",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "Content-Type": "application/json"
+          }
+        }
+      },
+      "id": "response",
+      "name": "Réponse HTTP",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extraction des Données",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction des Données": {
+      "main": [
+        [
+          {
+            "node": "Récupération Données Équipement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupération Données Équipement": {
+      "main": [
+        [
+          {
+            "node": "Normalisation des Données",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalisation des Données": {
+      "main": [
+        [
+          {
+            "node": "Réponse HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1"
+} 

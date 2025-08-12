@@ -1303,7 +1303,11 @@ export default function PublicationRapide() {
                                                       const { specs } = await fetchModelSpecsFull(formData.brand, formData.model, context); // context complet, champs vides inclus
                           if (!specs) { alert('Aucune spécification trouvée'); return; }
                           const mapped = toPublicationRapideForm(specs);
-                          setFormData(prev => ({ ...prev, specifications: { ...prev.specifications, ...mapped.specifications }}));
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            description: mapped.description || prev.description,
+                            specifications: { ...prev.specifications, ...mapped.specifications }
+                          }));
                           const summary = summarizeSpecs(specs);
                           const missing = missingForPublication(specs);
                           const msg = `Spécifications pré-remplies.\n${summary}${missing.length ? `\nChamps manquants: ${missing.join(', ')}` : ''}`;

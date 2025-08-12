@@ -210,7 +210,38 @@ export async function fetchModelSpecsFull(
 export function toSellEquipmentForm(specs: NormalizedSpecs) {
   const powerKw = specs.engine?.power_kw ?? null;
   const powerHp = specs.engine?.power_hp ?? (powerKw ? Math.round(powerKw * 1.341) : null);
+  
+  // Générer une description basée sur les spécifications
+  const descriptionParts = [];
+  if (specs.brand && specs.model) {
+    descriptionParts.push(`${specs.brand.toUpperCase()} ${specs.model.toUpperCase()}`);
+  }
+  if (specs.year_range) {
+    descriptionParts.push(`Année: ${specs.year_range}`);
+  }
+  if (specs.dimensions?.length_mm && specs.dimensions?.width_mm && specs.dimensions?.height_mm) {
+    descriptionParts.push(`Dimensions: ${specs.dimensions.length_mm} x ${specs.dimensions.width_mm} x ${specs.dimensions.height_mm} mm`);
+  }
+  if (specs.weight_kg) {
+    descriptionParts.push(`Poids: ${specs.weight_kg} kg`);
+  }
+  if (powerKw || powerHp) {
+    const powerStr = powerKw ? `${powerKw} kW` : `${powerHp} HP`;
+    descriptionParts.push(`Puissance: ${powerStr}`);
+  }
+  if (specs.engine?.engine_model) {
+    descriptionParts.push(`Moteur: ${specs.engine.engine_model}`);
+  }
+  if (specs.performance?.bucket_capacity_m3) {
+    descriptionParts.push(`Capacité godet: ${specs.performance.bucket_capacity_m3} m³`);
+  }
+  
+  const description = descriptionParts.length > 0 
+    ? descriptionParts.join(' | ') 
+    : `${specs.brand || 'Équipement'} ${specs.model || ''} - Spécifications techniques disponibles`;
+  
   return {
+    description,
     specifications: {
       weight: specs.weight_kg ? String(specs.weight_kg) : '',
       dimensions: {
@@ -236,7 +267,38 @@ export function toPublicationRapideForm(specs: NormalizedSpecs) {
         .filter(Boolean)
         .join(' x ')
     : '';
+  
+  // Générer une description basée sur les spécifications
+  const descriptionParts = [];
+  if (specs.brand && specs.model) {
+    descriptionParts.push(`${specs.brand.toUpperCase()} ${specs.model.toUpperCase()}`);
+  }
+  if (specs.year_range) {
+    descriptionParts.push(`Année: ${specs.year_range}`);
+  }
+  if (dimsStr) {
+    descriptionParts.push(`Dimensions: ${dimsStr}`);
+  }
+  if (specs.weight_kg) {
+    descriptionParts.push(`Poids: ${specs.weight_kg} kg`);
+  }
+  if (powerKw || powerHp) {
+    const powerStr = powerKw ? `${powerKw} kW` : `${powerHp} HP`;
+    descriptionParts.push(`Puissance: ${powerStr}`);
+  }
+  if (specs.engine?.engine_model) {
+    descriptionParts.push(`Moteur: ${specs.engine.engine_model}`);
+  }
+  if (specs.performance?.bucket_capacity_m3) {
+    descriptionParts.push(`Capacité godet: ${specs.performance.bucket_capacity_m3} m³`);
+  }
+  
+  const description = descriptionParts.length > 0 
+    ? descriptionParts.join(' | ') 
+    : `${specs.brand || 'Équipement'} ${specs.model || ''} - Spécifications techniques disponibles`;
+  
   return {
+    description,
     specifications: {
       weight: specs.weight_kg ?? 0,
       power: { value: powerKw ?? powerHp ?? 0, unit: powerKw ? 'kW' : 'HP' },

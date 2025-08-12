@@ -1,0 +1,145 @@
+{
+  "name": "Assistant Virtuel Enrichi - Minegrid IA",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "assistant_virtuel_enrichi",
+        "responseMode": "responseNode",
+        "options": {
+          "cors": {
+            "enabled": true,
+            "origin": "*",
+            "methods": "GET,POST,PUT,DELETE,OPTIONS"
+          }
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "assistant_virtuel_enrichi"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraction et validation des données d'entrée\nconst input = $input.first().json;\nconst { message, user_id, session_id, context } = input;\n\n// Log pour debug\nconsole.log('🚀 Assistant IA - Données reçues:', input);\n\n// Validation des données requises\nif (!message || typeof message !== 'string') {\n  throw new Error('Message requis et doit être une chaîne');\n}\n\n// Nettoyage et normalisation du message\nconst cleanMessage = message.trim().toLowerCase();\n\n// Détection de la langue (basique)\nconst arabicPattern = /[\u0600-\u06FF]/;\nconst frenchPattern = /[àáâäçéèêëïîôùûüÿ]/;\nlet detectedLanguage = 'fr'; // Par défaut français\n\nif (arabicPattern.test(message)) {\n  detectedLanguage = 'ar';\n} else if (!frenchPattern.test(message) && /[a-z]/i.test(message)) {\n  detectedLanguage = 'en';\n}\n\n// Détection d'intent basique\nconst intents = {\n  greeting: ['bonjour', 'salut', 'hello', 'hi', 'bonsoir'],\n  equipments: ['équipement', 'machine', 'excavatrice', 'bulldozer', 'chargeur', 'camion'],\n  services: ['service', 'maintenance', 'location', 'vente', 'formation'],\n  pricing: ['prix', 'coût', 'devis', 'tarif', 'combien'],\n  contact: ['contact', 'téléphone', 'email', 'adresse'],\n  support: ['aide', 'help', 'problème', 'panne', 'assistance']\n};\n\nlet detectedIntent = 'general';\nfor (const [intent, keywords] of Object.entries(intents)) {\n  if (keywords.some(keyword => cleanMessage.includes(keyword))) {\n    detectedIntent = intent;\n    break;\n  }\n}\n\n// Préparation des données pour les étapes suivantes\nreturn {\n  originalInput: input,\n  cleanMessage,\n  detectedLanguage,\n  detectedIntent,\n  user_id: user_id || null,\n  session_id: session_id || `session_${Date.now()}`,\n  context: context || {},\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "extract-validate",
+      "name": "Extraction & Validation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Récupération du contexte utilisateur depuis Supabase\nconst { user_id, context } = $input.first().json;\n\n// Simulation de récupération des données utilisateur\n// En production, vous feriez un appel réel à Supabase ici\nlet userProfile = null;\nlet userHistory = [];\nlet userPreferences = {};\n\nif (user_id) {\n  // Simulation d'un profil utilisateur\n  userProfile = {\n    id: user_id,\n    name: 'Utilisateur Pro',\n    email: 'user@example.com',\n    user_type: context.user_type || 'acheteur',\n    company: 'Entreprise XYZ',\n    location: 'Casablanca, Maroc',\n    preferred_language: 'fr',\n    subscription_type: 'pro'\n  };\n  \n  // Simulation d'historique d'interactions\n  userHistory = [\n    {\n      date: '2024-01-15',\n      action: 'recherche_equipement',\n      details: 'Recherche excavatrice CAT 320D'\n    },\n    {\n      date: '2024-01-10',\n      action: 'demande_devis',\n      details: 'Devis pour bulldozer D6T'\n    }\n  ];\n  \n  // Préférences utilisateur\n  userPreferences = {\n    notification_method: 'email',\n    preferred_brands: ['Caterpillar', 'Komatsu'],\n    budget_range: '500k-1M',\n    response_language: 'fr'\n  };\n}\n\n// Contexte de la page/équipement si disponible\nlet equipmentContext = {};\nif (context.equipment_id) {\n  // Simulation de données d'équipement\n  equipmentContext = {\n    id: context.equipment_id,\n    brand: 'Caterpillar',\n    model: '320D',\n    year: 2020,\n    price: 750000,\n    location: 'Casablanca',\n    seller_id: 'seller_123'\n  };\n}\n\n// Combinaison de toutes les données de contexte\nreturn {\n  ...($input.first().json),\n  userProfile,\n  userHistory,\n  userPreferences,\n  equipmentContext,\n  enrichedContext: {\n    hasUserProfile: !!userProfile,\n    isProUser: userProfile?.subscription_type === 'pro',\n    hasHistory: userHistory.length > 0,\n    currentPage: context.page || 'unknown',\n    isEquipmentPage: !!context.equipment_id\n  }\n};"
+      },
+      "id": "fetch-user-context",
+      "name": "Récupération Contexte Utilisateur",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Traitement IA avancé avec génération de réponse personnalisée\nconst data = $input.first().json;\nconst { cleanMessage, detectedLanguage, detectedIntent, userProfile, userHistory, equipmentContext, enrichedContext } = data;\n\n// Base de connaissances enrichie\nconst knowledgeBase = {\n  equipments: {\n    'excavatrice': {\n      description: 'Machines de terrassement pour excavation',\n      brands: ['Caterpillar', 'Komatsu', 'Hitachi', 'JCB'],\n      price_range: '300k-2M MAD',\n      applications: ['Terrassement', 'Démolition', 'Construction']\n    },\n    'bulldozer': {\n      description: 'Engins de terrassement et nivellement',\n      brands: ['Caterpillar', 'Komatsu', 'Case'],\n      price_range: '500k-3M MAD',\n      applications: ['Nivellement', 'Déblayage', 'Construction routes']\n    },\n    'chargeur': {\n      description: 'Machines de manutention et chargement',\n      brands: ['Caterpillar', 'Volvo', 'Liebherr'],\n      price_range: '400k-1.5M MAD',\n      applications: ['Chargement', 'Manutention', 'Nettoyage']\n    }\n  },\n  \n  services: {\n    'maintenance': 'Services de maintenance préventive et curative pour tous équipements',\n    'location': 'Location court et long terme avec opérateur ou sans opérateur',\n    'formation': 'Formation certifiante pour opérateurs d\\'équipements',\n    'financement': 'Solutions de financement et leasing adaptées',\n    'transport': 'Transport et livraison sur tout le Maroc'\n  }\n};\n\n// Génération de réponse basée sur l'intent et le contexte\nlet response = '';\nlet suggestedActions = [];\nlet relatedEquipments = [];\n\nswitch (detectedIntent) {\n  case 'greeting':\n    const userName = userProfile?.name || 'cher client';\n    const userType = userProfile?.user_type || 'visiteur';\n    \n    response = `Bonjour ${userName} ! 👋\\n\\n`;\n    \n    if (userType === 'vendeur') {\n      response += `Bienvenue sur votre espace vendeur Minegrid. Je peux vous aider avec :\\n`;\n      response += `• 📊 Analyse de vos performances commerciales\\n`;\n      response += `• 🎯 Optimisation de votre pipeline de ventes\\n`;\n      response += `• 📝 Génération automatique de fiches techniques\\n`;\n      response += `• 💰 Création de devis personnalisés\\n\\n`;\n    } else if (userType === 'loueur') {\n      response += `Bienvenue sur votre espace loueur. Je peux vous assister pour :\\n`;\n      response += `• 📅 Gestion de votre planning de locations\\n`;\n      response += `• 🔧 Suivi maintenance de votre flotte\\n`;\n      response += `• 💼 Optimisation de vos tarifs de location\\n`;\n      response += `• 📈 Analyse de rentabilité de vos équipements\\n\\n`;\n    } else {\n      response += `Je suis votre assistant IA spécialisé dans les équipements industriels. Je peux vous aider à :\\n`;\n      response += `• 🔍 Trouver l'équipement parfait pour vos besoins\\n`;\n      response += `• 💰 Obtenir des devis personnalisés\\n`;\n      response += `• 📋 Comparer les spécifications techniques\\n`;\n      response += `• 🛠️ Informations sur maintenance et services\\n\\n`;\n    }\n    \n    if (enrichedContext.isEquipmentPage && equipmentContext.brand) {\n      response += `Je vois que vous consultez un ${equipmentContext.brand} ${equipmentContext.model}. Avez-vous des questions spécifiques sur cet équipement ?`;\n    } else {\n      response += `Que puis-je faire pour vous aujourd'hui ?`;\n    }\n    \n    suggestedActions = [\n      'Rechercher un équipement',\n      'Demander un devis',\n      'Contacter un vendeur',\n      'En savoir plus sur nos services'\n    ];\n    break;\n\n  case 'equipments':\n    // Détection du type d'équipement mentionné\n    let equipmentType = null;\n    for (const [type, info] of Object.entries(knowledgeBase.equipments)) {\n      if (cleanMessage.includes(type)) {\n        equipmentType = type;\n        break;\n      }\n    }\n    \n    if (equipmentType) {\n      const equipInfo = knowledgeBase.equipments[equipmentType];\n      response = `🔧 **${equipmentType.toUpperCase()}**\\n\\n`;\n      response += `${equipInfo.description}\\n\\n`;\n      response += `**Marques disponibles :** ${equipInfo.brands.join(', ')}\\n`;\n      response += `**Gamme de prix :** ${equipInfo.price_range}\\n`;\n      response += `**Applications :** ${equipInfo.applications.join(', ')}\\n\\n`;\n      \n      if (userHistory.length > 0) {\n        response += `Basé sur votre historique, je recommande particulièrement les modèles ${userPreferences.preferred_brands?.join(' et ') || 'Caterpillar et Komatsu'}.\\n\\n`;\n      }\n      \n      response += `Souhaitez-vous que je vous aide à trouver le modèle parfait pour votre projet ?`;\n      \n      suggestedActions = [\n        `Voir tous les ${equipmentType}s disponibles`,\n        'Comparer les modèles',\n        'Demander un devis personnalisé',\n        'Parler avec un expert'\n      ];\n      \n      relatedEquipments = equipInfo.brands.slice(0, 3);\n    } else {\n      response = `Je peux vous aider à trouver l'équipement parfait ! 🚜\\n\\n`;\n      response += `Nous avons une large gamme d'équipements :\\n`;\n      for (const [type, info] of Object.entries(knowledgeBase.equipments)) {\n        response += `• **${type.charAt(0).toUpperCase() + type.slice(1)}** - ${info.description}\\n`;\n      }\n      response += `\\nPouvez-vous me dire quel type d'équipement vous recherchez et pour quel usage ?`;\n    }\n    break;\n\n  case 'pricing':\n    if (enrichedContext.isEquipmentPage) {\n      response = `💰 **Devis pour ${equipmentContext.brand} ${equipmentContext.model}**\\n\\n`;\n      response += `Prix affiché : ${equipmentContext.price?.toLocaleString()} MAD\\n\\n`;\n      response += `Je peux vous aider à :\\n`;\n      response += `• 📝 Générer un devis détaillé personnalisé\\n`;\n      response += `• 💼 Inclure les options de financement\\n`;\n      response += `• 🚛 Calculer les frais de transport\\n`;\n      response += `• 🛡️ Ajouter les garanties et services\\n\\n`;\n      response += `Souhaitez-vous que je crée un devis complet pour vous ?`;\n      \n      suggestedActions = [\n        'Générer un devis détaillé',\n        'Voir les options de financement',\n        'Contacter le vendeur',\n        'Comparer avec d\\'autres modèles'\n      ];\n    } else {\n      response = `💰 **Informations Tarifs**\\n\\n`;\n      response += `Nos prix varient selon plusieurs facteurs :\\n`;\n      response += `• Type et taille de l'équipement\\n`;\n      response += `• Année de fabrication\\n`;\n      response += `• État et heures d'utilisation\\n`;\n      response += `• Options et accessoires\\n\\n`;\n      \n      if (userProfile?.subscription_type === 'pro') {\n        response += `En tant que client Pro, vous bénéficiez de tarifs préférentiels ! 🌟\\n\\n`;\n      }\n      \n      response += `Pour un devis précis, j'ai besoin de connaître :\\n`;\n      response += `• Le type d'équipement souhaité\\n`;\n      response += `• Votre budget approximatif\\n`;\n      response += `• L'usage prévu (location/achat)\\n`;\n      response += `• La localisation de livraison\\n\\n`;\n      response += `Pouvez-vous me donner ces informations ?`;\n    }\n    break;\n\n  case 'services':\n    response = `🛠️ **Nos Services Complets**\\n\\n`;\n    for (const [service, description] of Object.entries(knowledgeBase.services)) {\n      response += `• **${service.charAt(0).toUpperCase() + service.slice(1)}** : ${description}\\n`;\n    }\n    response += `\\nTous nos services incluent :\\n`;\n    response += `✅ Support technique 24/7\\n`;\n    response += `✅ Garantie constructeur\\n`;\n    response += `✅ Pièces détachées d'origine\\n`;\n    response += `✅ Formation des opérateurs\\n\\n`;\n    response += `Quel service vous intéresse le plus ?`;\n    \n    suggestedActions = [\n      'Maintenance préventive',\n      'Location avec opérateur',\n      'Formation certification',\n      'Solutions de financement'\n    ];\n    break;\n\n  case 'support':\n    response = `🆘 **Support & Assistance**\\n\\n`;\n    response += `Je suis là pour vous aider ! Voici comment je peux vous assister :\\n\\n`;\n    response += `**Support Technique :**\\n`;\n    response += `• Diagnostic à distance\\n`;\n    response += `• Guides de dépannage\\n`;\n    response += `• Intervention sur site\\n\\n`;\n    response += `**Support Commercial :**\\n`;\n    response += `• Conseils choix équipement\\n`;\n    response += `• Devis personnalisés\\n`;\n    response += `• Négociation tarifs\\n\\n`;\n    \n    if (userProfile?.subscription_type === 'pro') {\n      response += `**Support Pro Prioritaire :**\\n`;\n      response += `• Ligne directe dédiée\\n`;\n      response += `• Technicien attitré\\n`;\n      response += `• Intervention sous 4h\\n\\n`;\n    }\n    \n    response += `Décrivez-moi votre problème ou question, je vais vous orienter vers la meilleure solution.`;\n    break;\n\n  default:\n    response = `🤖 **Assistant IA Minegrid**\\n\\n`;\n    response += `J'ai bien reçu votre message : \"${cleanMessage}\"\\n\\n`;\n    response += `Je peux vous aider avec :\\n`;\n    response += `• 🔍 Recherche d'équipements spécifiques\\n`;\n    response += `• 💰 Calculs de devis et financement\\n`;\n    response += `• 🛠️ Support technique et maintenance\\n`;\n    response += `• 📋 Comparaisons et recommandations\\n\\n`;\n    response += `Pouvez-vous me donner plus de détails sur ce que vous recherchez ?`;\n}\n\n// Ajout d'informations contextuelles si pertinentes\nif (userHistory.length > 0 && detectedIntent !== 'greeting') {\n  response += `\\n\\n💡 *Basé sur votre historique récent, vous pourriez aussi être intéressé par nos dernières offres sur les ${userPreferences.preferred_brands?.join(' et ') || 'équipements premium'}.*`;\n}\n\n// Préparation de la réponse finale\nreturn {\n  ...data,\n  aiResponse: {\n    message: response,\n    intent: detectedIntent,\n    language: detectedLanguage,\n    confidence: 0.85,\n    suggestedActions,\n    relatedEquipments,\n    personalized: enrichedContext.hasUserProfile,\n    contextual: enrichedContext.isEquipmentPage\n  }\n};"
+      },
+      "id": "ai-processing",
+      "name": "Traitement IA Avancé",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sauvegarde de la conversation en base de données\nconst data = $input.first().json;\nconst { originalInput, aiResponse, userProfile, session_id, timestamp } = data;\n\n// Préparation des données de conversation pour sauvegarde\nconst conversationRecord = {\n  session_id,\n  user_id: userProfile?.id || null,\n  user_message: originalInput.message,\n  ai_response: aiResponse.message,\n  intent: aiResponse.intent,\n  language: aiResponse.language,\n  confidence: aiResponse.confidence,\n  context: {\n    page: originalInput.context?.page,\n    equipment_id: originalInput.context?.equipment_id,\n    user_type: originalInput.context?.user_type\n  },\n  metadata: {\n    personalized: aiResponse.personalized,\n    contextual: aiResponse.contextual,\n    suggested_actions: aiResponse.suggestedActions,\n    related_equipments: aiResponse.relatedEquipments\n  },\n  created_at: timestamp\n};\n\n// En production, ici vous feriez un INSERT dans Supabase\n// const { error } = await supabase\n//   .from('ai_conversations')\n//   .insert(conversationRecord);\n\nconsole.log('💾 Conversation sauvegardée:', conversationRecord);\n\n// Mise à jour des statistiques utilisateur si connecté\nif (userProfile?.id) {\n  const userStats = {\n    user_id: userProfile.id,\n    total_conversations: 1, // Incrémenter en production\n    last_interaction: timestamp,\n    preferred_language: aiResponse.language,\n    most_common_intent: aiResponse.intent\n  };\n  \n  console.log('📊 Stats utilisateur mises à jour:', userStats);\n}\n\nreturn {\n  ...data,\n  conversationSaved: true,\n  conversationId: `conv_${Date.now()}`\n};"
+      },
+      "id": "save-conversation",
+      "name": "Sauvegarde Conversation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  response: $json.aiResponse.message,\n  metadata: {\n    intent: $json.aiResponse.intent,\n    language: $json.aiResponse.language,\n    confidence: $json.aiResponse.confidence,\n    personalized: $json.aiResponse.personalized,\n    contextual: $json.aiResponse.contextual,\n    session_id: $json.session_id,\n    conversation_id: $json.conversationId,\n    timestamp: $json.timestamp\n  },\n  suggestions: {\n    actions: $json.aiResponse.suggestedActions,\n    related_equipments: $json.aiResponse.relatedEquipments\n  },\n  user_context: {\n    has_profile: $json.enrichedContext.hasUserProfile,\n    is_pro_user: $json.enrichedContext.isProUser,\n    current_page: $json.enrichedContext.currentPage\n  }\n}) }}",
+        "options": {
+          "responseHeaders": {
+            "Content-Type": "application/json",
+            "X-AI-Powered": "true",
+            "X-Response-Time": "{{ new Date().toISOString() }}"
+          }
+        }
+      },
+      "id": "response",
+      "name": "Réponse HTTP Enrichie",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extraction & Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction & Validation": {
+      "main": [
+        [
+          {
+            "node": "Récupération Contexte Utilisateur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupération Contexte Utilisateur": {
+      "main": [
+        [
+          {
+            "node": "Traitement IA Avancé",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traitement IA Avancé": {
+      "main": [
+        [
+          {
+            "node": "Sauvegarde Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sauvegarde Conversation": {
+      "main": [
+        [
+          {
+            "node": "Réponse HTTP Enrichie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1"
+} 
