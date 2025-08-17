@@ -212,11 +212,10 @@ export async function getMessages() {
     const { data, error } = await supabase
         .from('messages')
         .select(`
-      *,
-      sender:profiles!messages_sender_id_fkey(firstname, lastname),
-      receiver:profiles!messages_receiver_id_fkey(firstname, lastname)
-    `)
-        .eq('receiver_id', user.id)
+            *,
+            machine:machines(name, brand, model, images)
+        `)
+        .eq('recipient_email', user.email)
         .order('created_at', { ascending: false });
     if (error)
         throw error;
@@ -229,9 +228,10 @@ export async function sendMessage(messageData) {
     const { data, error } = await supabase
         .from('messages')
         .insert([{
-            sender_id: user.id,
+            sender_email: user.email,
+            sender_name: user.user_metadata?.full_name || user.email,
             ...messageData,
-            is_read: false,
+            status: 'new',
             created_at: new Date().toISOString()
         }]);
     if (error)
@@ -241,7 +241,7 @@ export async function sendMessage(messageData) {
 export async function markMessageAsRead(messageId) {
     const { error } = await supabase
         .from('messages')
-        .update({ is_read: true })
+        .update({ status: 'read' })
         .eq('id', messageId);
     if (error)
         throw error;
@@ -254,11 +254,10 @@ export async function getOffers() {
     const { data, error } = await supabase
         .from('offers')
         .select(`
-      *,
-      buyer:profiles!offers_buyer_id_fkey(firstname, lastname),
-      machine:machines(name, brand, model)
-    `)
-        .eq('seller_id', user.id)
+            *,
+            machine:machines(name, brand, model, images)
+        `)
+        .eq('seller_email', user.email)
         .order('created_at', { ascending: false });
     if (error)
         throw error;
@@ -271,7 +270,8 @@ export async function createOffer(offerData) {
     const { data, error } = await supabase
         .from('offers')
         .insert([{
-            buyer_id: user.id,
+            buyer_email: user.email,
+            buyer_name: user.user_metadata?.full_name || user.email,
             ...offerData,
             status: 'pending',
             created_at: new Date().toISOString()

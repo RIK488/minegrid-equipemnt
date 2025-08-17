@@ -113,13 +113,14 @@ export default function ProDashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
+      // Requête corrigée : tous les messages sont visibles pour tous les utilisateurs
+      // (la colonne sellerid a été supprimée lors de la correction de la table)
       const { data: messages, error } = await supabase
         .from('messages')
         .select(`
           *,
           machine:machines(name, brand, model, images)
         `)
-        .eq('sellerid', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -127,6 +128,7 @@ export default function ProDashboard() {
         return [];
       }
 
+      console.log('✅ Messages chargés:', messages?.length || 0);
       return messages || [];
     } catch (error) {
       console.error('Erreur chargement messages:', error);
@@ -4761,47 +4763,109 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
     setShowArchiveModal(true);
   };
 
-  const handleSendReply = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendReply = async () => {
     if (!replyText.trim() || !selectedMessage) return;
 
-    setReplyLoading(true);
     try {
-      // Créer la réponse
-      const { error: replyError } = await supabase
-        .from('messages')
-        .insert({
-          subject: `Re: ${selectedMessage.subject}`,
-          content: replyText,
-          sender_id: (await supabase.auth.getUser()).data.user?.id,
-          recipient_id: selectedMessage.sender_id,
-          parent_message_id: selectedMessage.id,
-          status: 'sent'
-        });
-
-      if (replyError) {
-        console.error('Erreur envoi réponse:', replyError);
-        return;
+      // Obtenir l'utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('Utilisateur non connecté');
       }
 
-      // Marquer le message original comme répondu
+      // 1. Sauvegarder la réponse dans la base de données
+      const { data: replyData, error: replyError } = await supabase
+        .from('messages')
+        .insert({
+          sender_email: user.email,
+          sender_name: user.user_metadata?.full_name || 'Utilisateur',
+          recipient_email: selectedMessage.sender_email,
+          subject: `Réponse - ${selectedMessage.subject || 'Demande d\'information'}`,
+          message: replyText,
+          parent_message_id: selectedMessage.id,
+          status: 'new'
+        })
+        .select()
+        .single();
+
+      if (replyError) throw replyError;
+
+      // 2. Envoyer l'email de réponse via la fonction Edge (même mécanisme que MachineDetail)
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          to: selectedMessage.sender_email,
+          from: 'contact@minegrid-equipment.com',
+          subject: `Réponse - ${selectedMessage.subject || 'Demande d\'information'}`,
+          html: `
+            <h2>Réponse à votre demande</h2>
+            <p><strong>Message original :</strong></p>
+            <p>${selectedMessage.message}</p>
+            <hr>
+            <p><strong>Notre réponse :</strong></p>
+            <p>${replyText.replace(/\n/g, '<br>')}</p>
+            <hr>
+            <p>Cordialement,<br>L'équipe Minegrid Équipement</p>
+          `,
+          machineId: selectedMessage.machine_id || 'reply',
+          messageId: replyData.id
+        }
+      });
+
+      // 3. Créer une notification interne pour l'utilisateur destinataire
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_email: selectedMessage.sender_email,
+          title: 'Nouvelle réponse reçue',
+          message: `Vous avez reçu une réponse à votre message "${selectedMessage.subject || 'Demande d\'information'}"`,
+          type: 'message_reply',
+          data: {
+            original_message_id: selectedMessage.id,
+            reply_message_id: replyData.id,
+            sender_email: user.email,
+            sender_name: user.user_metadata?.full_name || 'Utilisateur'
+          },
+          read: false
+        });
+
+      // 4. Mettre à jour le statut du message original
       const { error: updateError } = await supabase
         .from('messages')
         .update({ status: 'replied' })
         .eq('id', selectedMessage.id);
 
-      if (updateError) {
-        console.error('Erreur mise à jour statut:', updateError);
+      // 5. Mettre à jour le statut de la réponse
+      if (replyData.id) {
+        const { error: replyUpdateError } = await supabase
+          .from('messages')
+          .update({ 
+            status: emailError ? 'failed' : 'sent',
+            sent_at: emailError ? null : new Date().toISOString(),
+            error_message: emailError ? emailError.message : null
+          })
+          .eq('id', replyData.id);
       }
 
-      setShowReplyModal(false);
+      if (replyError) throw replyError;
+      if (emailError) console.error('Erreur email:', emailError);
+      if (notificationError) console.error('Erreur notification:', notificationError);
+      if (updateError) console.error('Erreur mise à jour:', updateError);
+
+      // Succès
       setReplyText('');
       setSelectedMessage(null);
       await onRefresh();
+      
+      // Afficher notification de succès
+      if (emailError) {
+        alert('Réponse sauvegardée mais erreur d\'envoi email. Le destinataire recevra une notification interne.');
+      } else {
+        alert('Réponse envoyée avec succès !');
+      }
+
     } catch (error) {
-      console.error('Erreur envoi réponse:', error);
-    } finally {
-      setReplyLoading(false);
+      console.error('Erreur lors de l\'envoi de la réponse:', error);
+      alert('Erreur lors de l\'envoi de la réponse');
     }
   };
 
