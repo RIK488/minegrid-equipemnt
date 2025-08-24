@@ -5143,44 +5143,44 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(message.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                          <div className="flex space-x-1">
-                        {/* Onglet Voir */}
-                        <button
-                          onClick={() => handleViewMessage(message)}
-                          className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-t-lg border border-orange-200 hover:bg-orange-200 transition-colors"
-                          title="Voir le message"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        
-                        {/* Onglet Répondre */}
-                        <button
-                          onClick={() => handleReplyToMessage(message)}
-                          className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-t-lg border border-orange-200 hover:bg-orange-200 transition-colors"
-                          title="Répondre au message"
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                        </button>
-                        
-                        {/* Onglet Archiver */}
-                        <button
-                          onClick={() => handleArchiveMessageModal(message)}
-                          className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-t-lg border border-orange-200 hover:bg-orange-200 transition-colors"
-                          title="Archiver le message"
-                        >
-                          <Archive className="h-4 w-4" />
-                        </button>
-                        
-                        {/* Onglet Supprimer */}
-                        <button
-                          onClick={() => handleDeleteMessage(message.id)}
-                          className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-t-lg border border-orange-200 hover:bg-orange-200 transition-colors"
-                          title="Supprimer le message"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                  <td className="px-2 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex gap-0.5 flex-wrap">
+                      {/* Onglet Voir */}
+                      <button
+                        onClick={() => handleViewMessage(message)}
+                        className="p-0.5 text-xs bg-orange-100 text-orange-700 rounded border border-orange-200 hover:bg-orange-200 transition-colors min-w-0"
+                        title="Voir le message"
+                      >
+                        <Eye className="h-3 w-3" />
+                      </button>
+                      
+                      {/* Onglet Répondre */}
+                      <button
+                        onClick={() => handleReplyToMessage(message)}
+                        className="p-0.5 text-xs bg-orange-100 text-orange-700 rounded border border-orange-200 hover:bg-orange-200 transition-colors min-w-0"
+                        title="Répondre au message"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                      </button>
+                      
+                      {/* Onglet Archiver */}
+                      <button
+                        onClick={() => handleArchiveMessageModal(message)}
+                        className="p-0.5 text-xs bg-orange-100 text-orange-700 rounded border border-orange-200 hover:bg-orange-200 transition-colors min-w-0"
+                        title="Archiver le message"
+                      >
+                        <Archive className="h-3 w-3" />
+                      </button>
+                      
+                      {/* Onglet Supprimer */}
+                      <button
+                        onClick={() => handleDeleteMessage(message.id)}
+                        className="p-0.5 text-xs bg-orange-100 text-orange-700 rounded border border-orange-200 hover:bg-orange-200 transition-colors min-w-0"
+                        title="Supprimer le message"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -5355,7 +5355,7 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
 
             <div className="p-6 space-y-4">
               <div className="flex items-center">
-                <Archive className="h-8 w-8 text-purple-600 mr-3" />
+                <Archive className="h-8 w-8 text-orange-600 mr-3" />
                 <div>
                   <h3 className="font-medium text-gray-900">Confirmer l'archivage</h3>
                   <p className="text-sm text-gray-600 mt-1">
@@ -5382,7 +5382,7 @@ function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () =
                 <button
                   onClick={() => handleArchiveMessage(selectedMessage.id)}
                   disabled={archiveLoading}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center"
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center"
                 >
                   {archiveLoading ? (
                     <>

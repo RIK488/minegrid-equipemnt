@@ -247,7 +247,7 @@ export default function DocumentsEspace() {
           </div>
           <button
             onClick={() => setShowUploadModal(true)}
-            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
             <Plus className="h-4 w-4 mr-2" />
             Ajouter un document
@@ -264,14 +264,14 @@ export default function DocumentsEspace() {
                 placeholder="Rechercher..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
             
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="all">Tous les types</option>
               {documentTypes.map(type => (
@@ -282,7 +282,7 @@ export default function DocumentsEspace() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="all">Toutes les catégories</option>
               {categories.map(category => (
@@ -301,7 +301,7 @@ export default function DocumentsEspace() {
         <div className="bg-white rounded-lg shadow-sm">
           {loading ? (
             <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
               <p className="mt-2 text-gray-600">Chargement des documents...</p>
             </div>
           ) : filteredDocuments.length === 0 ? (
@@ -310,7 +310,7 @@ export default function DocumentsEspace() {
               <p className="text-gray-600">Aucun document trouvé</p>
               <button
                 onClick={() => setShowUploadModal(true)}
-                className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
               >
                 Ajouter votre premier document
               </button>
@@ -339,7 +339,7 @@ export default function DocumentsEspace() {
                             <span>{formatFileSize(doc.file_size)}</span>
                             <span className="px-2 py-1 bg-gray-100 rounded-full">{doc.category}</span>
                             {doc.tags.map((tag, index) => (
-                              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                              <span key={index} className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full">
                                 {tag}
                               </span>
                             ))}
@@ -352,7 +352,7 @@ export default function DocumentsEspace() {
                           href={doc.file_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                          className="p-2 text-gray-400 hover:text-orange-600 transition-colors"
                           title="Voir"
                         >
                           <Eye className="h-4 w-4" />
@@ -360,7 +360,7 @@ export default function DocumentsEspace() {
                         <a
                           href={doc.file_url}
                           download
-                          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                          className="p-2 text-gray-400 hover:text-orange-600 transition-colors"
                           title="Télécharger"
                         >
                           <Download className="h-4 w-4" />
@@ -404,7 +404,7 @@ export default function DocumentsEspace() {
                 <input
                   type="file"
                   onChange={handleFileSelect}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
                 />
               </div>
@@ -417,7 +417,7 @@ export default function DocumentsEspace() {
                   type="text"
                   value={uploadData.name}
                   onChange={(e) => setUploadData({...uploadData, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
               
@@ -428,7 +428,7 @@ export default function DocumentsEspace() {
                 <select
                   value={uploadData.type}
                   onChange={(e) => setUploadData({...uploadData, type: e.target.value as Document['type']})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   {documentTypes.map(type => (
                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -443,7 +443,7 @@ export default function DocumentsEspace() {
                 <select
                   value={uploadData.category}
                   onChange={(e) => setUploadData({...uploadData, category: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="">Sélectionner une catégorie</option>
                   {categories.map(category => (
@@ -460,7 +460,7 @@ export default function DocumentsEspace() {
                   value={uploadData.description}
                   onChange={(e) => setUploadData({...uploadData, description: e.target.value})}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
               
@@ -473,7 +473,7 @@ export default function DocumentsEspace() {
                   value={uploadData.tags}
                   onChange={(e) => setUploadData({...uploadData, tags: e.target.value})}
                   placeholder="ex: machine, client, maintenance"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
             </div>
@@ -488,7 +488,7 @@ export default function DocumentsEspace() {
               <button
                 onClick={handleUpload}
                 disabled={!selectedFile || uploading}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
                 {uploading ? 'Upload en cours...' : 'Uploader'}
               </button>

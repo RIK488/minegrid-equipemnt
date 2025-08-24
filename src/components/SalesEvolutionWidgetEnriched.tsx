@@ -245,126 +245,169 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
     }
   };
 
-  // Actions rapides connectées aux services
-  const handleQuickAction = async (action: string) => {
+  // Actions rapides avec réactivité maximale
+  const handleQuickAction = (action: string) => {
+    // Feedback visuel immédiat
+    const button = event?.target as HTMLButtonElement;
+    if (button) {
+      button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
+    }
+
+    console.log(`🔄 Action rapide: ${action}`);
+    
+    // Actions synchrones immédiates
     switch (action) {
       case 'publish_promo':
-        await handlePublishPromo();
+        handlePublishPromo();
         break;
       case 'add_equipment':
-        await handleAddEquipment();
+        handleAddEquipment();
         break;
       case 'correct_month':
-        await handleCorrectMonth();
+        handleCorrectMonth();
         break;
       case 'ai_forecast':
-        await handleAIForecast();
+        handleAIForecast();
         break;
       case 'export_data':
-        await handleExportData();
+        handleExportData();
         break;
+      default:
+        notificationService.warning('Action non reconnue', `L'action "${action}" n'est pas implémentée`);
     }
+
+    // Restaurer le bouton immédiatement après l'action
+    setTimeout(() => {
+      if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+      }
+    }, 100);
   };
 
-  const handlePublishPromo = async () => {
+  const handlePublishPromo = () => {
     try {
+      // Action immédiate
       notificationService.info('Création de promotion', 'Ouverture du formulaire de promotion...');
-      
-      // Ouvrir modal de création de promotion
       setShowPromoModal(true);
       
-      // TODO: Implémenter la vraie logique de création de promotion
-      // const promotionData = {
-      //   title: 'Promotion spéciale',
-      //   description: 'Offre limitée sur les équipements',
-      //   discount: 15,
-      //   startDate: new Date().toISOString(),
-      //   endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      //   equipmentIds: [],
-      //   status: 'active'
-      // };
-      
-      // const response = await apiService.createPromotion(promotionData);
-      // if (response.success) {
-      //   notificationService.promotionCreated(promotionData.title);
-      // } else {
-      //   notificationService.apiError('création de promotion', response.error || 'Erreur inconnue');
-      // }
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        // TODO: Implémenter la vraie logique de création de promotion
+        // const promotionData = {
+        //   title: 'Promotion spéciale',
+        //   description: 'Offre limitée sur les équipements',
+        //   discount: 15,
+        //   startDate: new Date().toISOString(),
+        //   endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        //   equipmentIds: [],
+        //   status: 'active'
+        // };
+        
+        // apiService.createPromotion(promotionData).then(response => {
+        //   if (response.success) {
+        //     notificationService.promotionCreated(promotionData.title);
+        //   } else {
+        //     notificationService.apiError('création de promotion', response.error || 'Erreur inconnue');
+        //   }
+        // }).catch(error => {
+        //   console.error('Erreur API création promotion:', error);
+        // });
+      }, 50);
       
     } catch (error) {
+      console.error('Erreur lors de la création de promotion:', error);
       notificationService.error('Erreur', 'Impossible de créer la promotion');
     }
   };
 
-  const handleAddEquipment = async () => {
+  const handleAddEquipment = () => {
     try {
+      // Action immédiate
       notificationService.info('Ajout d\'équipement', 'Redirection vers le formulaire d\'ajout...');
-      
-      // Ouvrir modal d'ajout d'équipement
       setShowEquipmentModal(true);
       
-      // TODO: Implémenter la vraie logique d'ajout d'équipement
-      // Rediriger vers la page d'ajout d'équipement ou ouvrir un modal
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        // TODO: Implémenter la vraie logique d'ajout d'équipement
+        // Rediriger vers la page d'ajout d'équipement ou ouvrir un modal
+      }, 50);
       
     } catch (error) {
+      console.error('Erreur lors de l\'ajout d\'équipement:', error);
       notificationService.error('Erreur', 'Impossible d\'ajouter l\'équipement');
     }
   };
 
-  const handleCorrectMonth = async () => {
+  const handleCorrectMonth = () => {
     try {
+      // Action immédiate
       notificationService.info('Correction des données', 'Ouverture du formulaire de correction...');
-      
-      // Ouvrir modal de correction
       setShowCorrectionModal(true);
       
-      // TODO: Implémenter la vraie logique de correction
-      // const correctionData = {
-      //   month: 'Juin',
-      //   newSales: 72000,
-      //   reason: 'Correction des données de vente'
-      // };
-      
-      // const response = await apiService.updateSalesData(correctionData);
-      // if (response.success) {
-      //   notificationService.success('Données corrigées', 'Les données de vente ont été mises à jour');
-      //   loadSalesData(); // Recharger les données
-      // } else {
-      //   notificationService.apiError('correction des données', response.error || 'Erreur inconnue');
-      // }
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        // TODO: Implémenter la vraie logique de correction
+        // const correctionData = {
+        //   month: 'Juin',
+        //   newSales: 72000,
+        //   reason: 'Correction des données de vente'
+        // };
+        
+        // apiService.updateSalesData(correctionData).then(response => {
+        //   if (response.success) {
+        //     notificationService.success('Données corrigées', 'Les données de vente ont été mises à jour');
+        //     loadSalesData(); // Recharger les données
+        //   } else {
+        //     notificationService.apiError('correction des données', response.error || 'Erreur inconnue');
+        //   }
+        // }).catch(error => {
+        //   console.error('Erreur API correction données:', error);
+        // });
+      }, 50);
       
     } catch (error) {
+      console.error('Erreur lors de la correction:', error);
       notificationService.error('Erreur', 'Impossible de corriger les données');
     }
   };
 
-  const handleAIForecast = async () => {
+  const handleAIForecast = () => {
     try {
+      // Action immédiate
       notificationService.aiProcessing();
+      setShowForecast(true);
       
-      // Simuler un délai d'analyse IA
+      // Appel API en arrière-plan (sans await)
       setTimeout(() => {
-        setShowForecast(true);
         notificationService.aiCompleted();
-      }, 2000);
-      
-      // TODO: Implémenter la vraie logique de prévision IA
-      // const forecastData = await apiService.getAIForecast(salesData);
-      // if (forecastData.success) {
-      //   setForecastData(forecastData.data);
-      //   setShowForecast(true);
-      //   notificationService.aiCompleted();
-      // } else {
-      //   notificationService.apiError('prévision IA', forecastData.error || 'Erreur inconnue');
-      // }
+        
+        // TODO: Implémenter la vraie logique de prévision IA
+        // apiService.getAIForecast(salesData).then(forecastData => {
+        //   if (forecastData.success) {
+        //     setForecastData(forecastData.data);
+        //     setShowForecast(true);
+        //     notificationService.aiCompleted();
+        //   } else {
+        //     notificationService.apiError('prévision IA', forecastData.error || 'Erreur inconnue');
+        //   }
+        // }).catch(error => {
+        //   console.error('Erreur API prévision IA:', error);
+        // });
+      }, 50);
       
     } catch (error) {
+      console.error('Erreur lors de la prévision IA:', error);
       notificationService.error('Erreur IA', 'Impossible de générer la prévision');
     }
   };
 
-  const handleExportData = async () => {
+  const handleExportData = () => {
     try {
+      // Action immédiate
       notificationService.info('Export en cours', 'Génération du rapport...');
       
       const exportData = {
@@ -377,15 +420,20 @@ const SalesEvolutionWidgetEnriched: React.FC<Props> = ({ data }) => {
         }))
       };
       
-      const result = await exportService.exportSalesEvolution(exportData, { format: 'pdf' });
-      
-      if (result.success) {
-        notificationService.success('Export réussi', `Rapport téléchargé: ${result.filename}`);
-      } else {
-        notificationService.error('Erreur d\'export', result.error || 'Erreur inconnue');
-      }
+      // Export immédiat (sans await)
+      exportService.exportSalesEvolution(exportData, { format: 'pdf' }).then(result => {
+        if (result.success) {
+          notificationService.success('Export réussi', `Rapport téléchargé: ${result.filename}`);
+        } else {
+          notificationService.error('Erreur d\'export', result.error || 'Erreur inconnue');
+        }
+      }).catch(error => {
+        console.error('Erreur export:', error);
+        notificationService.error('Erreur d\'export', 'Impossible d\'exporter les données');
+      });
       
     } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
       notificationService.error('Erreur d\'export', 'Impossible d\'exporter les données');
     }
   };

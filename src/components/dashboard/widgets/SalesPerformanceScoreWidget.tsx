@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { getSalesPerformanceData } from '../../../utils/api';
+import { apiCall, showNotification } from '../../../services/apiService';
 
 interface SalesPerformanceScoreData {
   score: number;
@@ -163,9 +164,39 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
     }
   };
 
-  // Fonction pour gérer l'action du bouton Agir
+  // Fonction pour gérer l'action du bouton Agir avec réactivité maximale
   const handleRecommendationAction = (recommendation: any) => {
-    alert(`Action recommandée : ${recommendation.action}`);
+    // Feedback visuel immédiat
+    const button = event?.target as HTMLButtonElement;
+    if (button) {
+      button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
+    }
+
+    console.log(`🔄 Action recommandation: ${recommendation.action}`);
+    
+    // Action immédiate
+    showNotification('success', `Action recommandée : ${recommendation.action}`);
+    
+    // Appel API en arrière-plan (sans await)
+    setTimeout(() => {
+      apiCall('POST', '/api/recommendations/execute', {
+        recommendationId: recommendation.id,
+        action: recommendation.action
+      }).catch(error => {
+        console.error('Erreur API recommandation:', error);
+      });
+    }, 50);
+
+    // Restaurer le bouton immédiatement après l'action
+    setTimeout(() => {
+      if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+      }
+    }, 100);
   };
 
   const [showQuickActions, setShowQuickActions] = useState(true);

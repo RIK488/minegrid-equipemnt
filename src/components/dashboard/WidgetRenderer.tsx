@@ -8,6 +8,10 @@ import SalesPipelineWidget from './widgets/SalesPipelineWidget';
 import SalesEvolutionWidgetEnriched from '../../components/SalesEvolutionWidgetEnriched';
 import DailyActionsPriorityWidget from './widgets/DailyActionsPriorityWidget';
 
+// Import des widgets IA
+import AIInsightsWidget from './widgets/AIInsightsWidget';
+import AIOptimizationWidget from './widgets/AIOptimizationWidget';
+
 // Import des widgets basiques (fallback)
 import MetricWidget from './widgets/MetricWidget';
 import ChartWidget from './widgets/ChartWidget';
@@ -441,6 +445,23 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 
   // Rendre le widget approprié selon son type et ID
   switch (widget.type) {
+    // Widgets IA - Priorité haute
+    case 'ai-insights':
+      return (
+        <AIInsightsWidget 
+          userId="current-user-id" // À remplacer par l'ID utilisateur réel
+          widgetSize={widgetSize}
+        />
+      );
+
+    case 'ai-optimization':
+      return (
+        <AIOptimizationWidget 
+          userId="current-user-id" // À remplacer par l'ID utilisateur réel
+          widgetSize={widgetSize}
+        />
+      );
+
     // Widgets avancés avec IA - Priorité haute
     case 'performance':
       if (widget.id === 'sales-performance-score') {

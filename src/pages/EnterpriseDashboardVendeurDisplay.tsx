@@ -29,12 +29,15 @@ const serviceLinks = [
   '/#assistant-ia',           // Assistant IA (corrigé)
 ];
 
+// Ajout des widgets IA à la liste des widgets disponibles
 const WIDGETS_VENDEUR_IDS = [
   'sales-performance-score',
-  'sales-evolution',
   'stock-status',
+  'sales-evolution',
   'sales-pipeline',
-  'daily-actions'
+  'daily-actions-priority',
+  'ai-insights',           // Nouveau widget IA
+  'ai-optimization'        // Nouveau widget IA
 ];
 
 // Fonction utilitaire pour garantir un layout complet et ordonné
@@ -574,6 +577,13 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       
       try {
         localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(configToSave));
+        
+        // ✅ MARQUER QUE LE TABLEAU DE BORD EST CONFIGURÉ
+        localStorage.setItem('enterpriseDashboardConfigured', 'true');
+        localStorage.setItem('enterpriseDashboardConfig_vendeur_configured', 'true');
+        
+        console.log('✅ Tableau de bord Enterprise Vendeur sauvegardé et configuré');
+        
         setConfig(configToSave);
         
         // Affiche le statut de sauvegarde

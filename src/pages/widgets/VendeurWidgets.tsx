@@ -140,6 +140,46 @@ export const VendeurWidgets: VendeurWidgetsConfig = {
         dynamicContent: true,
         stickyDisplay: true,
       }
+    },
+    {
+      id: 'ai-insights',
+      type: 'ai-insights',
+      title: 'Insights IA',
+      description: 'Analyses prédictives, recommandations intelligentes et insights automatiques',
+      icon: BarChart3,
+      dataSource: 'ai-insights',
+      priority: 6,
+      category: 'ai',
+      features: {
+        periodSelector: true,
+        export: true,
+        analytics: true,
+        alerts: true,
+        aiGenerated: true,
+        dynamicContent: true,
+        forecasting: true,
+        trendAnalysis: true,
+      }
+    },
+    {
+      id: 'ai-optimization',
+      type: 'ai-optimization',
+      title: 'Optimisation IA',
+      description: 'Suggestions d\'optimisation pour les prix, le SEO et le marketing',
+      icon: TrendingUp,
+      dataSource: 'ai-optimization',
+      priority: 7,
+      category: 'ai',
+      features: {
+        periodSelector: true,
+        export: true,
+        analytics: true,
+        alerts: true,
+        aiGenerated: true,
+        dynamicContent: true,
+        recommendations: true,
+        autoNotifications: true,
+      }
     }
   ]
 }; 

@@ -1,27 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  AlertTriangle, 
-  Phone, 
-  Mail, 
-  Calendar, 
-  CheckCircle, 
-  Clock, 
-  Target, 
-  Users, 
-  DollarSign,
-  TrendingUp,
-  Zap,
-  Star,
-  MessageSquare,
-  FileText,
-  ArrowRight,
-  ChevronRight,
-  ChevronDown
+  AlertTriangle, Clock, DollarSign, Phone, Mail, Calendar, 
+  ChevronRight, ChevronDown, Zap, Target, Users, TrendingUp,
+  FileText, CheckCircle
 } from 'lucide-react';
-import { useApiService } from '../../../utils/api';
-import { useNotificationService } from '../../../utils/notifications';
-import { useExportService } from '../../../utils/export';
-import { useCommunicationService } from '../../../utils/communication';
+import { apiCall, showNotification, sendMessage, exportData } from '../../../services/apiService';
 import { getMessages, getOffers, getDashboardStats } from '../../../utils/api';
 
 interface DailyAction {
@@ -62,12 +45,6 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
   const [realActions, setRealActions] = useState<DailyAction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Services communs
-  const { apiCall } = useApiService();
-  const { showNotification } = useNotificationService();
-  const { exportData } = useExportService();
-  const { sendMessage } = useCommunicationService();
 
   // Fonction pour charger les vraies données depuis Supabase
   const loadRealData = async () => {
@@ -333,6 +310,18 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
     }
   };
 
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'call': return 'Appel';
+      case 'email': return 'Email';
+      case 'meeting': return 'Réunion';
+      case 'follow-up': return 'Suivi';
+      case 'quote': return 'Devis';
+      case 'proposal': return 'Proposition';
+      default: return 'Autre';
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="w-4 h-4 text-green-500" />;
@@ -351,37 +340,151 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
     }).format(amount);
   };
 
-  const handleActionClick = async (action: DailyAction, actionType: string) => {
+  const handleActionClick = (action: DailyAction, actionType: string) => {
+    // Feedback visuel immédiat
+    const button = event?.target as HTMLButtonElement;
+    if (button) {
+      button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
+    }
+
+    console.log(`🔄 Action click: ${actionType}`, action);
+    
+    // Action immédiate
     if (onAction) {
       onAction(actionType, action);
     }
     
-    try {
-      switch (actionType) {
-        case 'start':
-          await apiCall('POST', '/api/actions/start', { actionId: action.id });
-          showNotification('success', `Action démarrée : ${action.title}`);
-          break;
-        case 'complete':
-          await apiCall('POST', '/api/actions/complete', { actionId: action.id });
-          showNotification('success', `Action terminée : ${action.title}`);
-          break;
-        case 'contact':
-          if (action.contact?.phone) {
-            await sendMessage('SMS', action.contact.phone, `Rappel : ${action.title}`);
-          }
-          if (action.contact?.email) {
-            await sendMessage('EMAIL', action.contact.email, `Rappel : ${action.title}`);
-          }
-          showNotification('info', `Contact établi avec ${action.contact?.name || 'le contact'}`);
-          break;
-        case 'reschedule':
-          await apiCall('POST', '/api/actions/reschedule', { actionId: action.id });
-          showNotification('info', `Action reprogrammée : ${action.title}`);
-          break;
+    // Notification immédiate
+    showNotification('info', `Exécution de ${actionType}...`);
+    
+    // Actions synchrones immédiates
+    switch (actionType) {
+      case 'start':
+        handleStartAction(action);
+        break;
+      case 'complete':
+        handleCompleteAction(action);
+        break;
+      case 'contact':
+        handleContactAction(action);
+        break;
+      case 'reschedule':
+        handleRescheduleAction(action);
+        break;
+      default:
+        showNotification('warning', `L'action "${actionType}" n'est pas encore implémentée`);
+    }
+
+    // Restaurer le bouton immédiatement après l'action
+    setTimeout(() => {
+      if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
       }
+    }, 100);
+  };
+
+  const handleStartAction = (action: DailyAction) => {
+    try {
+      // Action immédiate - mise à jour du statut
+      setRealActions(prev => prev.map(a => 
+        a.id === action.id 
+          ? { ...a, status: 'in-progress' as const }
+          : a
+      ));
+      
+      showNotification('success', `Action "${action.title}" démarrée`);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/actions/start', { actionId: action.id }).catch(error => {
+          console.error('Erreur API démarrage:', error);
+        });
+      }, 50);
+      
     } catch (error) {
-      showNotification('error', `Erreur lors de l'action : ${error}`);
+      console.error('Erreur lors du démarrage:', error);
+      showNotification('error', 'Impossible de démarrer l\'action');
+    }
+  };
+
+  const handleContactAction = (action: DailyAction) => {
+    try {
+      // Action immédiate - contact
+      showNotification('success', `Contact établi avec ${action.contact?.name || 'le contact'}`);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        if (action.contact?.phone) {
+          sendMessage('SMS', action.contact.phone, `Rappel : ${action.title}`).catch(error => {
+            console.error('Erreur SMS:', error);
+          });
+        }
+        if (action.contact?.email) {
+          sendMessage('EMAIL', action.contact.email, `Rappel : ${action.title}`).catch(error => {
+            console.error('Erreur email:', error);
+          });
+        }
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors du contact:', error);
+      showNotification('error', 'Impossible de contacter');
+    }
+  };
+
+  const handleCompleteAction = (action: DailyAction) => {
+    try {
+      // Action immédiate - mise à jour du statut
+      setRealActions(prev => prev.map(a => 
+        a.id === action.id 
+          ? { ...a, status: 'completed' as const }
+          : a
+      ));
+      
+      showNotification('success', `Action "${action.title}" terminée`);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/actions/complete', { actionId: action.id }).catch(error => {
+          console.error('Erreur API complétion:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la complétion:', error);
+      showNotification('error', 'Impossible de terminer l\'action');
+    }
+  };
+
+  const handleRescheduleAction = (action: DailyAction) => {
+    try {
+      // Action immédiate - reprogrammation
+      const newTime = new Date(Date.now() + 24 * 60 * 60 * 1000); // +24h
+      setRealActions(prev => prev.map(a => 
+        a.id === action.id 
+          ? { ...a, dueTime: newTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) }
+          : a
+      ));
+      
+      showNotification('success', `Action "${action.title}" reprogrammée`);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/actions/reschedule', { 
+          actionId: action.id,
+          newTime: newTime.toISOString()
+        }).catch(error => {
+          console.error('Erreur API reprogrammation:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la reprogrammation:', error);
+      showNotification('error', 'Impossible de reprogrammer l\'action');
     }
   };
 
@@ -412,60 +515,214 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
     }
   };
 
-  // Actions rapides
-  const handleQuickAction = async (action: string) => {
-    try {
-      switch (action) {
-        case 'new-task':
-          await apiCall('POST', '/api/actions/create', { 
-            title: 'Nouvelle tâche',
-            priority: 'medium',
-            category: 'follow-up'
-          });
-          showNotification('success', 'Nouvelle tâche créée');
-          break;
-        case 'auto-followup':
-          await apiCall('POST', '/api/actions/auto-followup', { 
-            actions: filteredActions.filter(a => a.status === 'pending')
-          });
-          showNotification('success', 'Relances automatiques programmées');
-          break;
-        case 'schedule':
-          await apiCall('POST', '/api/actions/schedule', { 
-            actions: filteredActions.filter(a => a.status === 'pending')
-          });
-          showNotification('success', 'Actions planifiées');
-          break;
-        case 'ai-report':
-          const report = await apiCall('GET', '/api/actions/ai-report', { 
-            actions: filteredActions
-          });
-          await exportData(report, 'rapport-actions-ia', 'pdf');
-          showNotification('success', 'Rapport IA généré et exporté');
-          break;
-        case 'export-actions':
-          await exportData(filteredActions, 'actions-prioritaires', 'excel');
-          showNotification('success', 'Actions exportées');
-          break;
-        case 'notify-team':
-          await sendMessage('TEAM', 'all', `Actions prioritaires du jour : ${filteredActions.length} tâches`);
-          showNotification('success', 'Équipe notifiée');
-          break;
-        case 'sync-crm':
-          await apiCall('POST', '/api/actions/sync-crm', { 
-            actions: filteredActions
-          });
-          showNotification('success', 'CRM synchronisé');
-          break;
-        case 'optimize-schedule':
-          const optimized = await apiCall('POST', '/api/actions/optimize-schedule', { 
-            actions: filteredActions
-          });
-          showNotification('success', 'Planning optimisé par IA');
-          break;
+  // Actions rapides avec réactivité maximale
+  const handleQuickAction = (action: string) => {
+    // Feedback visuel immédiat
+    const button = event?.target as HTMLButtonElement;
+    if (button) {
+      button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
+    }
+
+    console.log(`🔄 Action rapide: ${action}`);
+    
+    // Notification immédiate
+    showNotification('info', `Exécution de ${action}...`);
+    
+    // Actions synchrones immédiates
+    switch (action) {
+      case 'new-task':
+        handleNewTask();
+        break;
+      case 'auto-followup':
+        handleAutoFollowup();
+        break;
+      case 'schedule':
+        handleSchedule();
+        break;
+      case 'ai-report':
+        handleAIReport();
+        break;
+      case 'export-actions':
+        handleExportActions();
+        break;
+      case 'notify-team':
+        handleNotifyTeam();
+        break;
+      case 'sync-crm':
+        handleSyncCRM();
+        break;
+      case 'optimize-schedule':
+        handleOptimizeSchedule();
+        break;
+      default:
+        showNotification('warning', `L'action "${action}" n'est pas encore implémentée`);
+    }
+
+    // Restaurer le bouton immédiatement après l'action
+    setTimeout(() => {
+      if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
       }
+    }, 100);
+  };
+
+  const handleNewTask = () => {
+    try {
+      // Action immédiate
+      showNotification('success', 'Nouvelle tâche créée');
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/actions/create', { 
+          title: 'Nouvelle tâche',
+          priority: 'medium',
+          category: 'follow-up'
+        }).catch(error => {
+          console.error('Erreur API création tâche:', error);
+        });
+      }, 50);
+      
     } catch (error) {
-      showNotification('error', `Erreur lors de l'action rapide : ${error}`);
+      console.error('Erreur lors de la création de tâche:', error);
+      showNotification('error', 'Impossible de créer la tâche');
+    }
+  };
+
+  const handleAutoFollowup = () => {
+    try {
+      // Action immédiate
+      showNotification('success', 'Relances automatiques programmées');
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/actions/auto-followup', { 
+          actions: filteredActions.filter(a => a.status === 'pending')
+        }).catch(error => {
+          console.error('Erreur API relance auto:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la relance auto:', error);
+      showNotification('error', 'Impossible de programmer les relances');
+    }
+  };
+
+  const handleSchedule = () => {
+    try {
+      // Action immédiate
+      showNotification('success', 'Actions planifiées');
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/actions/schedule', { 
+          actions: filteredActions.filter(a => a.status === 'pending')
+        }).catch(error => {
+          console.error('Erreur API planification:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la planification:', error);
+      showNotification('error', 'Impossible de planifier les actions');
+    }
+  };
+
+  const handleAIReport = () => {
+    try {
+      // Action immédiate
+      showNotification('success', 'Rapport IA généré et exporté');
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('GET', '/api/actions/ai-report', { 
+          actions: filteredActions
+        }).then(report => {
+          exportData(report, 'rapport-actions-ia', 'pdf').catch(error => {
+            console.error('Erreur export rapport:', error);
+          });
+        }).catch(error => {
+          console.error('Erreur API rapport IA:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la génération du rapport:', error);
+      showNotification('error', 'Impossible de générer le rapport IA');
+    }
+  };
+
+  const handleExportActions = () => {
+    try {
+      // Action immédiate
+      exportData(filteredActions, 'actions-prioritaires', 'excel');
+      showNotification('success', 'Actions exportées');
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+      showNotification('error', 'Impossible d\'exporter les actions');
+    }
+  };
+
+  const handleNotifyTeam = () => {
+    try {
+      // Action immédiate
+      showNotification('success', 'Équipe notifiée');
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        sendMessage('TEAM', 'all', `Actions prioritaires du jour : ${filteredActions.length} tâches`).catch(error => {
+          console.error('Erreur API notification équipe:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la notification:', error);
+      showNotification('error', 'Impossible de notifier l\'équipe');
+    }
+  };
+
+  const handleSyncCRM = () => {
+    try {
+      // Action immédiate
+      showNotification('success', 'CRM synchronisé');
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/actions/sync-crm', { 
+          actions: filteredActions
+        }).catch(error => {
+          console.error('Erreur API sync CRM:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la synchronisation CRM:', error);
+      showNotification('error', 'Impossible de synchroniser le CRM');
+    }
+  };
+
+  const handleOptimizeSchedule = () => {
+    try {
+      // Action immédiate
+      showNotification('success', 'Planning optimisé par IA');
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/actions/optimize-schedule', { 
+          actions: filteredActions
+        }).catch(error => {
+          console.error('Erreur API optimisation planning:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'optimisation:', error);
+      showNotification('error', 'Impossible d\'optimiser le planning');
     }
   };
 

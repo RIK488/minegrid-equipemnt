@@ -14,6 +14,8 @@ const ListWidget: React.FC<ListWidgetProps> = ({ widget, data, widgetSize = 'med
   const [showDetails, setShowDetails] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ListItem | null>(null);
   const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // Fonction pour obtenir la taille adaptative
   const getAdaptiveSize = (type: 'text' | 'spacing' | 'grid') => {
@@ -89,25 +91,90 @@ const ListWidget: React.FC<ListWidgetProps> = ({ widget, data, widgetSize = 'med
     return { total, high, medium, low };
   };
 
-  // Fonction pour gérer les actions
-  const handleAction = (action: string, item: ListItem) => {
+  // Fonction pour gérer les actions avec réactivité maximale
+  const handleAction = (action: string, item: any) => {
+    // Feedback visuel immédiat
+    const button = event?.target as HTMLButtonElement;
+    if (button) {
+      button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
+    }
+
+    console.log(`🔄 Action: ${action}`, item);
+    
+    // Action immédiate
     if (onAction) {
       onAction(action, item);
     }
     
+    // Actions synchrones immédiates
     switch (action) {
       case 'view':
         setSelectedItem(item);
         setShowDetails(true);
         break;
       case 'edit':
-        // Logique d'édition
+        handleEditAction(item);
         break;
       case 'delete':
-        // Logique de suppression
+        handleDeleteAction(item);
+        break;
+      case 'more':
+        setSelectedItem(item);
+        setShowMoreOptions(true);
         break;
       default:
         break;
+    }
+
+    // Restaurer le bouton immédiatement après l'action
+    setTimeout(() => {
+      if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+      }
+    }, 100);
+  };
+
+  const handleEditAction = (item: any) => {
+    try {
+      // Action immédiate
+      console.log('Édition de:', item.title);
+      setSelectedItem(item);
+      setShowEditForm(true);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        // TODO: Implémenter la vraie logique d'édition
+        // apiCall('GET', `/api/items/${item.id}`).catch(error => {
+        //   console.error('Erreur API édition:', error);
+        // });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'édition:', error);
+    }
+  };
+
+  const handleDeleteAction = (item: any) => {
+    try {
+      // Action immédiate
+      console.log('Suppression de:', item.title);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        // TODO: Implémenter la vraie logique de suppression
+        // apiCall('DELETE', `/api/items/${item.id}`).then(() => {
+        //   console.log('Élément supprimé avec succès');
+        // }).catch(error => {
+        //   console.error('Erreur API suppression:', error);
+        // });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
     }
   };
 

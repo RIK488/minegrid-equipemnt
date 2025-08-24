@@ -45,6 +45,9 @@ import EnterpriseDashboardLogisticienDisplay from './pages/EnterpriseDashboardLo
 import EnterpriseDashboardInvestisseurDisplay from './pages/EnterpriseDashboardInvestisseurDisplay';
 import EnterpriseDashboardCourtierDisplay from './pages/EnterpriseDashboardCourtierDisplay';
 import PremiumDashboard from './pages/PremiumDashboard';
+import ApiDocs from './pages/ApiDocs';
+import PrioritySupport from './pages/PrioritySupport';
+import MultiUserManagement from './pages/MultiUserManagement';
 
 console.log('🔥 App.tsx: import EnterpriseDashboard principal');
 
@@ -198,6 +201,15 @@ function AppContent() {
 
       case 'assistant-ia':
         return <AssistantIA />;
+
+      case 'api-docs':
+        return <ApiDocs />;
+
+      case 'priority-support':
+        return <PrioritySupport />;
+
+      case 'multi-user-management':
+        return <MultiUserManagement />;
 
       case 'test-widget':
         return <WidgetTest />;

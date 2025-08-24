@@ -1,7 +1,7 @@
 // Types et interfaces pour le dashboard enterprise
 export interface Widget {
   id: string;
-  type: 'metric' | 'chart' | 'list' | 'calendar' | 'map' | 'equipment' | 'maintenance' | 'performance' | 'pipeline' | 'priority' | 'analytics' | 'daily-actions' | 'daily-priority' | 'inventory' | 'equipment-catalog' | 'customer-leads' | 'quotes-management' | 'after-sales-service' | 'market-trends' | 'sales-analytics';
+  type: 'metric' | 'chart' | 'list' | 'calendar' | 'map' | 'equipment' | 'maintenance' | 'performance' | 'pipeline' | 'priority' | 'analytics' | 'daily-actions' | 'daily-priority' | 'inventory' | 'equipment-catalog' | 'customer-leads' | 'quotes-management' | 'after-sales-service' | 'market-trends' | 'sales-analytics' | 'ai-insights' | 'ai-optimization';
   title: string;
   description: string;
   icon: any;

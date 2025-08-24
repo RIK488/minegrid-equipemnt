@@ -499,6 +499,12 @@ const EnterpriseDashboardCourtierDisplay: React.FC = () => {
     
     localStorage.setItem('enterpriseDashboardConfig_courtier', JSON.stringify(currentConfig));
     
+    // ✅ MARQUER QUE LE TABLEAU DE BORD EST CONFIGURÉ
+    localStorage.setItem('enterpriseDashboardConfigured', 'true');
+    localStorage.setItem('enterpriseDashboardConfig_courtier_configured', 'true');
+    
+    console.log('✅ Tableau de bord Enterprise Courtier sauvegardé et configuré');
+    
     // Simuler un délai de sauvegarde
     setTimeout(() => {
       setSaveStatus('saved');

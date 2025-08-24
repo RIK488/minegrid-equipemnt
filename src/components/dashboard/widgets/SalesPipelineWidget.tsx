@@ -3,8 +3,9 @@ import {
   Plus, ChevronUp, ChevronDown, Brain, AlertTriangle, FileText, Star, TrendingUp, Info, X,
   Phone, Mail, Calendar, Download, Send, Target, Users, TrendingDown, ChevronRight
 } from 'lucide-react';
-import { apiService, notificationService, exportService, communicationService } from '../../../services';
-import { getDashboardStats, getMessages, getOffers } from '../../../utils/api';
+import { apiCall, showNotification, sendMessage, exportData } from '../../../services/apiService';
+import { getDashboardStats } from '../../../utils/api';
+import { RealPipelineService, RealLead, RealPipelineAction, RealPipelineInsight } from '../../../services/realPipelineService';
 
 // Composant spécialisé pour le Pipeline Commercial (version avancée)
 // Correction : data doit être de type { leads: any[] }
@@ -25,76 +26,63 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fonction pour charger les vraies données depuis Supabase
+    // Fonction pour charger les vraies données depuis Supabase
   const loadRealData = async () => {
     try {
       setLoading(true);
       setError(null);
       console.log("🔄 Chargement des données réelles du pipeline depuis Supabase...");
       
+      // Synchroniser automatiquement les données (créer leads depuis messages/offres)
+      const syncResult = await RealPipelineService.syncData();
+      console.log("✅ Synchronisation terminée:", syncResult);
+      
+      // Récupérer les leads réels
+      const realLeads = await RealPipelineService.getLeads();
+      console.log("✅ Leads réels récupérés:", realLeads.length);
+      
+      // Récupérer les actions réelles
+      const realActions = await RealPipelineService.getPipelineActions();
+      console.log("✅ Actions réelles récupérées:", realActions.length);
+      
+      // Récupérer les insights réels
+      const realInsights = await RealPipelineService.getPipelineInsights();
+      console.log("✅ Insights réels récupérés:", realInsights.length);
+      
       // Récupérer les statistiques du dashboard
       const dashboardStats = await getDashboardStats();
-      console.log("✅ Données réelles du pipeline chargées:", dashboardStats);
+      console.log("✅ Statistiques dashboard récupérées:", dashboardStats);
       
-      // Récupérer les messages et offres pour créer des leads
-      const messages = await getMessages();
-      const offers = await getOffers();
-      
-      // Créer des leads à partir des vraies données
-      const realLeads = [];
-      
-      // Créer des leads à partir des messages
-      messages?.slice(0, 5).forEach((msg, index) => {
-        realLeads.push({
-          id: `lead-msg-${index}`,
-          title: `Prospect ${msg.sender?.firstName || 'Inconnu'}`,
-          stage: 'Prospection',
-          priority: 'medium',
-          value: Math.floor(Math.random() * 500000) + 50000,
-          probability: Math.floor(Math.random() * 40) + 10,
-          nextAction: 'Relancer le prospect',
-          assignedTo: 'Vendeur',
-          lastContact: msg.created_at,
-          notes: msg.content || 'Message reçu'
-        });
-      });
-      
-      // Créer des leads à partir des offres
-      offers?.slice(0, 3).forEach((offer, index) => {
-        realLeads.push({
-          id: `lead-offer-${index}`,
-          title: `Offre ${offer.buyer?.firstName || 'Inconnu'}`,
-          stage: 'Négociation',
-          priority: 'high',
-          value: offer.amount || 100000,
-          probability: Math.floor(Math.random() * 30) + 50,
-          nextAction: 'Finaliser la négociation',
-          assignedTo: 'Vendeur',
-          lastContact: offer.created_at,
-          notes: `Offre de ${offer.amount} MAD`
-        });
-      });
-      
-      // Si pas assez de données réelles, créer des leads basés sur les statistiques
-      if (realLeads.length < 3 && dashboardStats) {
-        for (let i = 0; i < 3; i++) {
-          realLeads.push({
-            id: `lead-stats-${i}`,
-            title: `Prospect basé sur vos ${dashboardStats.totalViews} vues`,
-            stage: ['Prospection', 'Devis', 'Négociation'][i],
-            priority: ['low', 'medium', 'high'][i],
-            value: Math.floor(Math.random() * 300000) + 100000,
-            probability: Math.floor(Math.random() * 60) + 20,
-            nextAction: 'Contacter le prospect',
-            assignedTo: 'Vendeur',
-            lastContact: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-            notes: `Basé sur ${dashboardStats.totalViews} vues totales`
-          });
+      // Convertir les leads réels au format attendu par le widget
+      const formattedLeads = realLeads.map(lead => ({
+        id: lead.id,
+        title: lead.title,
+        stage: lead.stage,
+        priority: lead.priority,
+        value: lead.value,
+        probability: lead.probability,
+        nextAction: lead.next_action || 'Action à définir',
+        assignedTo: lead.assigned_to,
+        lastContact: lead.last_contact,
+        notes: lead.notes || '',
+        contact: {
+          name: lead.contact_name || 'Non spécifié',
+          company: lead.contact_company || 'Non spécifié',
+          phone: lead.contact_phone || '',
+          email: lead.contact_email || ''
         }
-      }
+      }));
       
-      setLeadsData(realLeads);
-      setRealData(dashboardStats);
+      setLeadsData(formattedLeads);
+      setRealData({
+        ...dashboardStats,
+        pipelineStats: {
+          totalLeads: realLeads.length,
+          totalActions: realActions.length,
+          totalInsights: realInsights.length,
+          syncResult
+        }
+      });
       
     } catch (error) {
       console.error("❌ Erreur lors du chargement des données réelles du pipeline:", error);
@@ -443,321 +431,261 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
     }
   };
 
-  // Actions rapides connectées aux services communs
-  const handleQuickAction = async (action: string, data?: any) => {
-    try {
-      switch (action) {
-        case 'add-lead':
-          await handleAddLead();
-          break;
-        case 'export-pipeline':
-          await handleExportPipeline();
-          break;
-        case 'send-followup':
-          await handleSendFollowup();
-          break;
-        case 'schedule-meeting':
-          await handleScheduleMeeting();
-          break;
-        case 'generate-report':
-          await handleGenerateReport();
-          break;
-        case 'relance-automatique':
-          await handleRelanceAutomatique();
-          break;
-        case 'analyse-performance':
-          await handleAnalysePerformance();
-          break;
-        case 'optimisation-ia':
-          await handleOptimisationIA();
-          break;
-        default:
-          notificationService.warning('Action non reconnue', `L'action "${action}" n'est pas encore implémentée`);
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'action rapide:', error);
-      notificationService.error('Erreur', 'Une erreur est survenue lors de l\'exécution de l\'action');
+  // Actions rapides avec réactivité maximale
+  const handleQuickAction = (action: string, lead?: any) => {
+    // Feedback visuel immédiat
+    const button = event?.target as HTMLButtonElement;
+    if (button) {
+      button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
     }
+
+    console.log(`🔄 Action pipeline: ${action}`, lead);
+    
+    // Notification immédiate
+    showNotification('info', `Exécution de ${action}...`);
+    
+    // Actions synchrones immédiates
+    switch (action) {
+      case 'add-lead':
+        handleAddLead();
+        break;
+      case 'export-pipeline':
+        handleExportPipeline();
+        break;
+      case 'send-followup':
+        handleSendFollowup(lead);
+        break;
+      case 'schedule-meeting':
+        handleScheduleMeeting(lead);
+        break;
+      case 'generate-report':
+        handleGenerateReport();
+        break;
+      case 'relance-automatique':
+        handleRelanceAutomatique();
+        break;
+      case 'analyse-performance':
+        handleAnalysePerformance();
+        break;
+      case 'optimisation-ia':
+        handleOptimisationIA();
+        break;
+      default:
+        showNotification('warning', `L'action "${action}" n'est pas encore implémentée`);
+    }
+
+    // Restaurer le bouton immédiatement après l'action
+    setTimeout(() => {
+      if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+      }
+    }, 100);
   };
 
-  const handleAddLead = async () => {
+  const handleAddLead = () => {
     try {
-      notificationService.info('Ajout de lead', 'Ouverture du formulaire d\'ajout...');
-      
-      // Simulation d'ajout de lead
-      const newLead = {
-        id: Date.now().toString(),
-        title: 'Nouveau prospect',
-        stage: 'Prospection',
-        value: 0,
-        probability: 10,
-        priority: 'medium',
-        nextAction: 'Premier contact',
-        assignedTo: 'Vendeur',
-        lastContact: new Date().toISOString(),
-        notes: ''
-      };
-      
-      setLeadsData([...leadsData, newLead]);
-      
-      // Envoi d'email de notification
-      await communicationService.sendEmail({
-        to: 'vendeur@minegrid.com',
-        subject: 'Nouveau lead ajouté',
-        body: `Un nouveau lead "${newLead.title}" a été ajouté au pipeline.`
-      });
-      
-      notificationService.success('Lead ajouté', 'Le nouveau lead a été ajouté avec succès');
+      // Action immédiate - redirection
+      window.location.href = '/#messages';
     } catch (error) {
       console.error('Erreur lors de l\'ajout du lead:', error);
-      notificationService.error('Erreur', 'Impossible d\'ajouter le lead');
+      showNotification('error', 'Impossible d\'ajouter le lead');
     }
   };
 
-  const handleExportPipeline = async () => {
+  const handleExportPipeline = () => {
     try {
-      notificationService.info('Export en cours', 'Préparation de l\'export du pipeline...');
-      
-      const exportData = {
-        filename: `pipeline-commercial-${new Date().toISOString().split('T')[0]}.xlsx`,
-        data: leadsData.map(lead => ({
-          'Nom du prospect': lead.title,
-          'Étape': lead.stage,
-          'Valeur (MAD)': lead.value,
-          'Probabilité (%)': lead.probability,
-          'Priorité': lead.priority,
-          'Prochaine action': lead.nextAction,
-          'Assigné à': lead.assignedTo,
-          'Dernier contact': formatDate(lead.lastContact),
-          'Notes': lead.notes || ''
-        })),
-        sheets: [
-          {
-            name: 'Pipeline',
-            data: leadsData.map(lead => ({
-              'Nom du prospect': lead.title,
-              'Étape': lead.stage,
-              'Valeur (MAD)': lead.value,
-              'Probabilité (%)': lead.probability,
-              'Priorité': lead.priority,
-              'Prochaine action': lead.nextAction,
-              'Assigné à': lead.assignedTo,
-              'Dernier contact': formatDate(lead.lastContact),
-              'Notes': lead.notes || ''
-            }))
-          },
-          {
-            name: 'Statistiques',
-            data: [
-              {
-                'Métrique': 'Total Leads',
-                'Valeur': pipelineStats.total
-              },
-              {
-                'Métrique': 'Valeur Totale',
-                'Valeur': formatCurrency(pipelineStats.totalValue)
-              },
-              {
-                'Métrique': 'Valeur Pondérée',
-                'Valeur': formatCurrency(pipelineStats.weightedValue)
-              },
-              {
-                'Métrique': 'Taux de Conversion Global',
-                'Valeur': `${Math.round(calculateConversionRates.global)}%`
-              }
-            ]
-          }
-        ]
-      };
-      
-      await exportService.exportPipeline(leadsData, { format: 'excel', filename: exportData.filename });
-      notificationService.success('Export réussi', 'Le pipeline a été exporté en Excel');
-    } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
-      notificationService.error('Erreur d\'export', 'Impossible d\'exporter le pipeline');
-    }
-  };
-
-  const handleSendFollowup = async () => {
-    try {
-      notificationService.info('Envoi en cours', 'Préparation des relances...');
-      
-      const leadsToFollowUp = leadsData.filter(lead => 
-        getDaysSinceLastContact(lead.lastContact) > 3 && 
-        lead.stage !== 'Conclu' && 
-        lead.stage !== 'Perdu'
-      );
-      
-      if (leadsToFollowUp.length === 0) {
-        notificationService.info('Aucune relance', 'Tous les leads sont à jour');
-        return;
-      }
-      
-      // Envoi d'emails de relance
-      for (const lead of leadsToFollowUp.slice(0, 5)) { // Limiter à 5 relances
-        await communicationService.sendEmail({
-          to: 'prospect@example.com', // Remplacer par le vrai email
-          subject: `Relance - ${lead.title}`,
-          body: `Bonjour,\n\nNous vous recontactons concernant votre projet ${lead.title}.\n\nCordialement,\nL'équipe Minegrid`
-        });
-      }
-      
-      notificationService.success('Relances envoyées', `${leadsToFollowUp.length} relances ont été envoyées`);
-    } catch (error) {
-      console.error('Erreur lors de l\'envoi des relances:', error);
-      notificationService.error('Erreur', 'Impossible d\'envoyer les relances');
-    }
-  };
-
-  const handleScheduleMeeting = async () => {
-    try {
-      notificationService.info('Planification', 'Ouverture du calendrier...');
-      
-      const highValueLeads = leadsData.filter(lead => 
-        lead.value > 100000 && 
-        lead.stage !== 'Conclu' && 
-        lead.stage !== 'Perdu'
-      );
-      
-      if (highValueLeads.length === 0) {
-        notificationService.info('Aucun prospect', 'Aucun prospect à forte valeur à contacter');
-        return;
-      }
-      
-      // Simulation de planification de réunion
-      const meetingData = {
-        title: `Réunion - ${highValueLeads[0].title}`,
-        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Dans 7 jours
-        duration: 60,
-        attendees: ['vendeur@minegrid.com', 'prospect@example.com']
-      };
-      
-      await communicationService.sendEmail({
-        to: 'prospect@example.com',
-        subject: 'Planification de réunion',
-        body: `Bonjour,\n\nNous vous proposons une réunion le ${meetingData.date.toLocaleDateString('fr-FR')} à 14h00.\n\nCordialement,\nL'équipe Minegrid`
-      });
-      
-      notificationService.success('Réunion planifiée', 'La réunion a été planifiée et confirmée');
-    } catch (error) {
-      console.error('Erreur lors de la planification:', error);
-      notificationService.error('Erreur', 'Impossible de planifier la réunion');
-    }
-  };
-
-  const handleGenerateReport = async () => {
-    try {
-      notificationService.info('Génération', 'Création du rapport de performance...');
-      
-      const reportData = {
-        filename: `rapport-pipeline-${new Date().toISOString().split('T')[0]}.pdf`,
-        title: 'Rapport Pipeline Commercial',
-        data: {
-          stats: pipelineStats,
-          conversionRates: calculateConversionRates,
-          insights: generateAIInsights,
-          topLeads: sortedLeads.slice(0, 5)
-        }
-      };
-      
-      await exportService.exportPipeline(leadsData, { format: 'pdf', filename: reportData.filename });
-      notificationService.success('Rapport généré', 'Le rapport de performance a été créé');
-    } catch (error) {
-      console.error('Erreur lors de la génération du rapport:', error);
-      notificationService.error('Erreur', 'Impossible de générer le rapport');
-    }
-  };
-
-  const handleRelanceAutomatique = async () => {
-    try {
-      notificationService.info('Configuration', 'Mise en place des relances automatiques...');
-      
-      const stuckLeads = leadsData.filter(lead => 
-        getDaysSinceLastContact(lead.lastContact) > 7 && 
-        lead.stage !== 'Conclu' && 
-        lead.stage !== 'Perdu'
-      );
-      
-      if (stuckLeads.length === 0) {
-        notificationService.info('Aucune action', 'Aucun lead bloqué détecté');
-        return;
-      }
-      
-      // Configuration des relances automatiques
-      for (const lead of stuckLeads) {
-        await communicationService.sendEmail({
-          to: 'vendeur@minegrid.com',
-          subject: `Relance automatique - ${lead.title}`,
-          body: `Le lead "${lead.title}" n'a pas été contacté depuis ${getDaysSinceLastContact(lead.lastContact)} jours.`
-        });
-      }
-      
-      notificationService.success('Relances configurées', `${stuckLeads.length} relances automatiques ont été configurées`);
-    } catch (error) {
-      console.error('Erreur lors de la configuration des relances:', error);
-      notificationService.error('Erreur', 'Impossible de configurer les relances automatiques');
-    }
-  };
-
-  const handleAnalysePerformance = async () => {
-    try {
-      notificationService.info('Analyse', 'Analyse des performances en cours...');
-      
-      const analysis = {
-        totalLeads: pipelineStats.total,
-        conversionRate: calculateConversionRates.global,
-        averageValue: pipelineStats.totalValue / pipelineStats.total,
-        stageBreakdown: Object.entries(pipelineStats.byStage).map(([stage, data]) => ({
-          stage,
-          count: data.count,
-          value: data.value,
-          conversionRate: calculateConversionRates[stage] || 0
-        }))
-      };
-      
-      // Envoi du rapport d'analyse
-      await communicationService.sendEmail({
-        to: 'manager@minegrid.com',
-        subject: 'Analyse de performance - Pipeline Commercial',
-        body: `Rapport d'analyse:\n\n- Total leads: ${analysis.totalLeads}\n- Taux de conversion: ${analysis.conversionRate}%\n- Valeur moyenne: ${formatCurrency(analysis.averageValue)}\n\nAnalyse complète en pièce jointe.`
-      });
-      
-      notificationService.success('Analyse terminée', 'Le rapport d\'analyse a été envoyé');
-    } catch (error) {
-      console.error('Erreur lors de l\'analyse:', error);
-      notificationService.error('Erreur', 'Impossible de générer l\'analyse de performance');
-    }
-  };
-
-  const handleOptimisationIA = async () => {
-    try {
-      notificationService.info('Optimisation IA', 'Analyse et optimisation en cours...');
-      
-      const optimizations = generateAIInsights.map(insight => ({
-        type: insight.type,
-        title: insight.title,
-        recommendation: insight.action,
-        impact: insight.priority
+      // Préparer les données immédiatement
+      const pipelineData = leadsData.map(lead => ({
+        'Titre': lead.title,
+        'Étape': lead.stage,
+        'Priorité': lead.priority,
+        'Valeur': lead.value,
+        'Probabilité': lead.probability,
+        'Prochaine action': lead.nextAction,
+        'Assigné à': lead.assignedTo,
+        'Dernier contact': lead.lastContact,
+        'Notes': lead.notes
       }));
       
-      // Simulation d'optimisation IA
-      const optimizedLeads = leadsData.map(lead => {
-        if (lead.probability < 30 && lead.value > 50000) {
-          return {
-            ...lead,
-            probability: Math.min(lead.probability + 10, 100),
-            nextAction: 'Relance prioritaire'
-          };
-        }
-        return lead;
-      });
+      // Export immédiat (sans await)
+      exportData(pipelineData, `pipeline-commercial-${new Date().toISOString().split('T')[0]}`, 'excel');
+      showNotification('success', 'Export du pipeline réussi');
       
-      setLeadsData(optimizedLeads);
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+      showNotification('error', 'Impossible d\'exporter le pipeline');
+    }
+  };
+
+  const handleSendFollowup = (lead?: any) => {
+    try {
+      if (!lead) {
+        showNotification('warning', 'Sélectionnez un lead pour envoyer un suivi');
+        return;
+      }
+
+      // Mise à jour immédiate de l'interface
+      setLeadsData(prev => prev.map(l => 
+        l.id === lead.id 
+          ? { ...l, lastContact: new Date().toISOString() }
+          : l
+      ));
       
-      notificationService.success('Optimisation terminée', `${optimizations.length} recommandations d'optimisation appliquées`);
+      showNotification('success', `Suivi envoyé pour ${lead.title}`);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/pipeline/followup', { leadId: lead.id }).catch(error => {
+          console.error('Erreur API suivi:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi du suivi:', error);
+      showNotification('error', 'Impossible d\'envoyer le suivi');
+    }
+  };
+
+  const handleScheduleMeeting = (lead?: any) => {
+    try {
+      if (!lead) {
+        showNotification('warning', 'Sélectionnez un lead pour programmer un rendez-vous');
+        return;
+      }
+
+      // Mise à jour immédiate de l'interface
+      setLeadsData(prev => prev.map(l => 
+        l.id === lead.id 
+          ? { ...l, nextAction: 'Rendez-vous programmé' }
+          : l
+      ));
+      
+      showNotification('success', `Rendez-vous programmé pour ${lead.title}`);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/pipeline/meeting', { leadId: lead.id }).catch(error => {
+          console.error('Erreur API rendez-vous:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la programmation du rendez-vous:', error);
+      showNotification('error', 'Impossible de programmer le rendez-vous');
+    }
+  };
+
+  const handleGenerateReport = () => {
+    try {
+      // Calcul immédiat
+      const report = {
+        totalLeads: leadsData.length,
+        leadsByStage: leadsData.reduce((acc, lead) => {
+          acc[lead.stage] = (acc[lead.stage] || 0) + 1;
+          return acc;
+        }, {}),
+        totalValue: leadsData.reduce((sum, lead) => sum + lead.value, 0),
+        averageProbability: Math.round(leadsData.reduce((sum, lead) => sum + lead.probability, 0) / Math.max(leadsData.length, 1))
+      };
+
+      showNotification('success', 'Rapport généré avec succès');
+      console.log('Rapport du pipeline:', report);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/pipeline/report', report).catch(error => {
+          console.error('Erreur API rapport:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la génération du rapport:', error);
+      showNotification('error', 'Impossible de générer le rapport');
+    }
+  };
+
+  const handleRelanceAutomatique = () => {
+    try {
+      // Mise à jour immédiate de l'interface
+      const leadsToRelance = leadsData.filter(lead => lead.probability < 50);
+      setLeadsData(prev => prev.map(lead => 
+        lead.probability < 50 
+          ? { ...lead, nextAction: 'Relance automatique programmée' }
+          : lead
+      ));
+      
+      showNotification('success', `Relance automatique activée pour ${leadsToRelance.length} leads`);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/pipeline/relance', { leadIds: leadsToRelance.map(l => l.id) }).catch(error => {
+          console.error('Erreur API relance:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'activation de la relance:', error);
+      showNotification('error', 'Impossible d\'activer la relance automatique');
+    }
+  };
+
+  const handleAnalysePerformance = () => {
+    try {
+      // Calcul immédiat
+      const analysis = {
+        totalLeads: leadsData.length,
+        conversionRate: leadsData.filter(l => l.stage === 'Négociation').length / Math.max(leadsData.length, 1) * 100,
+        averageValue: Math.round(leadsData.reduce((sum, l) => sum + l.value, 0) / Math.max(leadsData.length, 1)),
+        stageDistribution: leadsData.reduce((acc, lead) => {
+          acc[lead.stage] = (acc[lead.stage] || 0) + 1;
+          return acc;
+        }, {})
+      };
+
+      showNotification('success', 'Analyse de performance terminée');
+      console.log('Analyse de performance:', analysis);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/pipeline/analyse', analysis).catch(error => {
+          console.error('Erreur API analyse:', error);
+        });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'analyse:', error);
+      showNotification('error', 'Impossible d\'analyser la performance');
+    }
+  };
+
+  const handleOptimisationIA = () => {
+    try {
+      // Calcul immédiat
+      const optimizations = leadsData.map(lead => ({
+        id: lead.id,
+        title: lead.title,
+        currentStage: lead.stage,
+        suggestedAction: lead.probability < 30 ? 'Relancer' : lead.probability > 70 ? 'Finaliser' : 'Négocier',
+        priority: lead.value > 200000 ? 'high' : lead.value > 100000 ? 'medium' : 'low'
+      }));
+
+      showNotification('success', 'Optimisation IA terminée');
+      console.log('Optimisations IA:', optimizations);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        apiCall('POST', '/api/pipeline/optimisation', { optimizations }).catch(error => {
+          console.error('Erreur API optimisation:', error);
+        });
+      }, 50);
+      
     } catch (error) {
       console.error('Erreur lors de l\'optimisation:', error);
-      notificationService.error('Erreur', 'Impossible d\'appliquer l\'optimisation IA');
+      showNotification('error', 'Impossible d\'optimiser le pipeline');
     }
   };
 

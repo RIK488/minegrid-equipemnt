@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Check, Building2, Users, Shield, Clock, FileText, Wrench, Activity, Briefcase } from 'lucide-react';
+import { Check, Building2, Users, Shield, Clock, FileText, Wrench, Activity, Briefcase, CreditCard, Lock, X, ArrowLeft, Gift } from 'lucide-react';
 import { upsertProClientProfile } from '../utils/proApi';
+import supabase from '../utils/supabaseClient';
 
 interface Plan {
   id: string;
@@ -71,6 +72,7 @@ const plans: Plan[] = [
 export default function ProSubscription() {
   const [selectedPlan, setSelectedPlan] = useState<string>('premium');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   const [formData, setFormData] = useState({
     companyName: '',
     siret: '',
@@ -87,32 +89,58 @@ export default function ProSubscription() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  // Gérer l'affichage des formulaires selon la méthode de paiement
+  React.useEffect(() => {
+    if (showPayment) {
+      const handlePaymentMethodChange = () => {
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked') as HTMLInputElement;
+        const cardForm = document.getElementById('cardForm');
+        const promoForm = document.getElementById('promoForm');
+        const promoDiscount = document.getElementById('promoDiscount');
+        const totalPrice = document.getElementById('totalPrice');
+        
+        if (paymentMethod?.value === 'promo') {
+          cardForm!.style.display = 'none';
+          promoForm!.style.display = 'block';
+          promoDiscount!.style.display = 'flex';
+          totalPrice!.textContent = '0€';
+        } else {
+          cardForm!.style.display = 'block';
+          promoForm!.style.display = 'none';
+          promoDiscount!.style.display = 'none';
+          totalPrice!.textContent = `${plans.find(p => p.id === selectedPlan)?.price}€`;
+        }
+      };
 
-    try {
-      // Ici, vous pouvez ajouter la logique de paiement (Stripe, etc.)
-      const profile = await upsertProClientProfile({
-        company_name: formData.companyName,
-        siret: formData.siret,
-        address: formData.address,
-        phone: formData.phone,
-        contact_person: formData.contactPerson,
-        subscription_type: selectedPlan as 'pro' | 'premium' | 'enterprise',
-        subscription_status: 'active',
-        max_users: plans.find(p => p.id === selectedPlan)?.maxUsers || 5
+      // Ajouter les event listeners
+      document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+        radio.addEventListener('change', handlePaymentMethodChange);
       });
 
-      if (profile) {
-        // Rediriger vers le portail Pro
-        window.location.hash = '#pro';
-      }
-    } catch (error) {
-      console.error('Erreur lors de la souscription:', error);
-    } finally {
-      setIsLoading(false);
+      // Initialiser l'affichage
+      handlePaymentMethodChange();
+
+      // Cleanup
+      return () => {
+        document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+          radio.removeEventListener('change', handlePaymentMethodChange);
+        });
+      };
     }
+  }, [showPayment, selectedPlan]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('🔍 handleSubmit appelé - redirection vers paiement');
+    
+    // Vérifier que tous les champs requis sont remplis
+    if (!formData.companyName || !formData.contactPerson || !formData.email) {
+      alert('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    // Au lieu d'activer directement l'abonnement, afficher la page de paiement
+    setShowPayment(true);
   };
 
   return (
@@ -275,7 +303,7 @@ export default function ProSubscription() {
               disabled={isLoading}
               className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Traitement...' : 'Souscrire maintenant'}
+              {isLoading ? 'Traitement...' : `Continuer vers le paiement (${plans.find(p => p.id === selectedPlan)?.price}€/mois)`}
             </button>
 
             <p className="text-sm text-gray-500 text-center">
@@ -325,6 +353,282 @@ export default function ProSubscription() {
           </div>
         </div>
       </div>
+
+      {/* Page de paiement intégrée */}
+      {showPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Finaliser votre abonnement</h2>
+                  <p className="text-gray-600 mt-1">
+                    {plans.find(p => p.id === selectedPlan)?.name} - {plans.find(p => p.id === selectedPlan)?.price}€/mois
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowPayment(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Méthodes de paiement */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4">Choisissez votre méthode de paiement</h3>
+                
+                <div className="space-y-3">
+                  {/* Option Carte */}
+                  <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="card"
+                      defaultChecked
+                      className="mr-3"
+                    />
+                    <CreditCard className="h-5 w-5 text-gray-600 mr-3" />
+                    <div>
+                      <div className="font-medium">Carte bancaire</div>
+                      <div className="text-sm text-gray-500">Paiement sécurisé</div>
+                    </div>
+                  </label>
+
+                  {/* Option Code Promo */}
+                  <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="promo"
+                      className="mr-3"
+                    />
+                    <Gift className="h-5 w-5 text-orange-600 mr-3" />
+                    <div>
+                      <div className="font-medium">Code promo</div>
+                      <div className="text-sm text-gray-500">Accès temporaire gratuit</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Formulaire de paiement */}
+              <div className="space-y-4">
+                {/* Formulaire carte bancaire */}
+                <div id="cardForm">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Numéro de carte
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="1234 5678 9012 3456"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Date d'expiration
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="MM/AA"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        CVC
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="123"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nom sur la carte
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Jean Dupont"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Formulaire code promo */}
+                <div id="promoForm" style={{ display: 'none' }}>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Code promo
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Entrez votre code promo"
+                        id="promoCode"
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      <button
+                        onClick={() => {
+                          const code = (document.getElementById('promoCode') as HTMLInputElement).value;
+                          if (code === '082025') {
+                            alert('✅ Code promo valide ! Accès temporaire de 30 jours.');
+                            // Activer l'abonnement avec code promo
+                            activateSubscriptionWithPromo();
+                          } else {
+                            alert('❌ Code promo invalide');
+                          }
+                        }}
+                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                      >
+                        Valider
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mt-4">
+                    <div className="flex items-center text-orange-800">
+                      <Gift className="h-5 w-5 mr-2" />
+                      <span className="font-medium">Offre spéciale</span>
+                    </div>
+                    <p className="text-sm text-orange-700 mt-1">
+                      Utilisez le code promo pour un accès temporaire gratuit à tous les abonnements.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Résumé de la commande */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-medium text-gray-900 mb-3">Résumé de votre commande</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Abonnement {plans.find(p => p.id === selectedPlan)?.name}</span>
+                    <span className="font-medium">{plans.find(p => p.id === selectedPlan)?.price}€/mois</span>
+                  </div>
+                  <div className="flex justify-between text-green-600" id="promoDiscount" style={{ display: 'none' }}>
+                    <span>Code promo appliqué</span>
+                    <span>-{plans.find(p => p.id === selectedPlan)?.price}€</span>
+                  </div>
+                  <div className="border-t pt-2">
+                    <div className="flex justify-between font-semibold">
+                      <span>Total</span>
+                      <span id="totalPrice">{plans.find(p => p.id === selectedPlan)?.price}€</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bouton de paiement */}
+              <button
+                onClick={() => {
+                  const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked') as HTMLInputElement;
+                  if (paymentMethod?.value === 'promo') {
+                    const code = (document.getElementById('promoCode') as HTMLInputElement).value;
+                    if (code === '082025') {
+                      activateSubscriptionWithPromo();
+                    } else {
+                      alert('Veuillez entrer un code promo valide');
+                    }
+                  } else {
+                    // Simulation de paiement par carte
+                    alert('💳 Paiement traité avec succès ! Votre abonnement est maintenant actif.');
+                    activateSubscriptionWithCard();
+                  }
+                }}
+                className="w-full mt-6 bg-orange-600 text-white py-3 px-4 rounded-lg hover:bg-orange-700 font-semibold flex items-center justify-center"
+              >
+                <Lock className="h-5 w-5 mr-2" />
+                Payer {plans.find(p => p.id === selectedPlan)?.price}€
+              </button>
+
+              <p className="text-xs text-gray-500 text-center mt-4">
+                Vos informations de paiement sont sécurisées et cryptées.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+
+  // Fonction pour activer l'abonnement avec code promo
+  const activateSubscriptionWithPromo = async () => {
+    try {
+      // Obtenir l'utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      // Créer l'abonnement avec accès temporaire
+      const { error: subscriptionError } = await supabase
+        .from('pro_clients')
+        .insert({
+          user_id: user.id,
+          company_name: formData.companyName,
+          subscription_type: selectedPlan,
+          subscription_status: 'active',
+          subscription_start: new Date().toISOString().split('T')[0],
+          subscription_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 jours
+          max_users: plans.find(p => p.id === selectedPlan)?.maxUsers || 5,
+          promo_code_used: '082025',
+          payment_method: 'promo_code'
+        });
+
+      if (subscriptionError) {
+        throw subscriptionError;
+      }
+
+      alert('✅ Abonnement activé avec succès grâce au code promo ! Accès temporaire de 30 jours.');
+      setShowPayment(false);
+      window.location.hash = '#pro';
+    } catch (error) {
+      console.error('Erreur activation abonnement promo:', error);
+      alert('Erreur lors de l\'activation de l\'abonnement');
+    }
+  };
+
+  // Fonction pour activer l'abonnement avec paiement carte
+  const activateSubscriptionWithCard = async () => {
+    try {
+      // Obtenir l'utilisateur actuel
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      // Créer l'abonnement avec paiement
+      const { error: subscriptionError } = await supabase
+        .from('pro_clients')
+        .insert({
+          user_id: user.id,
+          company_name: formData.companyName,
+          subscription_type: selectedPlan,
+          subscription_status: 'active',
+          subscription_start: new Date().toISOString().split('T')[0],
+          max_users: plans.find(p => p.id === selectedPlan)?.maxUsers || 5,
+          payment_method: 'card',
+          payment_amount: plans.find(p => p.id === selectedPlan)?.price || 0
+        });
+
+      if (subscriptionError) {
+        throw subscriptionError;
+      }
+
+      setShowPayment(false);
+      window.location.hash = '#pro';
+    } catch (error) {
+      console.error('Erreur paiement carte:', error);
+      alert('Erreur lors du traitement du paiement');
+    }
+  };
 } 

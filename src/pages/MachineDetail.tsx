@@ -640,7 +640,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
                   disabled
                 >
                   <Globe className="h-5 w-5 mr-2" />
-                  Vitrine non disponible (sellerid: {(machineData as any).sellerid || 'null'})
+                  Vitrine non disponible
                 </button>
               )}
               {canEdit && (

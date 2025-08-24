@@ -5,6 +5,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface EmailRequest {
+  to: string;
+  from: string;
+  subject: string;
+  html: string;
+  machineId?: string;
+  messageId?: string;
+}
+
+interface ResendError {
+  message: string;
+  [key: string]: any;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -12,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to, from, subject, html, machineId, messageId } = await req.json()
+    const { to, from, subject, html, machineId, messageId }: EmailRequest = await req.json()
 
     // Validation des données
     if (!to || !from || !subject || !html) {
@@ -28,7 +42,7 @@ serve(async (req) => {
     console.log('📧 Tentative d\'envoi d\'email:', { to, from, subject })
 
     let emailSent = false
-    let emailError = null
+    let emailError: Error | null = null
 
     // Utiliser Resend (service email gratuit) pour envoyer de vrais emails
     try {
@@ -54,7 +68,7 @@ serve(async (req) => {
           emailSent = true
           console.log('✅ Email envoyé avec succès via Resend')
         } else {
-          const errorData = await response.json()
+          const errorData = await response.json() as ResendError
           emailError = new Error(`Resend error: ${errorData.message}`)
           console.error('❌ Erreur Resend:', errorData)
         }
@@ -83,7 +97,7 @@ serve(async (req) => {
       }
 
     } catch (sendError) {
-      emailError = sendError
+      emailError = sendError instanceof Error ? sendError : new Error(String(sendError))
       console.error('❌ Erreur envoi email:', sendError)
     }
 
@@ -147,11 +161,13 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Erreur générale:', error)
     
+    const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue'
+    
     return new Response(
       JSON.stringify({ 
         success: false,
         error: 'Erreur interne du serveur',
-        details: error.message 
+        details: errorMessage
       }),
       { 
         status: 500, 

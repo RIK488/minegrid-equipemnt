@@ -240,7 +240,7 @@ export default function PlanningPro() {
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     required
                   />
                 </div>
@@ -251,7 +251,7 @@ export default function PlanningPro() {
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as PlanningEvent['type'] }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     required
                   >
                     <option value="rendez-vous">Rendez-vous</option>
@@ -268,7 +268,7 @@ export default function PlanningPro() {
                     type="datetime-local"
                     value={formData.startDate}
                     onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     required
                   />
                 </div>
@@ -280,7 +280,7 @@ export default function PlanningPro() {
                     type="datetime-local"
                     value={formData.endDate}
                     onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     required
                   />
                 </div>
@@ -291,7 +291,7 @@ export default function PlanningPro() {
                   <select
                     value={formData.priority}
                     onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as PlanningEvent['priority'] }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
                     <option value="basse">Basse</option>
                     <option value="normale">Normale</option>
@@ -306,7 +306,7 @@ export default function PlanningPro() {
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as PlanningEvent['status'] }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   >
                     <option value="planifié">Planifié</option>
                     <option value="en cours">En cours</option>
@@ -325,7 +325,7 @@ export default function PlanningPro() {
                     type="text"
                     value={formData.clientName}
                     onChange={(e) => setFormData(prev => ({ ...prev, clientName: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 <div>
@@ -336,7 +336,7 @@ export default function PlanningPro() {
                     type="tel"
                     value={formData.clientPhone}
                     onChange={(e) => setFormData(prev => ({ ...prev, clientPhone: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 <div>
@@ -347,7 +347,7 @@ export default function PlanningPro() {
                     type="email"
                     value={formData.clientEmail}
                     onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 <div>
@@ -358,7 +358,7 @@ export default function PlanningPro() {
                     type="text"
                     value={formData.assignedTo}
                     onChange={(e) => setFormData(prev => ({ ...prev, assignedTo: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
               </div>
@@ -371,7 +371,7 @@ export default function PlanningPro() {
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
@@ -383,7 +383,7 @@ export default function PlanningPro() {
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={3}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
@@ -395,7 +395,7 @@ export default function PlanningPro() {
                   value={formData.notes}
                   onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                   rows={3}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
@@ -409,7 +409,7 @@ export default function PlanningPro() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+                  className="px-6 py-3 bg-orange-600 text-white rounded-md hover:bg-orange-700"
                 >
                   Sauvegarder
                 </button>
@@ -458,7 +458,7 @@ export default function PlanningPro() {
                 });
                 setShowForm(true);
               }}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors flex items-center"
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center"
             >
               <Plus className="h-4 w-4 mr-2" />
               Nouvel événement
@@ -476,7 +476,7 @@ export default function PlanningPro() {
               onClick={() => setFilter('all')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === 'all' 
-                  ? 'bg-yellow-600 text-white' 
+                  ? 'bg-orange-600 text-white' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -486,7 +486,7 @@ export default function PlanningPro() {
               onClick={() => setFilter('rendez-vous')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === 'rendez-vous' 
-                  ? 'bg-blue-600 text-white' 
+                  ? 'bg-orange-600 text-white' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -496,7 +496,7 @@ export default function PlanningPro() {
               onClick={() => setFilter('livraison')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === 'livraison' 
-                  ? 'bg-green-600 text-white' 
+                  ? 'bg-orange-600 text-white' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -516,7 +516,7 @@ export default function PlanningPro() {
               onClick={() => setFilter('maintenance')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === 'maintenance' 
-                  ? 'bg-purple-600 text-white' 
+                  ? 'bg-orange-600 text-white' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -534,7 +534,7 @@ export default function PlanningPro() {
 
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
                 <p className="text-gray-600 mt-2">Chargement...</p>
               </div>
             ) : filteredEvents.length === 0 ? (
@@ -598,7 +598,7 @@ export default function PlanningPro() {
                             setEditingEvent(event);
                             setShowForm(true);
                           }}
-                          className="p-2 text-blue-600 hover:text-blue-800"
+                          className="p-2 text-orange-600 hover:text-orange-800"
                         >
                           <Edit className="h-4 w-4" />
                         </button>

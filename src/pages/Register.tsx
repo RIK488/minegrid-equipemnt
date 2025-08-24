@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { registerUser } from '../utils/api';
 import { Crown, Star, Building, Check } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
+import PaymentPage from './PaymentPage';
 
 interface RegisterProps {
   initialType: 'client' | 'seller';
@@ -29,6 +30,7 @@ export default function Register({ initialType }: RegisterProps) {
   });
 
   const [loading, setLoading] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -37,31 +39,44 @@ export default function Register({ initialType }: RegisterProps) {
 
   const handleSubscriptionSelect = (subscription: 'gratuit' | 'premium' | 'pro' | 'enterprise') => {
     setFormData(prev => ({ ...prev, subscription }));
+    
+    // Si c'est un abonnement payant, afficher directement la page de paiement
+    if (subscription !== 'gratuit') {
+      console.log('💰 Abonnement payant sélectionné - affichage page de paiement');
+      setShowPayment(true);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔍 handleSubmit appelé');
+    console.log('📊 Abonnement sélectionné:', formData.subscription);
+    
     if (formData.password !== formData.confirmPassword) {
       alert("Les mots de passe ne correspondent pas.");
       return;
     }
 
-    try {
-      setLoading(true);
-      const { user } = await registerUser(formData);
-      
-      // Créer automatiquement l'abonnement sélectionné
-      if (formData.subscription !== 'gratuit') {
-        await createSubscription(user.id, formData.subscription);
+    // Si l'abonnement est gratuit, procéder directement
+    if (formData.subscription === 'gratuit') {
+      console.log('🆓 Abonnement gratuit - création directe');
+      try {
+        setLoading(true);
+        const { user } = await registerUser(formData);
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('selectedSubscription', formData.subscription);
+        window.location.hash = '#dashboard';
+      } catch (err: any) {
+        alert('Erreur lors de l\'inscription : ' + err.message);
+      } finally {
+        setLoading(false);
       }
-      
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('selectedSubscription', formData.subscription);
-      window.location.hash = '#dashboard';
-    } catch (err: any) {
-      alert('Erreur lors de l\'inscription : ' + err.message);
-    } finally {
-      setLoading(false);
+    } else {
+      // Pour les abonnements payants, afficher la page de paiement
+      console.log('💰 Abonnement payant - affichage page de paiement');
+      console.log('📊 showPayment avant:', showPayment);
+      setShowPayment(true);
+      console.log('📊 showPayment après:', true);
     }
   };
 
@@ -94,6 +109,7 @@ export default function Register({ initialType }: RegisterProps) {
       name: 'Gratuit',
       icon: <Star className="h-6 w-6" />,
       price: '0€',
+      priceValue: 0,
       features: [
         'Publier des annonces',
         'Gestion basique',
@@ -107,6 +123,7 @@ export default function Register({ initialType }: RegisterProps) {
       name: 'Premium',
       icon: <Crown className="h-6 w-6" />,
       price: '29€/mois',
+      priceValue: 29,
       features: [
         'Visibilité renforcée',
         'Jusqu\'à 10 images par annonce',
@@ -121,6 +138,7 @@ export default function Register({ initialType }: RegisterProps) {
       name: 'Pro',
       icon: <Building className="h-6 w-6" />,
       price: '79€/mois',
+      priceValue: 79,
       features: [
         'Dashboard Pro personnalisé',
         'Support dédié',
@@ -135,6 +153,7 @@ export default function Register({ initialType }: RegisterProps) {
       name: 'Entreprise',
       icon: <Crown className="h-6 w-6" />,
       price: '199€/mois',
+      priceValue: 199,
       features: [
         'Dashboard personnalisable',
         'Gestion multi-utilisateurs',
@@ -269,7 +288,7 @@ export default function Register({ initialType }: RegisterProps) {
                     formData.subscription === plan.id
                       ? `${plan.color} border-2 border-primary-500`
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  } ${plan.id !== 'gratuit' ? 'hover:border-orange-400 hover:shadow-lg' : ''}`}
                   onClick={() => handleSubscriptionSelect(plan.id as any)}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -280,9 +299,13 @@ export default function Register({ initialType }: RegisterProps) {
                         <p className="text-2xl font-bold text-primary-600">{plan.price}</p>
                       </div>
                     </div>
-                    {formData.subscription === plan.id && (
+                    {formData.subscription === plan.id ? (
                       <Check className="h-6 w-6 text-primary-600" />
-                    )}
+                    ) : plan.id !== 'gratuit' ? (
+                      <div className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                        Paiement
+                      </div>
+                    ) : null}
                   </div>
                   <ul className="space-y-2">
                     {plan.features.map((feature, index) => (
@@ -299,14 +322,49 @@ export default function Register({ initialType }: RegisterProps) {
             <button
               type="submit"
               disabled={loading}
-              onClick={handleSubmit}
+              onClick={(e) => {
+                console.log('🔘 Bouton cliqué');
+                console.log('📊 Abonnement actuel:', formData.subscription);
+                handleSubmit(e);
+              }}
               className="w-full mt-6 bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 font-semibold"
             >
-              {loading ? 'Création en cours...' : `Créer mon compte ${formData.subscription !== 'gratuit' ? `(${subscriptionPlans.find(p => p.id === formData.subscription)?.price})` : ''}`}
+              {loading ? 'Création en cours...' : formData.subscription === 'gratuit' ? 'Créer mon compte gratuit' : `Continuer vers le paiement (${subscriptionPlans.find(p => p.id === formData.subscription)?.price})`}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Page de paiement */}
+      {showPayment && (
+        <div>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }}></div>
+          <PaymentPage
+            subscription={subscriptionPlans.find(p => p.id === formData.subscription)!}
+            userData={{
+              email: formData.email,
+              firstName: formData.firstName,
+              lastName: formData.lastName
+            }}
+            onSuccess={() => {
+              console.log('✅ Paiement réussi');
+              setShowPayment(false);
+              window.location.hash = '#dashboard';
+            }}
+            onBack={() => {
+              console.log('⬅️ Retour depuis la page de paiement');
+              setShowPayment(false);
+            }}
+          />
+        </div>
+      )}
+      
+      {/* Debug info */}
+      {showPayment && (
+        <div style={{ position: 'fixed', top: '10px', right: '10px', backgroundColor: 'red', color: 'white', padding: '10px', zIndex: 2000 }}>
+          DEBUG: showPayment = {showPayment.toString()}
+        </div>
+      )}
     </div>
   );
 }

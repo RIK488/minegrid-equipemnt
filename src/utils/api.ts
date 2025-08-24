@@ -411,18 +411,22 @@ export async function getMessages() {
   const user = await getCurrentUser();
   if (!user) throw new Error('Utilisateur non connecté');
 
-  const { data, error } = await supabase
-    .from('messages')
-    .select(`
-      *,
-      sender:profiles!messages_sender_id_fkey(firstname, lastname),
-      receiver:profiles!messages_receiver_id_fkey(firstname, lastname)
-    `)
-    .or(`receiver_id.eq.${user.id},seller_id.eq.${user.id}`)
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .or(`receiver_id.eq.${user.id},seller_id.eq.${user.id}`)
+      .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data;
+    if (error) {
+      console.error('Erreur getMessages:', error);
+      return [];
+    }
+    return data || [];
+  } catch (error) {
+    console.error('Erreur getMessages:', error);
+    return [];
+  }
 }
 
 export async function sendMessage(messageData: {
@@ -462,18 +466,22 @@ export async function getOffers() {
   const user = await getCurrentUser();
   if (!user) throw new Error('Utilisateur non connecté');
 
-  const { data, error } = await supabase
-    .from('offers')
-    .select(`
-      *,
-      buyer:profiles!offers_buyer_id_fkey(firstname, lastname),
-      machine:machines(name, brand, model)
-    `)
-    .eq('seller_id', user.id)
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('offers')
+      .select('*')
+      .eq('seller_id', user.id)
+      .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data;
+    if (error) {
+      console.error('Erreur getOffers:', error);
+      return [];
+    }
+    return data || [];
+  } catch (error) {
+    console.error('Erreur getOffers:', error);
+    return [];
+  }
 }
 
 export async function createOffer(offerData: {

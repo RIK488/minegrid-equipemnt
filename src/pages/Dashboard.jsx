@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Package, Settings, FileText, Bell, User, LogOut, ChevronRight, Shield, Wallet, RefreshCw, Eye, MessageSquare, DollarSign, Camera, X } from 'lucide-react';
+import { Plus, Package, Settings, FileText, Bell, User, LogOut, ChevronRight, Shield, Wallet, RefreshCw, Eye, MessageSquare, DollarSign, Camera, X, CreditCard, Gift, Save } from 'lucide-react';
+import StripePaymentForm from '../components/StripePaymentForm';
 import { getSellerMachines, logoutUser, getDashboardStats, getWeeklyActivityData, getOffers } from '../utils/api';
 import { supabaseClient as supabase } from '../utils/supabaseClient';
 
@@ -68,6 +69,11 @@ export default function Dashboard({ section = 'overview' }) {
     const [selectedMessageForReply, setSelectedMessageForReply] = useState(null);
     const [replyText, setReplyText] = useState('');
     const [isSendingReply, setIsSendingReply] = useState(false);
+    const [showPaymentPage, setShowPaymentPage] = useState(false);
+    const [selectedPlanForPayment, setSelectedPlanForPayment] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState('card');
+    const [promoCode, setPromoCode] = useState('');
+    const [hasEnterpriseSubscription, setHasEnterpriseSubscription] = useState(false);
     const [hasActiveSubscription, setHasActiveSubscription] = useState(() => {
         // Vérifier si l'abonnement a été explicitement résilié
         const subscriptionCancelled = localStorage.getItem('subscriptionCancelled');
@@ -139,12 +145,37 @@ export default function Dashboard({ section = 'overview' }) {
     const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
     useEffect(() => {
-        loadMachines();
         loadDashboardData();
         loadUserData();
-        handleHashChange();
         window.addEventListener('hashchange', handleHashChange);
-        return () => window.removeEventListener('hashchange', handleHashChange);
+        handleHashChange(); // Appel initial
+        
+        // Écouter l'événement d'activation de l'abonnement entreprise
+        const handleEnterpriseActivation = (event) => {
+            console.log('🎉 Événement d\'activation entreprise reçu:', event.detail);
+            setHasEnterpriseSubscription(true);
+            // Forcer le rafraîchissement de l'interface
+            setTimeout(() => {
+                refreshEnterpriseSubscription();
+            }, 100);
+        };
+        
+        // Écouter l'événement d'annulation d'abonnement
+        const handleSubscriptionCancellation = (event) => {
+            console.log('🚫 Événement d\'annulation d\'abonnement reçu:', event.detail);
+            setHasEnterpriseSubscription(false);
+            setHasActiveSubscription(false);
+            setSubscriptionType('aucun');
+        };
+        
+        window.addEventListener('enterpriseSubscriptionActivated', handleEnterpriseActivation);
+        window.addEventListener('subscriptionCancelled', handleSubscriptionCancellation);
+        
+        return () => {
+            window.removeEventListener('hashchange', handleHashChange);
+            window.removeEventListener('enterpriseSubscriptionActivated', handleEnterpriseActivation);
+            window.removeEventListener('subscriptionCancelled', handleSubscriptionCancellation);
+        };
     }, []);
 
     useEffect(() => {
@@ -159,6 +190,59 @@ export default function Dashboard({ section = 'overview' }) {
             return item;
         }));
     }, [hasActiveSubscription, subscriptionType]);
+
+    // Effet pour rafraîchir l'état de l'abonnement entreprise quand on va sur la section services
+    useEffect(() => {
+        if (activeSection === 'services') {
+            refreshEnterpriseSubscription();
+        }
+    }, [activeSection]);
+
+    // Effet pour surveiller automatiquement les changements d'abonnement
+    useEffect(() => {
+        const checkSubscriptionStatus = () => {
+            const userServices = localStorage.getItem('userServices');
+            const userSubscription = localStorage.getItem('userSubscription');
+            const enterpriseService = localStorage.getItem('enterpriseService');
+            const subscriptionCancelled = localStorage.getItem('subscriptionCancelled');
+            
+            // Logique de détection améliorée
+            const hasEnterprise = (userServices?.includes('enterprise') || 
+                                userSubscription === 'enterprise' || userSubscription === 'entreprise' ||
+                                enterpriseService === 'true') && 
+                                subscriptionCancelled !== 'true';
+            
+            if (hasEnterprise !== hasEnterpriseSubscription) {
+                console.log('🔄 Changement d\'état d\'abonnement détecté:', hasEnterprise ? 'Actif' : 'Inactif');
+                setHasEnterpriseSubscription(hasEnterprise);
+            }
+        };
+
+        // Vérifier immédiatement
+        checkSubscriptionStatus();
+
+        // Surveiller les changements de localStorage
+        const handleStorageChange = (e) => {
+            if (e.key === 'userSubscription' || e.key === 'enterpriseService' || 
+                e.key === 'userServices' || e.key === 'subscriptionCancelled') {
+                console.log('📊 Changement localStorage détecté:', e.key, e.newValue);
+                setTimeout(checkSubscriptionStatus, 100);
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        
+        // Vérifier périodiquement (toutes les 2 secondes)
+        const interval = setInterval(checkSubscriptionStatus, 2000);
+        
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            clearInterval(interval);
+        };
+    }, [hasEnterpriseSubscription]);
+
+    // Logique automatique d'activation/désactivation des services entreprise
+    // La surveillance se fait automatiquement via le useEffect ci-dessus
 
     const loadMachines = async () => {
         try {
@@ -216,8 +300,56 @@ export default function Dashboard({ section = 'overview' }) {
                 const user = JSON.parse(userData);
                 setUserName(user.name || user.email || 'Utilisateur');
             }
+            
+            // Vérifier l'abonnement entreprise
+            const checkEnterpriseSubscription = () => {
+                const userServices = localStorage.getItem('userServices');
+                const userSubscription = localStorage.getItem('userSubscription');
+                const enterpriseService = localStorage.getItem('enterpriseService');
+                const subscriptionCancelled = localStorage.getItem('subscriptionCancelled');
+                
+                const hasEnterprise = (userServices?.includes('enterprise') || 
+                                    userSubscription === 'enterprise' || userSubscription === 'entreprise' ||
+                                    enterpriseService === 'true') && 
+                                    subscriptionCancelled !== 'true';
+                
+                setHasEnterpriseSubscription(hasEnterprise);
+
+            };
+            
+            checkEnterpriseSubscription();
         } catch (error) {
             console.error('Erreur lors du chargement des données utilisateur:', error);
+        }
+    };
+
+    // Fonction pour rafraîchir l'état de l'abonnement entreprise
+    const refreshEnterpriseSubscription = () => {
+        try {
+            const userServices = localStorage.getItem('userServices');
+            const userSubscription = localStorage.getItem('userSubscription');
+            const enterpriseService = localStorage.getItem('enterpriseService');
+            const subscriptionCancelled = localStorage.getItem('subscriptionCancelled');
+            
+            // Logique de détection améliorée
+            const hasEnterprise = (userServices?.includes('enterprise') || 
+                                userSubscription === 'enterprise' || userSubscription === 'entreprise' ||
+                                enterpriseService === 'true') && 
+                                subscriptionCancelled !== 'true';
+            
+            console.log('🔄 Rafraîchissement abonnement entreprise:', hasEnterprise ? 'Actif' : 'Inactif');
+            console.log('📊 Détails:', {
+                userServices,
+                userSubscription,
+                enterpriseService,
+                subscriptionCancelled,
+                hasEnterprise
+            });
+            
+            setHasEnterpriseSubscription(hasEnterprise);
+        } catch (error) {
+            console.error('Erreur lors du rafraîchissement:', error);
+            setHasEnterpriseSubscription(false);
         }
     };
 
@@ -239,6 +371,11 @@ export default function Dashboard({ section = 'overview' }) {
         } else if (hash.includes('dashboard/')) {
             const section = hash.split('/')[1];
             setActiveSection(section);
+            
+            // Rafraîchir l'état de l'abonnement entreprise quand on va sur la section services
+            if (section === 'services') {
+                refreshEnterpriseSubscription();
+            }
         }
     };
 
@@ -284,15 +421,25 @@ export default function Dashboard({ section = 'overview' }) {
         if (confirm('Êtes-vous sûr de vouloir résilier votre abonnement ?')) {
             setHasActiveSubscription(false);
             setSubscriptionType('aucun');
+            setHasEnterpriseSubscription(false);
             
-            // Nettoyer les données temporaires et l'abonnement enregistré du localStorage
+            // Nettoyer TOUTES les données d'abonnement du localStorage
             localStorage.removeItem('tempSubscription');
             localStorage.removeItem('tempHasActiveSubscription');
             localStorage.removeItem('enterpriseDashboardConfigured');
             localStorage.removeItem('userSubscription');
+            localStorage.removeItem('enterpriseService');
+            localStorage.removeItem('userServices');
             
             // Marquer explicitement l'abonnement comme résilié
             localStorage.setItem('subscriptionCancelled', 'true');
+            
+            console.log('🚫 Abonnement résilié - Toutes les données nettoyées');
+            
+            // Déclencher un événement pour notifier les autres composants
+            window.dispatchEvent(new CustomEvent('subscriptionCancelled', {
+                detail: { cancelled: true }
+            }));
             
             alert('Votre abonnement a été résilié avec succès ! Vous pouvez maintenant choisir un nouvel abonnement.');
         }
@@ -307,19 +454,13 @@ export default function Dashboard({ section = 'overview' }) {
     };
 
     const handleActivateSubscription = (type) => {
-        setHasActiveSubscription(true);
-        setSubscriptionType(type);
+        // Afficher la page de paiement
+        console.log(`💰 Abonnement ${type} sélectionné - affichage page de paiement`);
         
-        // Enregistrer l'abonnement dans localStorage
-        localStorage.setItem('userSubscription', type);
-        
-        // Supprimer le marqueur de résiliation
-        localStorage.removeItem('subscriptionCancelled');
-        
-        alert(`Abonnement ${type} activé avec succès !`);
-        // Rediriger vers la vue d'ensemble pour voir le tableau de bord complet
-        setActiveSection('overview');
-        window.location.hash = '#dashboard/overview';
+        setSelectedPlanForPayment(type);
+        setShowPaymentPage(true);
+        setPaymentMethod('card');
+        setPromoCode('');
     };
 
     const formatNumber = (num) => {
@@ -472,6 +613,106 @@ export default function Dashboard({ section = 'overview' }) {
 
     const maxWeeklyViews = Math.max(...weeklyData, 1);
 
+    // Fonctions pour la page de paiement
+    const handlePaymentMethodChange = (method) => {
+        setPaymentMethod(method);
+    };
+
+    const handlePromoCodeValidation = () => {
+        if (promoCode === '082025') {
+            alert('✅ Code promo valide ! Accès temporaire de 30 jours.');
+            activateSubscriptionWithPromo();
+        } else {
+            alert('❌ Code promo invalide');
+        }
+    };
+
+    const activateSubscriptionWithPromo = async () => {
+        try {
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            if (userError || !user) {
+                throw new Error('Utilisateur non connecté');
+            }
+
+            // Activer l'abonnement temporaire
+            setHasActiveSubscription(true);
+            setSubscriptionType(selectedPlanForPayment);
+            localStorage.setItem('userSubscription', selectedPlanForPayment);
+            localStorage.setItem('tempHasActiveSubscription', 'true');
+            localStorage.setItem('tempSubscription', selectedPlanForPayment);
+            
+            setShowPaymentPage(false);
+            alert(`✅ Abonnement ${selectedPlanForPayment} activé avec succès grâce au code promo ! Accès temporaire de 30 jours.`);
+            setActiveSection('overview');
+        } catch (error) {
+            console.error('Erreur activation abonnement promo:', error);
+            alert('Erreur lors de l\'activation de l\'abonnement');
+        }
+    };
+
+    const handleStripePaymentSuccess = () => {
+        setHasActiveSubscription(true);
+        setSubscriptionType(selectedPlanForPayment);
+        
+        // Mettre à jour l'état de l'abonnement entreprise
+        if (selectedPlanForPayment === 'enterprise') {
+            setHasEnterpriseSubscription(true);
+            // Sauvegarder dans localStorage
+            localStorage.setItem('userSubscription', 'enterprise');
+            localStorage.setItem('enterpriseService', 'true');
+            localStorage.setItem('userServices', 'enterprise');
+            localStorage.removeItem('subscriptionCancelled');
+            console.log('✅ Abonnement entreprise activé');
+            
+            // Déclencher l'événement d'activation
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('enterpriseSubscriptionActivated', {
+                    detail: { planType: 'enterprise' }
+                }));
+                console.log('🎉 Événement enterpriseSubscriptionActivated déclenché après paiement');
+            }, 100);
+        }
+        
+        setShowPaymentPage(false);
+        setActiveSection('overview');
+        alert('✅ Paiement réussi ! Votre abonnement est maintenant actif.');
+    };
+
+    const handleStripePaymentError = (error) => {
+        console.error('Erreur paiement Stripe:', error);
+        alert(`Erreur lors du paiement: ${error}`);
+    };
+
+    const handleStripePaymentCancel = () => {
+        setShowPaymentPage(false);
+    };
+
+    const getPlanPrice = (planType) => {
+        switch (planType) {
+            case 'premium': return 49;
+            case 'pro': return 149;
+            case 'enterprise': return 499;
+            default: return 0;
+        }
+    };
+
+    // Fonction pour sauvegarder la configuration du tableau de bord
+    const handleSaveDashboard = () => {
+        // Sauvegarder la configuration actuelle
+        const dashboardConfig = {
+            hasActiveSubscription,
+            subscriptionType,
+            lastSaved: new Date().toISOString(),
+            version: '1.0'
+        };
+        
+        localStorage.setItem('dashboardConfig', JSON.stringify(dashboardConfig));
+        localStorage.setItem('dashboardConfigured', 'true');
+        
+        console.log('✅ Configuration du tableau de bord sauvegardée');
+        alert('✅ Configuration du tableau de bord sauvegardée avec succès !');
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -500,13 +741,24 @@ export default function Dashboard({ section = 'overview' }) {
                             </ol>
                         </nav>
                     </div>
-                    <a
-                        href="#vendre"
-                        className="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-lg text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 transform hover:scale-105 transition-all duration-200"
-                    >
-                        <Plus className="h-5 w-5 mr-2" />
-                        Nouvelle annonce
-                    </a>
+                    <div className="flex items-center space-x-3">
+                        {hasActiveSubscription && subscriptionType !== 'gratuit' && (
+                            <button
+                                onClick={handleSaveDashboard}
+                                className="inline-flex items-center px-4 py-2 border border-orange-300 rounded-lg text-sm font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 transition-all duration-200"
+                            >
+                                <Save className="h-4 w-4 mr-2" />
+                                Sauvegarder
+                            </button>
+                        )}
+                        <a
+                            href="#vendre"
+                            className="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-lg text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 transform hover:scale-105 transition-all duration-200"
+                        >
+                            <Plus className="h-5 w-5 mr-2" />
+                            Nouvelle annonce
+                        </a>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -767,7 +1019,50 @@ export default function Dashboard({ section = 'overview' }) {
                                                 )}
                                             </div>
                                             <div className="mt-4 pt-4 border-t border-orange-200">
-                                                <p className="text-xs text-gray-600">Renouvellement automatique le 15 juillet 2024</p>
+                                                <p className="text-xs text-gray-600 mb-3">Renouvellement automatique le 15 juillet 2024</p>
+                                                {(subscriptionType === 'pro' || subscriptionType === 'entreprise') && (
+                                                    <button
+                                                        onClick={() => {
+                                                            // Logique de redirection selon le type d'abonnement
+                                                            switch (subscriptionType) {
+                                                                case 'pro':
+                                                                    console.log('🚀 Redirection vers tableau de bord pro');
+                                                                    window.location.href = '/#pro';
+                                                                    break;
+                                                                case 'entreprise':
+                                                                    // Vérifier si le tableau de bord entreprise est configuré
+                                                                    const isConfigured = localStorage.getItem('enterpriseDashboardConfigured');
+                                                                    const vendeurConfig = localStorage.getItem('enterpriseDashboardConfig_vendeur');
+                                                                    const generalConfig = localStorage.getItem('enterpriseDashboardConfig');
+                                                                    
+                                                                    console.log('🔍 Debug configuration entreprise:', {
+                                                                        isConfigured,
+                                                                        vendeurConfig,
+                                                                        generalConfig
+                                                                    });
+                                                                    
+                                                                    // Si une configuration existe et est marquée comme configurée
+                                                                    if (isConfigured === 'true' && (vendeurConfig || generalConfig)) {
+                                                                        console.log('✅ Tableau de bord configuré - redirection vers affichage');
+                                                                        window.location.href = '/#dashboard-entreprise-display';
+                                                                    } else {
+                                                                        console.log('🚀 Tableau de bord non configuré - redirection vers configuration');
+                                                                        window.location.href = '/#dashboard-entreprise';
+                                                                    }
+                                                                    break;
+                                                                default:
+                                                                    // Par défaut, rediriger vers la configuration
+                                                                    console.log('🚀 Aucun abonnement détecté - redirection vers configuration');
+                                                                    window.location.href = '/#dashboard-entreprise';
+                                                                    break;
+                                                            }
+                                                        }}
+                                                        className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 font-medium flex items-center justify-center"
+                                                    >
+                                                        <Shield className="h-4 w-4 mr-2" />
+                                                        Accéder à mon service
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
 
@@ -823,104 +1118,16 @@ export default function Dashboard({ section = 'overview' }) {
                                             </div>
                                         </div>
 
-                                        {/* Actions rapides */}
+                                        {/* Support */}
                                         <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-100">
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions rapides</h3>
-                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                                <a
-                                                    href="#vendre"
-                                                    className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
-                                                >
-                                                    <Plus className="h-6 w-6 text-orange-600 mb-2" />
-                                                    <span className="text-sm font-medium text-gray-700">Nouvelle annonce</span>
-                                                </a>
-                                                <button
-                                                    onClick={() => {
-                                                        // Récupérer le type d'abonnement actuel
-                                                        const currentSubscription = localStorage.getItem('userSubscription') || subscriptionType;
-                                                        
-                                                        console.log('🔍 Type d\'abonnement actuel:', currentSubscription);
-
-                                                        // Rediriger selon le type d'abonnement
-                                                        switch (currentSubscription) {
-                                                            case 'premium':
-                                                                // Premium : accès au tableau de bord standard
-                                                                setHasActiveSubscription(true);
-                                                                setSubscriptionType('premium');
-                                                                window.location.href = '/#dashboard/overview';
-                                                                break;
-                                                                
-                                                            case 'pro':
-                                                                // Pro : accès à l'espace pro
-                                                                setHasActiveSubscription(true);
-                                                                setSubscriptionType('pro');
-                                                                window.location.href = '/#pro';
-                                                                break;
-                                                                
-                                                            case 'entreprise':
-                                                                // Entreprise : configuration ou accès au tableau de bord
-                                                                setHasActiveSubscription(true);
-                                                                setSubscriptionType('entreprise');
-                                                                
-                                                                // Nettoyer les configurations invalides pour forcer la configuration
-                                                                const isConfigured = localStorage.getItem('enterpriseDashboardConfigured');
-                                                                if (isConfigured !== 'true') {
-                                                                    // Supprimer les configurations invalides
-                                                                    localStorage.removeItem('enterpriseDashboardConfig_vendeur');
-                                                                    localStorage.removeItem('enterpriseDashboardConfig');
-                                                                    console.log('🧹 Nettoyage des configurations invalides');
-                                                                }
-                                                                
-                                                                // Utiliser la fonction utilitaire pour vérifier la configuration
-                                                                const hasRealConfiguration = hasValidConfiguration();
-                                                                
-                                                                console.log('🔍 Debug configuration entreprise:', {
-                                                                    hasRealConfiguration,
-                                                                    vendeurConfig: localStorage.getItem('enterpriseDashboardConfig_vendeur'),
-                                                                    generalConfig: localStorage.getItem('enterpriseDashboardConfig'),
-                                                                    isConfigured: localStorage.getItem('enterpriseDashboardConfigured')
-                                                                });
-                                                                
-                                                                // Par défaut, rediriger vers la configuration
-                                                                // Seulement si une configuration valide existe, aller au dashboard
-                                                                if (hasRealConfiguration) {
-                                                                    console.log('✅ Utilisateur entreprise existant - redirection vers dashboard');
-                                                                    // L'utilisateur a déjà un tableau de bord configuré
-                                                                    // Rediriger directement vers son tableau de bord
-                                                                    window.location.href = '/#dashboard-entreprise-display';
-                                                                } else {
-                                                                    console.log('🚀 Nouvel utilisateur entreprise - redirection vers configuration');
-                                                                    // Rediriger vers la configuration par défaut
-                                                                    window.location.href = '/#dashboard-entreprise';
-                                                                }
-                                                                break;
-                                                                
-                                                            default:
-                                                                // Par défaut, rediriger vers la configuration
-                                                                console.log('🚀 Aucun abonnement détecté - redirection vers configuration');
-                                                                window.location.href = '/#dashboard-entreprise';
-                                                                break;
-                                                        }
-                                                    }}
-                                                    className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
-                                                >
-                                                    <Shield className="h-6 w-6 text-orange-600 mb-2" />
-                                                    <span className="text-sm font-medium text-gray-700">
-                                                        Accéder à mon service
-                                                    </span>
-                                                </button>
-                                                <a
-                                                    href="#contact"
-                                                    className="flex flex-col items-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
-                                                >
-                                                    <MessageSquare className="h-6 w-6 text-orange-600 mb-2" />
-                                                    <span className="text-sm font-medium text-gray-700">Contacter le support</span>
-                                                </a>
-                                                
-
-
-
-                                            </div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Support</h3>
+                                            <a
+                                                href="#contact"
+                                                className="flex items-center justify-center p-4 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors"
+                                            >
+                                                <MessageSquare className="h-6 w-6 text-orange-600 mr-3" />
+                                                <span className="text-sm font-medium text-gray-700">Contacter le support</span>
+                                            </a>
                                         </div>
                                     </>
                                 )}
@@ -1169,68 +1376,16 @@ export default function Dashboard({ section = 'overview' }) {
 
                         {activeSection === 'services' && (
                             <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-100">
-                                <h3 className="text-xl font-semibold text-gray-900 mb-6 bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent">
-                                    Mes Services Entreprise
-                                </h3>
-                                <div className="mb-8 p-6 bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl border border-orange-200">
-                                    <p className="text-gray-800 font-medium">
-                                        Formule actuelle :{' '}
-                                        <span className="text-orange-700 font-bold">Service Entreprise Pro</span>
-                                    </p>
-                                    <p className="text-sm text-orange-600 mt-1">Renouvellement automatique le 15 juillet 2024</p>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-semibold text-gray-900 bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent">
+                                        Mes Services Entreprise
+                                    </h3>
                                 </div>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-4">
-                                        <h4 className="font-semibold text-gray-900 border-b border-orange-200 pb-3 text-lg">
-                                            Services Entreprise Actifs
-                                        </h4>
-                                        <div className="space-y-4">
-                                            <div className="flex items-center p-4 bg-gradient-to-r from-green-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
-                                                <div className="w-4 h-4 bg-gradient-to-r from-green-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
-                                                <div>
-                                                    <h5 className="font-semibold text-orange-900">Annonces en vedette</h5>
-                                                    <p className="text-sm text-orange-700">Affichage prioritaire et badge Entreprise</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center p-4 bg-gradient-to-r from-blue-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
-                                                <div className="w-4 h-4 bg-gradient-to-r from-blue-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
-                                                <div>
-                                                    <h5 className="font-semibold text-orange-900">Médias enrichis</h5>
-                                                    <p className="text-sm text-orange-700">Jusqu'à 15 images par annonce + vidéos et vues 360°</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center p-4 bg-gradient-to-r from-purple-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
-                                                <div className="w-4 h-4 bg-gradient-to-r from-purple-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
-                                                <div>
-                                                    <h5 className="font-semibold text-orange-900">Tableau de bord personnalisé</h5>
-                                                    <p className="text-sm text-orange-700">Analytics complets et métriques avancées</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center p-4 bg-gradient-to-r from-red-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
-                                                <div className="w-4 h-4 bg-gradient-to-r from-red-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
-                                                <div>
-                                                    <h5 className="font-semibold text-orange-900">Support prioritaire 24/7</h5>
-                                                    <p className="text-sm text-orange-700">Assistance téléphonique, email et chat en direct</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center p-4 bg-gradient-to-r from-indigo-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
-                                                <div className="w-4 h-4 bg-gradient-to-r from-indigo-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
-                                                <div>
-                                                    <h5 className="font-semibold text-orange-900">API d'intégration</h5>
-                                                    <p className="text-sm text-orange-700">Connexion avec vos systèmes existants</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center p-4 bg-gradient-to-r from-yellow-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
-                                                <div className="w-4 h-4 bg-gradient-to-r from-yellow-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
-                                                <div>
-                                                    <h5 className="font-semibold text-orange-900">Gestion multi-utilisateurs</h5>
-                                                    <p className="text-sm text-orange-700">Accès pour toute votre équipe</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
+
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                                    {/* Services Premium - Colonne gauche */}
                                     <div className="space-y-4">
                                         <h4 className="font-semibold text-gray-900 border-b border-orange-200 pb-3 text-lg">
                                             Services Premium
@@ -1238,31 +1393,387 @@ export default function Dashboard({ section = 'overview' }) {
                                         <div className="space-y-4">
                                             <div className="flex items-center p-4 bg-gradient-to-r from-emerald-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
                                                 <div className="w-4 h-4 bg-gradient-to-r from-emerald-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
-                                                <div>
-                                                    <h5 className="font-semibold text-orange-900">Réseau partenarial</h5>
-                                                    <p className="text-sm text-orange-700">Accès exclusif au réseau de partenaires</p>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Visibilité renforcée sur la page d'accueil</h5>
+                                                    <p className="text-sm text-orange-700">Mise en avant de vos annonces en position prioritaire sur la page d'accueil du site</p>
                                                 </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasActiveSubscription && (subscriptionType === 'premium' || subscriptionType === 'pro' || subscriptionType === 'enterprise')
+                                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                        : 'bg-gray-500 text-white cursor-not-allowed'
+                                                }`}>
+                                                    {hasActiveSubscription && (subscriptionType === 'premium' || subscriptionType === 'pro' || subscriptionType === 'enterprise') ? 'Actif' : 'Verrouillé'}
+                                                </button>
                                             </div>
+                                            
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-blue-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-blue-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Jusqu'à 10 images par annonce</h5>
+                                                    <p className="text-sm text-orange-700">Possibilité de publier jusqu'à 10 images haute qualité par annonce pour maximiser la visibilité</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasActiveSubscription && (subscriptionType === 'premium' || subscriptionType === 'pro' || subscriptionType === 'enterprise')
+                                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                        : 'bg-gray-500 text-white cursor-not-allowed'
+                                                }`}>
+                                                    {hasActiveSubscription && (subscriptionType === 'premium' || subscriptionType === 'pro' || subscriptionType === 'enterprise') ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-purple-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-purple-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Support prioritaire</h5>
+                                                    <p className="text-sm text-orange-700">Accès prioritaire au support technique avec temps de réponse garanti</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasActiveSubscription && (subscriptionType === 'premium' || subscriptionType === 'pro' || subscriptionType === 'enterprise')
+                                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                        : 'bg-gray-500 text-white cursor-not-allowed'
+                                                }`}>
+                                                    {hasActiveSubscription && (subscriptionType === 'premium' || subscriptionType === 'pro' || subscriptionType === 'enterprise') ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-green-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-green-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Statistiques détaillées</h5>
+                                                    <p className="text-sm text-orange-700">Accès à des statistiques avancées sur vos annonces, vues, contacts et performances</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasActiveSubscription && (subscriptionType === 'premium' || subscriptionType === 'pro' || subscriptionType === 'enterprise')
+                                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                        : 'bg-gray-500 text-white cursor-not-allowed'
+                                                }`}>
+                                                    {hasActiveSubscription && (subscriptionType === 'premium' || subscriptionType === 'pro' || subscriptionType === 'enterprise') ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Services Pro - Colonne droite */}
+                                    <div className="space-y-4">
+                                        <h4 className="font-semibold text-gray-900 border-b border-orange-200 pb-3 text-lg">
+                                            Services Pro
+                                        </h4>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-purple-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-purple-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Jusqu'à 12 images par annonce</h5>
+                                                    <p className="text-sm text-orange-700">Possibilité de publier jusqu'à 12 images haute qualité par annonce</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasActiveSubscription && (subscriptionType === 'pro' || subscriptionType === 'enterprise')
+                                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                        : 'bg-gray-500 text-white cursor-not-allowed'
+                                                }`}>
+                                                    {hasActiveSubscription && (subscriptionType === 'pro' || subscriptionType === 'enterprise') ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-blue-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-blue-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Support prioritaire par téléphone, email et chat</h5>
+                                                    <p className="text-sm text-orange-700">Accès prioritaire au support technique via tous les canaux de communication</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasActiveSubscription && (subscriptionType === 'pro' || subscriptionType === 'enterprise')
+                                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                        : 'bg-gray-500 text-white cursor-not-allowed'
+                                                }`}>
+                                                    {hasActiveSubscription && (subscriptionType === 'pro' || subscriptionType === 'enterprise') ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                            
                                             <div className="flex items-center p-4 bg-gradient-to-r from-teal-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
                                                 <div className="w-4 h-4 bg-gradient-to-r from-teal-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
-                                                <div>
-                                                    <h5 className="font-semibold text-orange-900">Formation personnalisée</h5>
-                                                    <p className="text-sm text-orange-700">Sessions de formation dédiées à votre équipe</p>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Analytics avancés et rapports personnalisés</h5>
+                                                    <p className="text-sm text-orange-700">Analyses détaillées et rapports personnalisés sur vos performances</p>
                                                 </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasActiveSubscription && (subscriptionType === 'pro' || subscriptionType === 'enterprise')
+                                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                        : 'bg-gray-500 text-white cursor-not-allowed'
+                                                }`}>
+                                                    {hasActiveSubscription && (subscriptionType === 'pro' || subscriptionType === 'enterprise') ? 'Actif' : 'Verrouillé'}
+                                                </button>
                                             </div>
+                                            
                                             <div className="flex items-center p-4 bg-gradient-to-r from-cyan-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
                                                 <div className="w-4 h-4 bg-gradient-to-r from-cyan-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
-                                                <div>
-                                                    <h5 className="font-semibold text-orange-900">Services de financement</h5>
-                                                    <p className="text-sm text-orange-700">Solutions de financement sur mesure</p>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Tableau de bord professionnel</h5>
+                                                    <p className="text-sm text-orange-700">Interface de gestion avancée avec outils professionnels intégrés</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasActiveSubscription && (subscriptionType === 'pro' || subscriptionType === 'enterprise')
+                                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                        : 'bg-gray-500 text-white cursor-not-allowed'
+                                                }`}>
+                                                    {hasActiveSubscription && (subscriptionType === 'pro' || subscriptionType === 'enterprise') ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="flex items-center p-4 bg-gradient-to-r from-rose-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
+                                                <div className="w-4 h-4 bg-gradient-to-r from-rose-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Services de financement et logistique</h5>
+                                                    <p className="text-sm text-orange-700">Solutions de financement et services logistiques intégrés</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasActiveSubscription && (subscriptionType === 'pro' || subscriptionType === 'enterprise')
+                                                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                                        : 'bg-gray-500 text-white cursor-not-allowed'
+                                                }`}>
+                                                    {hasActiveSubscription && (subscriptionType === 'pro' || subscriptionType === 'enterprise') ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Services Entreprise - En bas sur deux colonnes */}
+                                <div className="mt-8">
+                                    <h4 className="font-semibold text-gray-900 border-b border-orange-200 pb-3 text-lg mb-6">
+                                        Services Entreprise
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Colonne gauche Services Entreprise */}
+                                        <div className="space-y-4">
+                                            <div className={`flex items-center p-4 rounded-xl border shadow-sm transition-all ${
+                                                hasEnterpriseSubscription 
+                                                    ? 'bg-gradient-to-r from-green-50 via-orange-100 to-orange-200 border-orange-300' 
+                                                    : 'bg-gradient-to-r from-green-50 via-orange-100 to-orange-200 border-orange-300'
+                                            }`}>
+                                                <div className={`w-4 h-4 rounded-full mr-4 shadow-sm ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-gradient-to-r from-green-100 via-orange-200 to-orange-400' 
+                                                        : 'bg-gradient-to-r from-green-100 via-orange-200 to-orange-400'
+                                                }`}></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Visibilité renforcée sur la page d'accueil</h5>
+                                                    <p className="text-sm text-orange-700">Mise en avant maximale et positionnement prioritaire</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                }`}>
+                                                    {hasEnterpriseSubscription ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                            
+                                            <div className={`flex items-center p-4 rounded-xl border shadow-sm transition-all ${
+                                                hasEnterpriseSubscription 
+                                                    ? 'bg-gradient-to-r from-blue-50 via-orange-100 to-orange-200 border-orange-300' 
+                                                    : 'bg-gradient-to-r from-blue-50 via-orange-100 to-orange-200 border-orange-300'
+                                            }`}>
+                                                <div className={`w-4 h-4 rounded-full mr-4 shadow-sm ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-gradient-to-r from-blue-100 via-orange-200 to-orange-400' 
+                                                        : 'bg-gradient-to-r from-blue-100 via-orange-200 to-orange-400'
+                                                }`}></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Jusqu'à 15 images par annonce</h5>
+                                                    <p className="text-sm text-orange-700">Possibilité de publier jusqu'à 15 images haute qualité par annonce</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                }`}>
+                                                    {hasEnterpriseSubscription ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                            
+                                            <div className={`flex items-center p-4 rounded-xl border shadow-sm transition-all ${
+                                                hasEnterpriseSubscription 
+                                                    ? 'bg-gradient-to-r from-red-50 via-orange-100 to-orange-200 border-orange-300 hover:shadow-md cursor-pointer' 
+                                                    : 'bg-gradient-to-r from-red-50 via-orange-100 to-orange-200 border-orange-300 cursor-not-allowed'
+                                            }`} onClick={hasEnterpriseSubscription ? () => window.open('#priority-support', '_blank') : undefined}>
+                                                <div className={`w-4 h-4 rounded-full mr-4 shadow-sm ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-gradient-to-r from-red-100 via-orange-200 to-orange-400' 
+                                                        : 'bg-gradient-to-r from-red-100 via-orange-200 to-orange-400'
+                                                }`}></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Support prioritaire 24/7</h5>
+                                                    <p className="text-sm text-orange-700">Assistance téléphonique, email et chat en direct</p>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                        hasEnterpriseSubscription 
+                                                            ? 'bg-green-600 text-white hover:bg-green-700' 
+                                                            : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                    }`}>
+                                                        {hasEnterpriseSubscription ? 'Disponible' : 'Verrouillé'}
+                                                    </button>
+                                                    {hasEnterpriseSubscription && (
+                                                        <button className="text-xs bg-orange-600 text-white px-3 py-1 rounded-full hover:bg-orange-700 transition-colors">
+                                                            Contacter
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center p-4 bg-gradient-to-r from-pink-50 via-orange-100 to-orange-200 rounded-xl border border-orange-300 shadow-sm">
-                                                <div className="w-4 h-4 bg-gradient-to-r from-pink-100 via-orange-200 to-orange-400 rounded-full mr-4 shadow-sm"></div>
-                                                <div>
-                                                    <h5 className="font-semibold text-orange-900">Logistique intégrée</h5>
-                                                    <p className="text-sm text-orange-700">Services de transport et logistique</p>
+                                            
+                                            <div className={`flex items-center p-4 rounded-xl border shadow-sm transition-all ${
+                                                hasEnterpriseSubscription 
+                                                    ? 'bg-gradient-to-r from-purple-50 via-orange-100 to-orange-200 border-orange-300' 
+                                                    : 'bg-gradient-to-r from-purple-50 via-orange-100 to-orange-200 border-orange-300'
+                                            }`}>
+                                                <div className={`w-4 h-4 rounded-full mr-4 shadow-sm ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-gradient-to-r from-purple-100 via-orange-200 to-orange-400' 
+                                                        : 'bg-gradient-to-r from-purple-100 via-orange-200 to-orange-400'
+                                                }`}></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Statistiques détaillées et analytics</h5>
+                                                    <p className="text-sm text-orange-700">Analytics complets et métriques avancées</p>
                                                 </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                }`}>
+                                                    {hasEnterpriseSubscription ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                            
+                                            <div className={`flex items-center p-4 rounded-xl border shadow-sm transition-all ${
+                                                hasEnterpriseSubscription 
+                                                    ? 'bg-gradient-to-r from-teal-50 via-orange-100 to-orange-200 border-orange-300' 
+                                                    : 'bg-gradient-to-r from-teal-50 via-orange-100 to-orange-200 border-orange-300'
+                                            }`}>
+                                                <div className={`w-4 h-4 rounded-full mr-4 shadow-sm ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-gradient-to-r from-teal-100 via-orange-200 to-orange-400' 
+                                                        : 'bg-gradient-to-r from-teal-100 via-orange-200 to-orange-400'
+                                                }`}></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Tableau de bord entreprise personnalisé</h5>
+                                                    <p className="text-sm text-orange-700">Interface de gestion avancée et personnalisable</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                }`}>
+                                                    {hasEnterpriseSubscription ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Colonne droite Services Entreprise */}
+                                        <div className="space-y-4">
+                                            <div className={`flex items-center p-4 rounded-xl border shadow-sm transition-all ${
+                                                hasEnterpriseSubscription 
+                                                    ? 'bg-gradient-to-r from-yellow-50 via-orange-100 to-orange-200 border-orange-300 hover:shadow-md cursor-pointer' 
+                                                    : 'bg-gradient-to-r from-yellow-50 via-orange-100 to-orange-200 border-orange-300 cursor-not-allowed'
+                                            }`} onClick={hasEnterpriseSubscription ? () => window.open('#multi-user-management', '_blank') : undefined}>
+                                                <div className={`w-4 h-4 rounded-full mr-4 shadow-sm ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-gradient-to-r from-yellow-100 via-orange-200 to-orange-400' 
+                                                        : 'bg-gradient-to-r from-yellow-100 via-orange-200 to-orange-400'
+                                                }`}></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Gestion multi-utilisateurs</h5>
+                                                    <p className="text-sm text-orange-700">Accès pour toute votre équipe</p>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                        hasEnterpriseSubscription 
+                                                            ? 'bg-green-600 text-white hover:bg-green-700' 
+                                                            : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                    }`}>
+                                                        {hasEnterpriseSubscription ? 'Disponible' : 'Verrouillé'}
+                                                    </button>
+                                                    {hasEnterpriseSubscription && (
+                                                        <button className="text-xs bg-orange-600 text-white px-3 py-1 rounded-full hover:bg-orange-700 transition-colors">
+                                                            Gérer
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className={`flex items-center p-4 rounded-xl border shadow-sm transition-all ${
+                                                hasEnterpriseSubscription 
+                                                    ? 'bg-gradient-to-r from-indigo-50 via-orange-100 to-orange-200 border-orange-300 hover:shadow-md cursor-pointer' 
+                                                    : 'bg-gradient-to-r from-indigo-50 via-orange-100 to-orange-200 border-orange-300 cursor-not-allowed'
+                                            }`} onClick={hasEnterpriseSubscription ? () => window.open('#api-docs', '_blank') : undefined}>
+                                                <div className={`w-4 h-4 rounded-full mr-4 shadow-sm ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-gradient-to-r from-indigo-100 via-orange-200 to-orange-400' 
+                                                        : 'bg-gradient-to-r from-indigo-100 via-orange-200 to-orange-400'
+                                                }`}></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">API d'intégration</h5>
+                                                    <p className="text-sm text-orange-700">Connexion avec vos systèmes existants</p>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                        hasEnterpriseSubscription 
+                                                            ? 'bg-green-600 text-white hover:bg-green-700' 
+                                                            : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                    }`}>
+                                                        {hasEnterpriseSubscription ? 'Disponible' : 'Verrouillé'}
+                                                    </button>
+                                                    {hasEnterpriseSubscription && (
+                                                        <button className="text-xs bg-orange-600 text-white px-3 py-1 rounded-full hover:bg-orange-700 transition-colors">
+                                                            Accéder
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className={`flex items-center p-4 rounded-xl border shadow-sm transition-all ${
+                                                hasEnterpriseSubscription 
+                                                    ? 'bg-gradient-to-r from-cyan-50 via-orange-100 to-orange-200 border-orange-300' 
+                                                    : 'bg-gradient-to-r from-cyan-50 via-orange-100 to-orange-200 border-orange-300'
+                                            }`}>
+                                                <div className={`w-4 h-4 rounded-full mr-4 shadow-sm ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-gradient-to-r from-cyan-100 via-orange-200 to-orange-400' 
+                                                        : 'bg-gradient-to-r from-cyan-100 via-orange-200 to-orange-400'
+                                                }`}></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Analytics complets</h5>
+                                                    <p className="text-sm text-orange-700">Analyses détaillées et rapports avancés</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                }`}>
+                                                    {hasEnterpriseSubscription ? 'Actif' : 'Verrouillé'}
+                                                </button>
+                                            </div>
+                                            
+                                            <div className={`flex items-center p-4 rounded-xl border shadow-sm transition-all ${
+                                                hasEnterpriseSubscription 
+                                                    ? 'bg-gradient-to-r from-emerald-50 via-orange-100 to-orange-200 border-orange-300' 
+                                                    : 'bg-gradient-to-r from-emerald-50 via-orange-100 to-orange-200 border-orange-300'
+                                            }`}>
+                                                <div className={`w-4 h-4 rounded-full mr-4 shadow-sm ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-gradient-to-r from-emerald-100 via-orange-200 to-orange-400' 
+                                                        : 'bg-gradient-to-r from-emerald-100 via-orange-200 to-orange-400'
+                                                }`}></div>
+                                                <div className="flex-1">
+                                                    <h5 className="font-semibold text-orange-900">Réseau partenarial intégré</h5>
+                                                    <p className="text-sm text-orange-700">Accès au réseau de partenaires exclusifs</p>
+                                                </div>
+                                                <button className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                                                    hasEnterpriseSubscription 
+                                                        ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                }`}>
+                                                    {hasEnterpriseSubscription ? 'Actif' : 'Verrouillé'}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -1547,6 +2058,132 @@ export default function Dashboard({ section = 'overview' }) {
                                     )}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Page de paiement */}
+            {showPaymentPage && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-2xl font-bold text-gray-900">Finaliser votre abonnement</h2>
+                                <button
+                                    onClick={() => setShowPaymentPage(false)}
+                                    className="text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <div className="mb-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                    {selectedPlanForPayment === 'premium' ? 'Premium' : 
+                                     selectedPlanForPayment === 'pro' ? 'Pro' : 'Enterprise'} - {getPlanPrice(selectedPlanForPayment)}€/mois
+                                </h3>
+                            </div>
+
+                            {/* Méthodes de paiement */}
+                            <div className="mb-6">
+                                <h4 className="text-lg font-medium text-gray-900 mb-4">Choisissez votre méthode de paiement</h4>
+                                <div className="space-y-3">
+                                    <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value="card"
+                                            checked={paymentMethod === 'card'}
+                                            onChange={() => handlePaymentMethodChange('card')}
+                                            className="mr-3"
+                                        />
+                                        <CreditCard className="h-5 w-5 text-orange-600 mr-3" />
+                                        <div>
+                                            <div className="font-medium">Carte bancaire</div>
+                                            <div className="text-sm text-gray-500">Paiement sécurisé</div>
+                                        </div>
+                                    </label>
+                                    <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value="promo"
+                                            checked={paymentMethod === 'promo'}
+                                            onChange={() => handlePaymentMethodChange('promo')}
+                                            className="mr-3"
+                                        />
+                                        <Gift className="h-5 w-5 text-orange-600 mr-3" />
+                                        <div>
+                                            <div className="font-medium">Code promo</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Formulaire de paiement Stripe */}
+                            {paymentMethod === 'card' && (
+                                <div className="mb-6">
+                                    <StripePaymentForm
+                                        planType={selectedPlanForPayment}
+                                        amount={getPlanPrice(selectedPlanForPayment)}
+                                        onSuccess={handleStripePaymentSuccess}
+                                        onError={handleStripePaymentError}
+                                        onCancel={handleStripePaymentCancel}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Formulaire code promo */}
+                            {paymentMethod === 'promo' && (
+                                <div className="mb-6">
+                                    <h4 className="text-lg font-medium text-gray-900 mb-4">Code promo</h4>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Entrez votre code promo"
+                                            value={promoCode}
+                                            onChange={(e) => setPromoCode(e.target.value)}
+                                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                        />
+                                        <button
+                                            onClick={handlePromoCodeValidation}
+                                            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                                        >
+                                            Valider
+                                        </button>
+                                    </div>
+                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mt-4">
+                                        <div className="flex items-center text-orange-800">
+                                            <Gift className="h-5 w-5 mr-2" />
+                                            <span className="font-medium">Offre spéciale</span>
+                                        </div>
+                                        <p className="text-sm text-orange-700 mt-1">
+                                            Utilisez le code <strong>082025</strong> pour un accès temporaire de 30 jours
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Résumé de commande */}
+                            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                <h4 className="text-lg font-medium text-gray-900 mb-3">Résumé de commande</h4>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-600">
+                                        {selectedPlanForPayment === 'premium' ? 'Premium' : 
+                                         selectedPlanForPayment === 'pro' ? 'Pro' : 'Enterprise'} - Abonnement mensuel
+                                    </span>
+                                    <span className="font-semibold text-lg">
+                                        {paymentMethod === 'promo' ? '0€' : `${getPlanPrice(selectedPlanForPayment)}€`}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Le bouton de paiement est maintenant géré par StripePaymentForm */}
+
+                            <p className="text-xs text-gray-500 text-center mt-4">
+                                Vos informations de paiement sont sécurisées et cryptées.
+                            </p>
                         </div>
                     </div>
                 </div>

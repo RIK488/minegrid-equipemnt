@@ -304,7 +304,7 @@ Que puis-je faire pour vous aujourd'hui ?`;
               </h1>
             </div>
             <div className="flex items-center space-x-2">
-              <Sparkles className="h-5 w-5 text-pink-600" />
+              <Sparkles className="h-5 w-5 text-orange-600" />
               <span className="text-sm text-gray-600">IA spécialisée équipements</span>
             </div>
           </div>
@@ -325,13 +325,13 @@ Que puis-je faire pour vous aujourd'hui ?`;
                     onClick={() => handleToolSelect(tool)}
                     className={`w-full p-4 rounded-lg border transition-colors text-left ${
                       activeTool === tool.id
-                        ? 'border-pink-500 bg-pink-50'
-                        : 'border-gray-200 hover:border-pink-300 hover:bg-pink-50'
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
                       <div className={`p-2 rounded-lg ${
-                        activeTool === tool.id ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-600'
+                        activeTool === tool.id ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-600'
                       }`}>
                         {tool.icon}
                       </div>
@@ -352,8 +352,8 @@ Que puis-je faire pour vous aujourd'hui ?`;
               {/* Header du chat */}
               <div className="p-4 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-pink-100 rounded-lg">
-                    <Bot className="h-5 w-5 text-pink-600" />
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Bot className="h-5 w-5 text-orange-600" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Assistant IA</h3>
@@ -381,13 +381,13 @@ Que puis-je faire pour vous aujourd'hui ?`;
                       <div
                         className={`max-w-[80%] p-4 rounded-lg ${
                           message.role === 'user'
-                            ? 'bg-pink-600 text-white'
+                            ? 'bg-orange-600 text-white'
                             : 'bg-gray-100 text-gray-900'
                         }`}
                       >
                         <div className="flex items-start space-x-2">
                           {message.role === 'assistant' && (
-                            <Bot className="h-4 w-4 mt-1 text-pink-600 flex-shrink-0" />
+                            <Bot className="h-4 w-4 mt-1 text-orange-600 flex-shrink-0" />
                           )}
                           <div className="flex-1">
                             <div className="whitespace-pre-wrap">{message.content}</div>
@@ -407,7 +407,7 @@ Que puis-je faire pour vous aujourd'hui ?`;
                   <div className="flex justify-start">
                     <div className="bg-gray-100 text-gray-900 p-4 rounded-lg">
                       <div className="flex items-center space-x-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-pink-600" />
+                        <Loader2 className="h-4 w-4 animate-spin text-orange-600" />
                         <span>L'assistant réfléchit...</span>
                       </div>
                     </div>
@@ -425,13 +425,13 @@ Que puis-je faire pour vous aujourd'hui ?`;
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder="Posez votre question..."
-                    className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
                     disabled={isLoading}
                   />
                   <button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim() || isLoading}
-                    className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send className="h-4 w-4" />
                   </button>
@@ -454,7 +454,7 @@ Que puis-je faire pour vous aujourd'hui ?`;
                     </button>
                     <button
                       onClick={() => downloadContent(generatedContent, 'contenu-ia.txt')}
-                      className="px-3 py-1 bg-pink-100 text-pink-700 rounded-md hover:bg-pink-200 transition-colors flex items-center text-sm"
+                      className="px-3 py-1 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors flex items-center text-sm"
                     >
                       <Download className="h-3 w-3 mr-1" />
                       Télécharger

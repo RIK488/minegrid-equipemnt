@@ -49,33 +49,41 @@ interface MachineFormData {
 }
 
 // Détermine le tableau de bord cible selon la formule d'abonnement
-async function navigateBackToDashboard(): Promise<void> {
+function navigateBackToDashboard(): void {
+  console.log('🔍 Navigation vers le tableau de bord approprié...');
+  
   try {
-    // 1) Session/Local hints (rapide et sans appel réseau)
-    const savedHash = sessionStorage.getItem('returnToHash');
-    if (savedHash) {
-      window.location.hash = savedHash;
-      return;
-    }
-    const planLS = (localStorage.getItem('subscriptionPlan') || localStorage.getItem('userPlan') || localStorage.getItem('plan') || '').toLowerCase();
-    if (planLS.includes('enterprise') || planLS.includes('entreprise')) {
-      window.location.hash = '#dashboard-entreprise-display';
-      return;
-    }
-
-    // 2) Fallback: lire le plan depuis les métadonnées utilisateur si disponible
-    try {
-      const user = await getCurrentUser();
-      const metaPlan = String((user as any)?.user_metadata?.plan || (user as any)?.app_metadata?.plan || '').toLowerCase();
-      if (metaPlan.includes('enterprise') || metaPlan.includes('entreprise')) {
-        window.location.hash = '#dashboard-entreprise-display';
-        return;
+    // 1) Vérifier l'abonnement actuel dans localStorage
+    const userSubscription = localStorage.getItem('userSubscription');
+    const tempSubscription = localStorage.getItem('tempSubscription');
+    const hasActiveSubscription = localStorage.getItem('tempHasActiveSubscription') === 'true';
+    
+    console.log('📊 Abonnement détecté:', { userSubscription, tempSubscription, hasActiveSubscription });
+    
+    // 2) Déterminer le tableau de bord selon l'abonnement
+    let targetDashboard = '#dashboard'; // Par défaut
+    
+    if (userSubscription || tempSubscription) {
+      const subscriptionType = userSubscription || tempSubscription;
+      
+      if (subscriptionType === 'entreprise' || subscriptionType === 'enterprise') {
+        targetDashboard = '#dashboard-entreprise-display';
+        console.log('🎯 Redirection vers Dashboard Enterprise');
+      } else {
+        targetDashboard = '#dashboard';
+        console.log('🎯 Redirection vers Dashboard Standard');
       }
-    } catch {}
-
-    // 3) Défaut: Espace Pro
-    window.location.hash = '#pro';
-  } catch {
+    } else if (hasActiveSubscription) {
+      targetDashboard = '#dashboard';
+      console.log('🎯 Redirection vers Dashboard (abonnement temporaire)');
+    }
+    
+    // 3) Effectuer la redirection
+    console.log('🚀 Redirection vers:', targetDashboard);
+    window.location.hash = targetDashboard;
+    
+  } catch (error) {
+    console.error('❌ Erreur navigation:', error);
     // En dernier recours, revenir en arrière
     window.history.back();
   }
@@ -232,7 +240,7 @@ export default function PublicationRapide() {
         // Calculer le temps de réponse pour chaque machine
         Object.values(messagesByMachine).forEach(machineMessages => {
           // Trier par date de création
-          const sortedMessages = machineMessages.sort((a, b) => 
+          const sortedMessages = (machineMessages as any[]).sort((a, b) => 
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           );
 
@@ -261,11 +269,11 @@ export default function PublicationRapide() {
       setAnalyticsData({
         totalViews,
         totalContacts,
-        conversionRate: parseFloat(conversionRate),
+        conversionRate: parseFloat(conversionRate.toString()),
         weeklyPerformance,
         topPerformers,
         categoryStats,
-        responseTime: parseFloat(avgResponseTime)
+        responseTime: parseFloat(avgResponseTime.toString())
       });
 
     } catch (error) {
@@ -976,7 +984,7 @@ export default function PublicationRapide() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => { void navigateBackToDashboard(); }}
+                onClick={navigateBackToDashboard}
                 className="text-gray-600 hover:text-gray-900"
                 title="Retourner au tableau de bord"
               >
@@ -989,7 +997,7 @@ export default function PublicationRapide() {
             </div>
             <div className="flex items-center space-x-3">
               <button
-                onClick={() => { void navigateBackToDashboard(); }}
+                onClick={navigateBackToDashboard}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium flex items-center"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -1221,6 +1229,7 @@ export default function PublicationRapide() {
                           type: '',
                           year: new Date().getFullYear(),
                           price: 0,
+                          total_hours: 0,
                           description: '',
                           location: '',
                           specifications: {
@@ -1833,7 +1842,7 @@ export default function PublicationRapide() {
                           <p className="text-2xl font-bold text-orange-600">
                             {analyticsData.weeklyPerformance.length > 0 
                               ? analyticsData.weeklyPerformance.reduce((max, day) => 
-                                  day.views > max.views ? day : max
+                                  (day as any).views > (max as any).views ? day : max
                                 ).day 
                               : 'N/A'
                             }
@@ -1841,7 +1850,7 @@ export default function PublicationRapide() {
                           <p className="text-sm text-gray-600">
                             {analyticsData.weeklyPerformance.length > 0 
                               ? `${analyticsData.weeklyPerformance.reduce((max, day) => 
-                                  day.views > max.views ? day : max
+                                  (day as any).views > (max as any).views ? day : max
                                 ).views} vues`
                               : 'Aucune donnée'
                             }
@@ -1851,17 +1860,17 @@ export default function PublicationRapide() {
                           <h6 className="font-semibold text-orange-800 mb-2">Catégorie la plus vue</h6>
                           <p className="text-2xl font-bold text-orange-600">
                             {Object.keys(analyticsData.categoryStats).length > 0 
-                              ? Object.entries(analyticsData.categoryStats)
+                              ? (Object.entries(analyticsData.categoryStats)
                                   .reduce((max, [cat, stats]) => 
-                                    stats.views > max.views ? { category: cat, ...stats } : max
-                                  ).category
+                                    (stats as any).views > (max as any).views ? { category: cat, ...(stats as any) } : max
+                                  ) as any).category
                               : 'N/A'
                             }
                           </p>
                           <p className="text-sm text-gray-600">
                             {Object.keys(analyticsData.categoryStats).length > 0 
-                              ? `${Math.round(Object.values(analyticsData.categoryStats)
-                                  .reduce((total, stats) => total + stats.views, 0) / 
+                              ? `${Math.round(Number(Object.values(analyticsData.categoryStats)
+                                  .reduce((total, stats) => Number(total) + Number((stats as any).views), 0)) / 
                                   analyticsData.totalViews * 100)}% des vues`
                               : 'Aucune donnée'
                             }

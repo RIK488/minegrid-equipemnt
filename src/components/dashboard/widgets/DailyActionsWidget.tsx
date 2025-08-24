@@ -74,12 +74,24 @@ const DailyActionsWidget: React.FC<DailyActionsWidgetProps> = ({ widget, data, w
     return { total, high, medium, low, completed, pending };
   };
 
-  // Fonction pour gérer les actions
+  // Fonction pour gérer les actions avec réactivité maximale
   const handleAction = (action: string, item: DailyAction) => {
+    // Feedback visuel immédiat
+    const button = event?.target as HTMLButtonElement;
+    if (button) {
+      button.disabled = true;
+      button.style.opacity = '0.6';
+      button.style.cursor = 'not-allowed';
+    }
+
+    console.log(`🔄 Action: ${action}`, item);
+    
+    // Action immédiate
     if (onAction) {
       onAction(action, item);
     }
     
+    // Actions synchrones immédiates
     switch (action) {
       case 'view':
         setSelectedAction(item);
@@ -90,13 +102,58 @@ const DailyActionsWidget: React.FC<DailyActionsWidgetProps> = ({ widget, data, w
         setShowContactForm(true);
         break;
       case 'complete':
-        // Logique de complétion
+        handleCompleteAction(item);
         break;
       case 'reschedule':
-        // Logique de reprogrammation
+        handleRescheduleAction(item);
         break;
       default:
         break;
+    }
+
+    // Restaurer le bouton immédiatement après l'action
+    setTimeout(() => {
+      if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+      }
+    }, 100);
+  };
+
+  const handleCompleteAction = (item: DailyAction) => {
+    try {
+      // Action immédiate
+      console.log('Action complétée:', item.title);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        // TODO: Implémenter la vraie logique de complétion
+        // apiCall('POST', '/api/actions/complete', { actionId: item.id }).catch(error => {
+        //   console.error('Erreur API complétion:', error);
+        // });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la complétion:', error);
+    }
+  };
+
+  const handleRescheduleAction = (item: DailyAction) => {
+    try {
+      // Action immédiate
+      console.log('Action reprogrammée:', item.title);
+      
+      // Appel API en arrière-plan (sans await)
+      setTimeout(() => {
+        // TODO: Implémenter la vraie logique de reprogrammation
+        // apiCall('POST', '/api/actions/reschedule', { actionId: item.id }).catch(error => {
+        //   console.error('Erreur API reprogrammation:', error);
+        // });
+      }, 50);
+      
+    } catch (error) {
+      console.error('Erreur lors de la reprogrammation:', error);
     }
   };
 
