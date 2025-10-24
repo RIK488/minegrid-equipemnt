@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import supabase from '../utils/supabaseClient';
+import { getResetPasswordUrl } from '../config/urls';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -9,7 +10,7 @@ export default function ForgotPassword() {
   const handleReset = async () => {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'http://localhost:5173/update-password', // adapte selon ton port
+      redirectTo: getResetPasswordUrl(), // URL dynamique basée sur le port actuel
     });
 
     if (error) {

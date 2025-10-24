@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { CheckCircle, Maximize2, Minimize2, X, Layout, Save } from 'lucide-react';
 import { commonServices } from '../constants/commonServices';
 import SalesPerformanceScoreWidget from '../components/dashboard/widgets/SalesPerformanceScoreWidget';
@@ -8,7 +8,6 @@ import { WidthProvider, Responsive } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { VendeurWidgets } from './widgets/VendeurWidgets';
-import { useRef } from 'react';
 import WidgetRenderer from '../components/dashboard/WidgetRenderer';
 import { listData } from '../constants/mockData';
 import { NotificationContainer } from '../components/NotificationToast';
@@ -168,6 +167,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   const [showAddWidgetModal, setShowAddWidgetModal] = useState(false);
   const [addStatus, setAddStatus] = useState<{ [key: string]: 'idle' | 'added' }>({});
   const addTimeouts = useRef<{ [key: string]: NodeJS.Timeout }>({});
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showSizeMenu, setShowSizeMenu] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -344,16 +344,24 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   const widgetsById = Object.fromEntries(widgetsToDisplay.map((w: any) => [w.id, w]));
   const orderedLayouts = config?.layout?.lg || [];
 
-  // 3. À chaque action (drag, resize, suppression, ajout, changement de taille)
-  const onLayoutChange = (newLayout: any[], allLayouts?: any) => {
+  // 3. À chaque action (drag, resize, suppression, ajout, changement de taille) - avec debounce
+  const onLayoutChange = useCallback((newLayout: any[], allLayouts?: any) => {
     setLayout(prev => ({ ...prev, lg: newLayout }));
-    setConfig(prev => {
-      if (!prev) return prev;
-      const newConfig = { ...prev, layout: { ...prev.layout, lg: newLayout } };
-      localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
-      return newConfig;
-    });
-  };
+    
+    // Debounce pour éviter les sauvegardes trop fréquentes
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      setConfig(prev => {
+        if (!prev) return prev;
+        const newConfig = { ...prev, layout: { ...prev.layout, lg: newLayout } };
+        localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(newConfig));
+        return newConfig;
+      });
+    }, 300); // 300ms de délai
+  }, []);
 
   // Change la taille d'un widget (1/3, 2/3, 1/1)
   const handleToggleSize = (widgetId: string) => {
@@ -657,11 +665,11 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     </div>
   );
 
-  // Fonction pour gérer les actions des widgets
-  const handleWidgetAction = (action: string, data: any) => {
+  // Fonction pour gérer les actions des widgets - optimisée
+  const handleWidgetAction = useCallback((action: string, data: any) => {
     console.log('Widget action:', action, data);
     // Gérer les actions des widgets ici
-  };
+  }, []);
 
 
 
@@ -693,11 +701,10 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     }
   };
 
-  // Rendu dynamique des widgets métier en grille (react-grid-layout)
-  const renderWidgets = () => {
+  // Rendu dynamique des widgets métier en grille (react-grid-layout) - optimisé
+  const renderWidgets = useCallback(() => {
     return (
       <ResponsiveGridLayout
-        key={JSON.stringify(orderedLayouts.map(l => [l.i, l.w, l.h]))}
         className="layout"
         layouts={{ lg: orderedLayouts }}
         breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
@@ -715,7 +722,11 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
           const widget = widgetsById[l.i];
           if (!widget) return null;
           return (
-            <div key={widget.id} data-grid={l} className="bg-orange-50 border border-orange-200 rounded-lg flex flex-col h-full group relative">
+            <div 
+              key={`${widget.id}-${l.x}-${l.y}-${l.w}-${l.h}`} 
+              data-grid={l} 
+              className="bg-orange-50 border border-orange-200 rounded-lg flex flex-col h-full group relative"
+            >
               <div className="h-full flex flex-col">
                 {/* Header du widget */}
                 <div className="flex justify-between items-center p-4 pb-2 border-b">
@@ -758,7 +769,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
         })}
       </ResponsiveGridLayout>
     );
-  };
+  }, [orderedLayouts, widgetsById, handleWidgetAction]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

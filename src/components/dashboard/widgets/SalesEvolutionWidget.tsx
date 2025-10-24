@@ -45,11 +45,8 @@ const SalesEvolutionWidget: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Services communs
-  const { apiCall } = apiService;
-  const { showNotification } = notificationService;
-  const { exportData } = exportService;
-  const { sendMessage } = communicationService;
+  // Services communs - utiliser les fonctions exportées directement
+  // Les méthodes sont exportées comme fonctions, pas comme propriétés d'objets
 
   // Fonction pour charger les vraies données depuis Supabase
   const loadRealData = async () => {
@@ -73,7 +70,7 @@ const SalesEvolutionWidget: React.FC<Props> = ({
       
       for (let i = 5; i >= 0; i--) {
         const monthIndex = (currentMonth - i + 12) % 12;
-        const baseSales = performanceData?.totalSales || 500000;
+        const baseSales = performanceData?.sales || 500000;
         const baseViews = dashboardStats?.totalViews || 100;
         const baseMessages = dashboardStats?.totalMessages || 20;
         
@@ -113,5 +110,69 @@ const SalesEvolutionWidget: React.FC<Props> = ({
   // Utiliser les données réelles au lieu des données simulées
   const displayData = realData;
 
-  // ... existing code ...
+  // Calculer les métriques de base
+  const totalSales = displayData.reduce((sum, item) => sum + (item.sales || 0), 0);
+  const growthRate = displayData.length > 1 
+    ? ((displayData[displayData.length - 1]?.sales || 0) - (displayData[0]?.sales || 0)) / (displayData[0]?.sales || 1) * 100
+    : 0;
+
+  return (
+    <div className={`p-4 bg-white rounded-lg shadow-sm border ${widgetSize === 'small' ? 'h-64' : widgetSize === 'large' ? 'h-96' : 'h-80'}`}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Évolution des Ventes</h3>
+        <div className="flex space-x-2">
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value as any)}
+            className="text-sm border rounded px-2 py-1"
+          >
+            <option value="week">Semaine</option>
+            <option value="month">Mois</option>
+            <option value="quarter">Trimestre</option>
+            <option value="year">Année</option>
+          </select>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+        </div>
+      ) : error ? (
+        <div className="text-red-500 text-center py-4">{error}</div>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-orange-50 p-3 rounded">
+              <p className="text-sm text-gray-600">Total Ventes</p>
+              <p className="text-xl font-bold text-orange-600">{totalSales.toLocaleString()} €</p>
+            </div>
+            <div className="bg-green-50 p-3 rounded">
+              <p className="text-sm text-gray-600">Croissance</p>
+              <p className={`text-xl font-bold ${growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {growthRate.toFixed(1)}%
+              </p>
+            </div>
+          </div>
+
+          {showQuickActions && (
+            <div className="flex space-x-2">
+              <button
+                onClick={() => onAction?.('export', displayData)}
+                className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+              >
+                Exporter
+              </button>
+              <button
+                onClick={() => onAction?.('analyze', displayData)}
+                className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
+              >
+                Analyser
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 } 

@@ -112,9 +112,18 @@ export default function LocationPicker({ onLocationSelect, initialLocation }: Lo
     const geocoder = new window.google.maps.Geocoder();
     
     try {
-      const response = await geocoder.geocode({ location: position });
-      if (response.results[0]) {
-        const result = response.results[0];
+      const response = await new Promise<any[]>((resolve, reject) => {
+        geocoder.geocode({ location: position }, (results, status) => {
+          if (status === 'OK' && results) {
+            resolve(results);
+          } else {
+            reject(new Error(`Geocoding failed: ${status}`));
+          }
+        });
+      });
+      
+      if (response[0]) {
+        const result = response[0];
         const addressComponents = result.address_components;
         
         const locationData = {

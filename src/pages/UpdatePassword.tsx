@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import supabase from '../utils/supabaseClient';
+import { getLoginUrl, getHomeUrl } from '../config/urls';
 
 export default function UpdatePassword() {
   const [newPassword, setNewPassword] = useState('');
@@ -8,16 +9,29 @@ export default function UpdatePassword() {
 
   // Récupère le token depuis l'URL et initialise la session
   useEffect(() => {
-    const hash = window.location.hash.split('?')[1];
-    const params = new URLSearchParams(hash);
-    const access_token = params.get('access_token');
+    // Supabase envoie les paramètres dans l'URL après le hash
+    const hash = window.location.hash;
+    const urlParams = new URLSearchParams(hash.split('?')[1] || '');
+    const access_token = urlParams.get('access_token');
+    const refresh_token = urlParams.get('refresh_token');
+
+    console.log('🔍 Tokens reçus:', { access_token: !!access_token, refresh_token: !!refresh_token });
 
     if (access_token) {
       supabase.auth.setSession({
         access_token,
-        refresh_token: access_token, // requis même si non utilisé ici
-      }).then(() => setLoading(false));
+        refresh_token: refresh_token || access_token,
+      }).then(({ error }) => {
+        if (error) {
+          console.error('❌ Erreur session:', error);
+          setMessage('❌ Erreur de session: ' + error.message);
+        } else {
+          console.log('✅ Session initialisée avec succès');
+        }
+        setLoading(false);
+      });
     } else {
+      console.log('⚠️ Aucun token trouvé dans l\'URL');
       setLoading(false);
     }
   }, []);
@@ -58,18 +72,18 @@ export default function UpdatePassword() {
           <p className="text-sm text-gray-700">{message}</p>
 
           <button
-  onClick={() => window.location.replace(window.location.origin + '/#connexion')}
-  className="mt-2 bg-blue-600 text-white px-4 py-2 rounded"
->
-  Se connecter
-</button>
+            onClick={() => window.location.replace(getLoginUrl())}
+            className="mt-2 bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Se connecter
+          </button>
 
-<button
-  onClick={() => window.location.replace(window.location.origin + '/#')}
-  className="mt-2 bg-gray-300 text-gray-800 px-4 py-2 rounded"
->
-  Retour à l’accueil
-</button>
+          <button
+            onClick={() => window.location.replace(getHomeUrl())}
+            className="mt-2 bg-gray-300 text-gray-800 px-4 py-2 rounded"
+          >
+            Retour à l'accueil
+          </button>
 
         </div>
       )}

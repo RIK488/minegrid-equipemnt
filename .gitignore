@@ -1,24 +1,34 @@
-# Logs
-logs
+# Fichiers système Windows
+AppData/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+*.tmp
+*.temp
 
-node_modules
-dist
-dist-ssr
-*.local
+# LMStudio
+.lmstudio/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Fichiers de cache et temporaires
+*.cache
+*.tmp
+*.temp
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+
+# Fichiers de configuration système
+*.ini
+*.cfg
+
+# Fichiers de base de données
+*.db
+*.sqlite
+*.jtx
+
+# Fichiers de logs
+logs/
+*.log
+
+# Fichiers de cache
+cache/
+*.cache

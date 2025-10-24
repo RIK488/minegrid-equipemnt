@@ -20,8 +20,19 @@ import {
   Activity,
   Key,
   Crown,
-  AlertTriangle
+  AlertTriangle,
+  X,
+  Send,
+  Clock
 } from 'lucide-react';
+import { 
+  createUserAccount, 
+  inviteUser, 
+  getUserInvitations, 
+  cancelInvitation,
+  type UserInvitation 
+} from '../utils/userManagement';
+import { setupUserInvitationsTable } from '../utils/setupUserInvitations';
 
 interface TeamMember {
   id: string;
@@ -43,6 +54,18 @@ const MultiUserManagement: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [hasEnterpriseService, setHasEnterpriseService] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // États pour la gestion des invitations
+  const [invitations, setInvitations] = useState<UserInvitation[]>([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(false);
+  const [inviteFormData, setInviteFormData] = useState({
+    name: '',
+    email: '',
+    role: 'viewer' as 'admin' | 'manager' | 'technician' | 'viewer'
+  });
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+  const [inviteSuccess, setInviteSuccess] = useState(false);
 
   // Données d'exemple
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
@@ -113,24 +136,22 @@ const MultiUserManagement: React.FC = () => {
         // Vérifier dans localStorage
         const userServices = localStorage.getItem('userServices');
         const userSubscription = localStorage.getItem('userSubscription');
+        const enterpriseDashboardConfigured = localStorage.getItem('enterpriseDashboardConfigured');
         
-        // Vérifier si l'utilisateur a le service entreprise
+        // Vérifier si l'utilisateur a le service entreprise ou une configuration dashboard
         const hasEnterprise = userServices?.includes('enterprise') || 
                              userSubscription === 'enterprise' ||
-                             localStorage.getItem('enterpriseService') === 'true';
+                             localStorage.getItem('enterpriseService') === 'true' ||
+                             enterpriseDashboardConfigured === 'true';
         
         setHasEnterpriseService(!!hasEnterprise);
         setIsLoading(false);
         
-        // Si pas de service entreprise, rediriger après un délai
-        if (!hasEnterprise) {
-          setTimeout(() => {
-            window.location.href = '/#dashboard/services';
-          }, 3000);
-        }
+        // Ne plus rediriger automatiquement - permettre l'accès
+        console.log('✅ Accès à la gestion multi-utilisateur autorisé');
       } catch (error) {
         console.error('Erreur lors de la vérification du service:', error);
-        setHasEnterpriseService(false);
+        setHasEnterpriseService(true); // Autoriser l'accès par défaut
         setIsLoading(false);
       }
     };
@@ -151,6 +172,26 @@ const MultiUserManagement: React.FC = () => {
     }
   };
 
+  const getInvitationStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'accepted': return 'bg-green-100 text-green-800 border-green-200';
+      case 'expired': return 'bg-red-100 text-red-800 border-red-200';
+      case 'cancelled': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getInvitationStatusText = (status: string) => {
+    switch (status) {
+      case 'pending': return 'En attente';
+      case 'accepted': return 'Acceptée';
+      case 'expired': return 'Expirée';
+      case 'cancelled': return 'Annulée';
+      default: return 'Inconnu';
+    }
+  };
+
   const filteredMembers = teamMembers.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -159,19 +200,79 @@ const MultiUserManagement: React.FC = () => {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const handleInviteUser = (formData: any) => {
-    const newMember: TeamMember = {
-      id: Date.now().toString(),
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      status: 'pending',
-      lastLogin: 'Jamais connecté',
-      permissions: formData.permissions || ['dashboard'],
-      avatar: formData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+  // Charger les invitations
+  const loadInvitations = async () => {
+    setLoadingInvitations(true);
+    try {
+      const invitationsData = await getUserInvitations();
+      setInvitations(invitationsData);
+    } catch (error) {
+      console.error('Erreur chargement invitations:', error);
+    } finally {
+      setLoadingInvitations(false);
+    }
+  };
+
+  // Charger les invitations au montage du composant
+  useEffect(() => {
+    const initializeComponent = async () => {
+      try {
+        // Configurer la table si nécessaire
+        await setupUserInvitationsTable();
+        // Charger les invitations
+        await loadInvitations();
+      } catch (error) {
+        console.error('Erreur initialisation:', error);
+      }
     };
-    setTeamMembers([...teamMembers, newMember]);
-    setShowInviteModal(false);
+
+    initializeComponent();
+  }, []);
+
+  const handleInviteUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteLoading(true);
+    setInviteError('');
+    setInviteSuccess(false);
+
+    try {
+      const result = await inviteUser(
+        inviteFormData.email,
+        inviteFormData.name,
+        inviteFormData.role
+      );
+
+      if (result.success) {
+        setInviteSuccess(true);
+        setInviteFormData({ name: '', email: '', role: 'viewer' });
+        await loadInvitations(); // Recharger les invitations
+        
+        // Fermer le modal après 2 secondes
+        setTimeout(() => {
+          setShowInviteModal(false);
+          setInviteSuccess(false);
+        }, 2000);
+      } else {
+        setInviteError(result.error || 'Erreur lors de l\'invitation');
+      }
+    } catch (error) {
+      setInviteError('Erreur inattendue lors de l\'invitation');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const handleCancelInvitation = async (invitationId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir annuler cette invitation ?')) return;
+
+    try {
+      const success = await cancelInvitation(invitationId);
+      if (success) {
+        await loadInvitations(); // Recharger la liste
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'annulation:', error);
+    }
   };
 
   const handleUpdateMember = (memberId: string, updates: Partial<TeamMember>) => {
@@ -188,48 +289,7 @@ const MultiUserManagement: React.FC = () => {
     }
   };
 
-  // Afficher un message d'accès refusé si pas de service entreprise
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Vérification de votre abonnement...</p>
-        </div>
-      </div>
-    );
-  }
 
-  if (!hasEnterpriseService) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md mx-4 text-center">
-          <AlertTriangle className="h-16 w-16 text-orange-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Accès Restreint</h2>
-          <p className="text-gray-600 mb-6">
-            La gestion multi-utilisateurs est disponible uniquement avec le Service Entreprise.
-          </p>
-          <div className="space-y-3">
-            <a
-              href="/#dashboard/services"
-              className="block w-full bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors"
-            >
-              Voir les services disponibles
-            </a>
-            <a
-              href="/#dashboard"
-              className="block w-full text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              Retour au tableau de bord
-            </a>
-          </div>
-          <p className="text-sm text-gray-500 mt-4">
-            Redirection automatique dans 3 secondes...
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -239,7 +299,7 @@ const MultiUserManagement: React.FC = () => {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <a 
-                href="#dashboard/services"
+                href="#dashboard-entreprise-display"
                 className="text-gray-600 hover:text-gray-900"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -256,6 +316,32 @@ const MultiUserManagement: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Bannière informative pour les utilisateurs sans service entreprise */}
+      {!hasEnterpriseService && (
+        <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-l-4 border-orange-400 p-4 mb-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-orange-600 mr-3" />
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-orange-800">
+                  Mode Démonstration
+                </h3>
+                <p className="text-sm text-orange-700 mt-1">
+                  Vous utilisez actuellement la version de démonstration de la gestion multi-utilisateurs. 
+                  Pour activer toutes les fonctionnalités, passez au Service Entreprise.
+                </p>
+              </div>
+              <a
+                href="#dashboard/services"
+                className="ml-4 bg-orange-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-700 transition-colors"
+              >
+                Voir les services
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contenu principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -309,16 +395,36 @@ const MultiUserManagement: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md">
               {/* Header avec filtres */}
               <div className="p-6 border-b border-gray-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                  <h2 className="text-lg font-semibold text-gray-900">Membres de l'équipe</h2>
-                  <button
-                    onClick={() => setShowInviteModal(true)}
-                    className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Inviter un membre
-                  </button>
-                </div>
+                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                   <h2 className="text-lg font-semibold text-gray-900">Membres de l'équipe</h2>
+                   <div className="flex space-x-3">
+                     <button
+                       onClick={() => setShowInviteModal(true)}
+                       className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                     >
+                       <UserPlus className="h-4 w-4 mr-2" />
+                       Inviter un membre
+                     </button>
+                     <button
+                       onClick={async () => {
+                         const result = await createUserAccount({
+                           email: 'test-direct@example.com',
+                           name: 'Test Direct',
+                           role: 'viewer'
+                         });
+                         if (result.success) {
+                           alert('✅ Utilisateur créé avec succès !');
+                         } else {
+                           alert(`❌ Erreur: ${result.error}`);
+                         }
+                       }}
+                       className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                     >
+                       <UserPlus className="h-4 w-4 mr-2" />
+                       Test Création Directe
+                     </button>
+                   </div>
+                 </div>
                 
                 {/* Filtres */}
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -402,33 +508,87 @@ const MultiUserManagement: React.FC = () => {
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Rôles et permissions */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Rôles et Permissions</h3>
-              <div className="space-y-3">
-                {roles.map(role => (
-                  <div key={role.id} className="border border-gray-200 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${role.color}`}>
-                        {role.icon}
-                        <span className="ml-1">{role.name}</span>
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {teamMembers.filter(m => m.role === role.id).length} membre(s)
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      {role.id === 'admin' && 'Accès complet à toutes les fonctionnalités'}
-                      {role.id === 'manager' && 'Gestion des équipes et projets'}
-                      {role.id === 'user' && 'Utilisation standard des outils'}
-                      {role.id === 'viewer' && 'Consultation uniquement'}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
+                     {/* Sidebar */}
+           <div className="space-y-6">
+             {/* Invitations envoyées */}
+             <div className="bg-white rounded-lg shadow-md p-6">
+               <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                 <Mail className="h-4 w-4 mr-2 text-orange-600" />
+                 Invitations envoyées
+               </h3>
+               
+               {loadingInvitations ? (
+                 <div className="flex items-center justify-center py-4">
+                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"></div>
+                   <span className="ml-2 text-sm text-gray-600">Chargement...</span>
+                 </div>
+               ) : invitations.length === 0 ? (
+                 <div className="text-center py-4">
+                   <Mail className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                   <p className="text-sm text-gray-500">Aucune invitation envoyée</p>
+                 </div>
+               ) : (
+                 <div className="space-y-3">
+                   {invitations.map((invitation) => (
+                     <div key={invitation.id} className="border border-gray-200 rounded-lg p-3">
+                       <div className="flex items-center justify-between mb-2">
+                         <div>
+                           <p className="text-sm font-medium text-gray-900">{invitation.name}</p>
+                           <p className="text-xs text-gray-600">{invitation.email}</p>
+                         </div>
+                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getInvitationStatusColor(invitation.status)}`}>
+                           {getInvitationStatusText(invitation.status)}
+                         </span>
+                       </div>
+                       <div className="flex items-center justify-between">
+                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleInfo(invitation.role).color}`}>
+                           {getRoleInfo(invitation.role).icon}
+                           <span className="ml-1">{getRoleInfo(invitation.role).name}</span>
+                         </span>
+                         {invitation.status === 'pending' && (
+                           <button
+                             onClick={() => handleCancelInvitation(invitation.id)}
+                             className="text-red-600 hover:text-red-800 text-xs"
+                           >
+                             Annuler
+                           </button>
+                         )}
+                       </div>
+                       <div className="mt-2 text-xs text-gray-500 flex items-center">
+                         <Clock className="h-3 w-3 mr-1" />
+                         Expire le {new Date(invitation.expires_at).toLocaleDateString('fr-FR')}
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+
+             {/* Rôles et permissions */}
+             <div className="bg-white rounded-lg shadow-md p-6">
+               <h3 className="font-semibold text-gray-900 mb-4">Rôles et Permissions</h3>
+               <div className="space-y-3">
+                 {roles.map(role => (
+                   <div key={role.id} className="border border-gray-200 rounded-lg p-3">
+                     <div className="flex items-center justify-between mb-2">
+                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${role.color}`}>
+                         {role.icon}
+                         <span className="ml-1">{role.name}</span>
+                       </span>
+                       <span className="text-xs text-gray-500">
+                         {teamMembers.filter(m => m.role === role.id).length} membre(s)
+                       </span>
+                     </div>
+                     <p className="text-xs text-gray-600">
+                       {role.id === 'admin' && 'Accès complet à toutes les fonctionnalités'}
+                       {role.id === 'manager' && 'Gestion des équipes et projets'}
+                       {role.id === 'user' && 'Utilisation standard des outils'}
+                       {role.id === 'viewer' && 'Consultation uniquement'}
+                     </p>
+                   </div>
+                 ))}
+               </div>
+             </div>
 
             {/* Actions rapides */}
             <div className="bg-white rounded-lg shadow-md p-6">
@@ -456,39 +616,57 @@ const MultiUserManagement: React.FC = () => {
       {showInviteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Inviter un nouveau membre</h3>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              handleInviteUser({
-                name: formData.get('name'),
-                email: formData.get('email'),
-                role: formData.get('role')
-              });
-            }}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Inviter un nouveau membre</h3>
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {inviteError && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+                <p className="text-red-700 text-sm">{inviteError}</p>
+              </div>
+            )}
+
+            {inviteSuccess && (
+              <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded-lg">
+                <p className="text-green-700 text-sm">✅ Utilisateur invité avec succès !</p>
+              </div>
+            )}
+
+            <form onSubmit={handleInviteUser}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
                   <input
                     type="text"
-                    name="name"
+                    value={inviteFormData.name}
+                    onChange={(e) => setInviteFormData(prev => ({ ...prev, name: e.target.value }))}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Prénom Nom"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <input
                     type="email"
-                    name="email"
+                    value={inviteFormData.email}
+                    onChange={(e) => setInviteFormData(prev => ({ ...prev, email: e.target.value }))}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="utilisateur@entreprise.com"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
                   <select
-                    name="role"
+                    value={inviteFormData.role}
+                    onChange={(e) => setInviteFormData(prev => ({ ...prev, role: e.target.value as any }))}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   >
@@ -503,14 +681,26 @@ const MultiUserManagement: React.FC = () => {
                   type="button"
                   onClick={() => setShowInviteModal(false)}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  disabled={inviteLoading}
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                  disabled={inviteLoading}
+                  className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:bg-gray-300"
                 >
-                  Inviter
+                  {inviteLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Invitation...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Inviter
+                    </>
+                  )}
                 </button>
               </div>
             </form>

@@ -1,4 +1,4 @@
-# 🚀 GUIDE DE RÉSOLUTION - Widgets Loueur d'Engins
+npn# 🚀 GUIDE DE RÉSOLUTION - Widgets Loueur d'Engins
 
 ## 🔍 **PROBLÈME IDENTIFIÉ**
 

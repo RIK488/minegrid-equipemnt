@@ -3124,63 +3124,74 @@ export default function EnterpriseDashboard() {
         {dashboardConfig && dashboardConfig.widgets && layout.lg && layout.lg.length > 0 && (
           <div className="mb-8">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Services en commun</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                Services en commun
+                <span className="ml-2 px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
+                  📧 Messages prioritaires
+                </span>
+              </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
                 <a
                   href="#vitrine"
-                  className="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors group"
+                  className="flex flex-col items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group border border-gray-200"
                 >
-                  <Globe className="h-6 w-6 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-orange-700">Vitrine</span>
+                  <Globe className="h-6 w-6 text-gray-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-gray-700">Vitrine</span>
                 </a>
                 <a
                   href="#publication"
-                  className="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors group"
+                  className="flex flex-col items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group border border-gray-200"
                 >
-                  <FileText className="h-6 w-6 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-orange-700">Publication</span>
+                  <FileText className="h-6 w-6 text-gray-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-gray-700">Publication</span>
                 </a>
                 <a
                   href="#devis"
-                  className="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors group"
+                  className="flex flex-col items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group border border-gray-200"
                 >
-                  <DollarSign className="h-6 w-6 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-orange-700">Devis</span>
+                  <DollarSign className="h-6 w-6 text-gray-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-gray-700">Devis</span>
                 </a>
                 <a
                   href="#documents"
-                  className="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors group"
+                  className="flex flex-col items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group border border-gray-200"
                 >
-                  <Package className="h-6 w-6 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-orange-700">Documents</span>
+                  <Package className="h-6 w-6 text-gray-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-gray-700">Documents</span>
                 </a>
                 <a
                   href="#messages"
-                  className="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors group"
+                  className="flex flex-col items-center p-4 bg-gradient-to-br from-orange-100 to-orange-200 hover:from-orange-200 hover:to-orange-300 rounded-lg transition-all duration-300 group border-2 border-orange-300 shadow-md hover:shadow-lg relative overflow-hidden"
                 >
-                  <Mail className="h-6 w-6 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-orange-700">Messages</span>
+                  {/* Indicateur de nouveaux messages */}
+                  <div className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  
+                  <Mail className="h-6 w-6 text-orange-700 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-semibold text-orange-800">Boîte de réception</span>
+                  
+                  {/* Effet de brillance */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </a>
                 <a
                   href="#planning"
-                  className="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors group"
+                  className="flex flex-col items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group border border-gray-200"
                 >
-                  <Calendar className="h-6 w-6 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-orange-700">Planning</span>
+                  <Calendar className="h-6 w-6 text-gray-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-gray-700">Planning</span>
                 </a>
                 <a
                   href="#assistant-ia"
-                  className="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors group"
+                  className="flex flex-col items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group border border-gray-200"
                 >
-                  <Zap className="h-6 w-6 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-orange-700">Assistant IA</span>
+                  <Zap className="h-6 w-6 text-gray-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-gray-700">Assistant IA</span>
                 </a>
                 <a
                   href="#dashboard-entreprise"
-                  className="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors group"
+                  className="flex flex-col items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group border border-gray-200"
                 >
-                  <BarChart3 className="h-6 w-6 text-orange-600 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-medium text-orange-700">Tableau de bord</span>
+                  <BarChart3 className="h-6 w-6 text-gray-600 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium text-gray-700">Tableau de bord</span>
                 </a>
               </div>
             </div>
@@ -10381,11 +10392,11 @@ const InventoryStatusWidget = ({ data }: { data: any[] }) => {
       </div>
 
       {/* Filtres */}
-      <div className="flex space-x-4 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500 min-w-0 flex-shrink-0"
         >
           {categories.map(category => (
             <option key={category} value={category}>
@@ -10396,7 +10407,7 @@ const InventoryStatusWidget = ({ data }: { data: any[] }) => {
         <select
           value={selectedPriority}
           onChange={(e) => setSelectedPriority(e.target.value)}
-          className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500 min-w-0 flex-shrink-0"
         >
           {priorities.map(priority => (
             <option key={priority} value={priority}>
@@ -10409,7 +10420,7 @@ const InventoryStatusWidget = ({ data }: { data: any[] }) => {
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
-          className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500 min-w-0 flex-shrink-0"
         >
           {statuses.map(status => (
             <option key={status} value={status}>
@@ -10420,7 +10431,7 @@ const InventoryStatusWidget = ({ data }: { data: any[] }) => {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as 'priority' | 'stock' | 'value' | 'delivery' | 'dormant' | 'visibility' | 'salesTime')}
-          className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500 min-w-0 flex-shrink-0"
         >
           <option value="priority">Trier par priorité</option>
           <option value="stock">Trier par niveau de stock</option>
@@ -10439,7 +10450,7 @@ const InventoryStatusWidget = ({ data }: { data: any[] }) => {
           const daysUntilDelivery = getDaysUntilDelivery(item.nextDelivery);
 
           return (
-            <div key={item.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-orange-300 transition-colors">
+            <div key={item.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-orange-300 transition-colors overflow-hidden">
               {/* En-tête avec priorité et statut */}
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center space-x-2">
@@ -10463,33 +10474,35 @@ const InventoryStatusWidget = ({ data }: { data: any[] }) => {
                     style={{ width: `${stockPercentage}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between text-xs text-gray-600">
-                  <span>{item.category}</span>
-                  <span>{item.location}</span>
+                <div className="flex flex-col space-y-1 text-xs text-gray-600">
+                  <span className="truncate">{item.category}</span>
+                  <span className="truncate">{item.location}</span>
                 </div>
               </div>
 
               {/* Informations de vente et visibilité */}
               <div className="space-y-2 mb-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Stock dormant:</span>
-                  <span className={item.dormantDays > 60 ? 'text-orange-600 font-semibold' : 'text-gray-900'}>
-                    {item.dormantDays} jours
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Visibilité:</span>
-                  <span className={item.visibilityRate < 30 ? 'text-red-600 font-semibold' : 'text-gray-900'}>
-                    {item.visibilityRate}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Temps de vente moyen:</span>
-                  <span className="text-gray-900">{item.averageSalesTime} jours</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Clics:</span>
-                  <span className="text-gray-900">{item.clickCount}</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 text-xs">Stock dormant:</span>
+                    <span className={`text-xs ${item.dormantDays > 60 ? 'text-orange-600 font-semibold' : 'text-gray-900'}`}>
+                      {item.dormantDays}j
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 text-xs">Visibilité:</span>
+                    <span className={`text-xs ${item.visibilityRate < 30 ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
+                      {item.visibilityRate}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 text-xs">Temps vente:</span>
+                    <span className="text-gray-900 text-xs">{item.averageSalesTime}j</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 text-xs">Clics:</span>
+                    <span className="text-gray-900 text-xs">{item.clickCount}</span>
+                  </div>
                 </div>
               </div>
 
@@ -10509,21 +10522,21 @@ const InventoryStatusWidget = ({ data }: { data: any[] }) => {
               {/* Informations fournisseur et livraison */}
               <div className="space-y-2 mb-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Fournisseur:</span>
-                  <span>{item.supplier}</span>
+                  <span className="text-gray-600 text-xs">Fournisseur:</span>
+                  <span className="text-xs truncate max-w-32">{item.supplier}</span>
                 </div>
                 {item.nextDelivery && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Prochaine livraison:</span>
-                    <span className={daysUntilDelivery && daysUntilDelivery <= 3 ? 'text-orange-600 font-semibold' : ''}>
+                    <span className="text-gray-600 text-xs">Livraison:</span>
+                    <span className={`text-xs ${daysUntilDelivery && daysUntilDelivery <= 3 ? 'text-orange-600 font-semibold' : ''}`}>
                       {formatDate(item.nextDelivery)}
                       {daysUntilDelivery && daysUntilDelivery > 0 && ` (${daysUntilDelivery}j)`}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Valeur:</span>
-                  <span className="font-semibold">{formatCurrency(item.value)}</span>
+                  <span className="text-gray-600 text-xs">Valeur:</span>
+                  <span className="font-semibold text-xs">{formatCurrency(item.value)}</span>
                 </div>
               </div>
 
