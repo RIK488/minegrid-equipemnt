@@ -15,6 +15,7 @@ import {
   LogOut,
   Settings,
   Building2,
+  Globe,
   ShoppingCart,
   Heart,
   Bell,
@@ -262,6 +263,13 @@ const Header = () => {
                       <User className="h-4 w-4 mr-2" />
                       Mon espace
                     </a>
+                    <a
+                      href="#global-monitor"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600"
+                    >
+                      <Globe className="h-4 w-4 mr-2" />
+                      Global Monitor
+                    </a>
                     <button
                       onClick={async () => {
                         await supabaseClient.auth.signOut();
@@ -308,6 +316,10 @@ const Header = () => {
             {user ? (
               <>
                 <a href="#dashboard" className="text-gray-700 hover:text-primary-600">Mon espace</a>
+                <a href="#global-monitor" className="text-gray-700 hover:text-primary-600 flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Global Monitor
+                </a>
                 <button
                   onClick={async () => {
                     await supabaseClient.auth.signOut();
