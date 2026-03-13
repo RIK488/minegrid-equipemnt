@@ -48,6 +48,8 @@ import PremiumDashboard from './pages/PremiumDashboard';
 import ApiDocs from './pages/ApiDocs';
 import PrioritySupport from './pages/PrioritySupport';
 import MultiUserManagement from './pages/MultiUserManagement';
+import GlobalMonitor from './pages/GlobalMonitor';
+import ProtectedRoute from './components/ProtectedRoute';
 
 console.log('🔥 App.tsx: import EnterpriseDashboard principal');
 
@@ -210,6 +212,9 @@ function AppContent() {
 
       case 'multi-user-management':
         return <MultiUserManagement />;
+
+      case 'global-monitor':
+        return <ProtectedRoute><GlobalMonitor /></ProtectedRoute>;
 
       case 'test-widget':
         return <WidgetTest />;
