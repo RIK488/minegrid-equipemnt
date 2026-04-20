@@ -35,7 +35,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const SOURCE_FILE = path.join(REPO_ROOT, 'src', 'pages', 'EnterpriseDashboard.tsx');
+
+const SOURCES: Record<string, string> = {
+  enterprise: path.join(REPO_ROOT, 'src', 'pages', 'EnterpriseDashboard.tsx'),
+  pro: path.join(REPO_ROOT, 'src', 'pages', 'ProDashboard.tsx'),
+  vitrine: path.join(REPO_ROOT, 'src', 'pages', 'VitrinePersonnalisee.tsx'),
+  publication: path.join(REPO_ROOT, 'src', 'pages', 'PublicationRapide.tsx'),
+};
+
+const sourceArg = process.argv.slice(2).find((a) => a.startsWith('--source='));
+const sourceKey = sourceArg?.split('=')[1] ?? 'enterprise';
+if (!SOURCES[sourceKey]) {
+  console.error(`Source inconnue: ${sourceKey}. Possibles: ${Object.keys(SOURCES).join(', ')}`);
+  process.exit(1);
+}
+const SOURCE_FILE = SOURCES[sourceKey];
 const OUT_DIR = path.join(__dirname, 'output');
 
 interface TopLevelSymbol {

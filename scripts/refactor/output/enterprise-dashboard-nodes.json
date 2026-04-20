@@ -1,455 +1,61 @@
 [
   {
-    "name": "ResponsiveGridLayout",
-    "kind": "constant",
-    "line": 120,
-    "endLine": 120,
-    "lineCount": 1,
+    "name": "navigateBackToDashboard",
+    "kind": "helper",
+    "line": 52,
+    "endLine": 90,
+    "lineCount": 39,
     "internalRefs": [],
-    "importedRefs": [
-      "Responsive",
-      "WidthProvider"
-    ]
+    "importedRefs": []
   },
   {
-    "name": "iconMap",
-    "kind": "constant",
-    "line": 123,
-    "endLine": 155,
-    "lineCount": 33,
-    "internalRefs": [],
+    "name": "PublicationRapide",
+    "kind": "component",
+    "line": 92,
+    "endLine": 1907,
+    "lineCount": 1816,
+    "internalRefs": [
+      "MachineFormData",
+      "navigateBackToDashboard"
+    ],
     "importedRefs": [
-      "Activity",
-      "ArrowRight",
+      "ArrowLeft",
       "BarChart3",
-      "Bell",
-      "Building2",
-      "Calendar",
+      "Camera",
       "CheckCircle",
-      "Clock",
-      "DollarSign",
-      "Eye",
-      "FileText",
-      "Globe",
-      "Layout",
-      "LogOut",
-      "Mail",
-      "MoreHorizontal",
-      "Package",
-      "PieChart",
-      "Plus",
-      "RefreshCw",
-      "Settings",
-      "Shield",
-      "Smartphone",
-      "Star",
-      "Target",
-      "TrendingUp",
-      "Truck",
-      "User",
-      "Users",
-      "Wrench",
-      "Zap"
-    ]
-  },
-  {
-    "name": "useAdaptiveWidget",
-    "kind": "hook",
-    "line": 161,
-    "endLine": 229,
-    "lineCount": 69,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "mockData",
-    "kind": "constant",
-    "line": 232,
-    "endLine": 397,
-    "lineCount": 166,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "DonutChart",
-    "kind": "component",
-    "line": 399,
-    "endLine": 420,
-    "lineCount": 22,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "MetricWidget",
-    "kind": "component",
-    "line": 424,
-    "endLine": 784,
-    "lineCount": 361,
-    "internalRefs": [
-      "DonutChart",
-      "iconMap",
-      "useAdaptiveWidget"
-    ],
-    "importedRefs": [
-      "DollarSign",
-      "TrendingUp",
-      "Widget",
-      "X",
-      "useState"
-    ]
-  },
-  {
-    "name": "MapWidget",
-    "kind": "component",
-    "line": 786,
-    "endLine": 982,
-    "lineCount": 197,
-    "internalRefs": [
-      "iconMap"
-    ],
-    "importedRefs": [
-      "ArrowRight",
-      "FileText",
-      "Globe",
-      "Package",
-      "Truck",
-      "Widget",
-      "X",
-      "useState"
-    ]
-  },
-  {
-    "name": "WidgetComponent",
-    "kind": "component",
-    "line": 985,
-    "endLine": 1410,
-    "lineCount": 426,
-    "internalRefs": [
-      "ChartWidget",
-      "ListWidget",
-      "MapWidget",
-      "MetricWidget",
-      "getCalendarData",
-      "getEquipmentAvailabilityData",
-      "getMaintenanceData",
-      "getMapData",
-      "getPerformanceScoreData",
-      "getSalesPerformanceScoreData",
-      "iconMap",
-      "mockData"
-    ],
-    "importedRefs": [
-      "CalendarWidget",
-      "DailyActionsPriorityWidget",
-      "DollarSign",
-      "EquipmentAvailabilityWidget",
-      "Eye",
-      "GripVertical",
-      "Layout",
-      "Maximize2",
-      "Minimize2",
-      "PerformanceScoreWidget",
-      "PreventiveMaintenanceWidget",
-      "React",
-      "SalesEvolutionWidgetEnriched",
-      "SalesPerformanceScoreWidget",
-      "SalesPipelineWidget",
-      "Widget",
-      "X",
-      "getChartData",
-      "getDailyInterventions",
-      "getEquipmentAvailability",
-      "getInventoryStatus",
-      "getPreventiveMaintenance",
-      "getRentalRevenue",
-      "getRepairsStatus",
-      "getTechniciansWorkload",
-      "getUpcomingRentals",
-      "useEffect",
-      "useState"
-    ]
-  },
-  {
-    "name": "Modal",
-    "kind": "component",
-    "line": 1412,
-    "endLine": 1426,
-    "lineCount": 15,
-    "internalRefs": [],
-    "importedRefs": [
-      "React",
-      "X"
-    ]
-  },
-  {
-    "name": "RentalForm",
-    "kind": "component",
-    "line": 1428,
-    "endLine": 1483,
-    "lineCount": 56,
-    "internalRefs": [],
-    "importedRefs": [
-      "React",
-      "useState"
-    ]
-  },
-  {
-    "name": "widgetConfigs",
-    "kind": "constant",
-    "line": 2337,
-    "endLine": 2407,
-    "lineCount": 71,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "renderWidgetContent",
-    "kind": "helper",
-    "line": 2410,
-    "endLine": 2571,
-    "lineCount": 162,
-    "internalRefs": [
-      "ChartWidget",
-      "ListWidget",
-      "MapWidget",
-      "MetricWidget",
-      "getCalendarData",
-      "getEquipmentAvailabilityData",
-      "getListData",
-      "getMaintenanceData",
-      "getMapData",
-      "getMetricData",
-      "getNotificationsData",
-      "getPerformanceScoreData",
-      "getSalesPerformanceScoreData"
-    ],
-    "importedRefs": [
-      "AdvancedKPIsWidget",
-      "CalendarWidget",
-      "DailyActionsPriorityWidget",
-      "DailyActionsWidget",
-      "EquipmentAvailabilityWidget",
-      "InventoryStatusWidget",
-      "NotificationsWidget",
-      "PerformanceScoreWidget",
-      "PlanningWidget",
-      "PreventiveMaintenanceWidget",
-      "SalesEvolutionWidgetEnriched",
-      "SalesPerformanceScoreWidget",
-      "SalesPipelineWidget",
-      "getAdvancedKPIsData",
-      "getChartData",
-      "getDailyActionsData",
-      "getPlanningData"
-    ]
-  },
-  {
-    "name": "getMetricData",
-    "kind": "helper",
-    "line": 2574,
-    "endLine": 2588,
-    "lineCount": 15,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "getPerformanceScoreData",
-    "kind": "helper",
-    "line": 2591,
-    "endLine": 2632,
-    "lineCount": 42,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "getSalesPerformanceScoreData",
-    "kind": "helper",
-    "line": 2636,
-    "endLine": 2945,
-    "lineCount": 310,
-    "internalRefs": [
-      "getActivityRecommendation",
-      "getDefaultPerformanceData"
-    ],
-    "importedRefs": [
-      "supabase"
-    ]
-  },
-  {
-    "name": "getDefaultPerformanceData",
-    "kind": "helper",
-    "line": 2948,
-    "endLine": 3025,
-    "lineCount": 78,
-    "internalRefs": [],
-    "importedRefs": [
-      "supabase"
-    ]
-  },
-  {
-    "name": "getActivityRecommendation",
-    "kind": "helper",
-    "line": 3028,
-    "endLine": 3039,
-    "lineCount": 12,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "getListData",
-    "kind": "helper",
-    "line": 3042,
-    "endLine": 3763,
-    "lineCount": 722,
-    "internalRefs": [],
-    "importedRefs": [
-      "getDailyActionsData"
-    ]
-  },
-  {
-    "name": "getEquipmentAvailabilityData",
-    "kind": "helper",
-    "line": 3766,
-    "endLine": 3815,
-    "lineCount": 50,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "ListWidget",
-    "kind": "component",
-    "line": 3819,
-    "endLine": 3947,
-    "lineCount": 129,
-    "internalRefs": [
-      "iconMap"
-    ],
-    "importedRefs": [
-      "CheckCircle",
-      "Clock",
-      "React",
-      "Widget",
-      "Wrench"
-    ]
-  },
-  {
-    "name": "ChartWidget",
-    "kind": "component",
-    "line": 3949,
-    "endLine": 4455,
-    "lineCount": 507,
-    "internalRefs": [
-      "iconMap"
-    ],
-    "importedRefs": [
-      "Bar",
-      "CartesianGrid",
-      "Cell",
-      "EquipmentAvailabilityWidget",
-      "Legend",
-      "Package",
-      "Pie",
-      "PieChart",
-      "React",
-      "RechartsBarChart",
-      "ResponsiveContainer",
-      "SalesEvolutionWidgetEnriched",
-      "Tooltip",
-      "Widget",
-      "XAxis",
-      "YAxis",
-      "getInterventionsByStatus"
-    ]
-  },
-  {
-    "name": "getCalendarData",
-    "kind": "helper",
-    "line": 4459,
-    "endLine": 4477,
-    "lineCount": 19,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "getMapData",
-    "kind": "helper",
-    "line": 4480,
-    "endLine": 4496,
-    "lineCount": 17,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "getMaintenanceData",
-    "kind": "helper",
-    "line": 4499,
-    "endLine": 4539,
-    "lineCount": 41,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "getNotificationsData",
-    "kind": "helper",
-    "line": 4542,
-    "endLine": 4607,
-    "lineCount": 66,
-    "internalRefs": [],
-    "importedRefs": []
-  },
-  {
-    "name": "EnterpriseDashboard",
-    "kind": "component",
-    "line": 1489,
-    "endLine": 2334,
-    "lineCount": 846,
-    "internalRefs": [
-      "Modal",
-      "RentalForm",
-      "ResponsiveGridLayout",
-      "WidgetComponent",
-      "iconMap"
-    ],
-    "importedRefs": [
-      "BarChart3",
-      "Bell",
-      "Calendar",
-      "Check",
-      "DashboardConfig",
-      "DollarSign",
       "Download",
-      "EditRentalForm",
+      "Edit",
+      "Eye",
       "FileText",
-      "Globe",
-      "Info",
-      "InterventionForm",
-      "Layout",
-      "Mail",
-      "Package",
       "Plus",
       "React",
       "RefreshCw",
-      "RentalDetailsModal",
       "Save",
       "Settings",
-      "Target",
-      "User",
-      "VendeurWidgets",
-      "Widget",
-      "WidgetLayout",
+      "Trash2",
+      "TrendingUp",
+      "Upload",
+      "Users",
       "X",
-      "Zap",
-      "assignTechnicianToRepair",
-      "createIntervention",
-      "createRental",
-      "getEquipmentList",
-      "getTechnicians",
+      "fetchModelSpecsFull",
+      "getCurrentUser",
+      "getSellerMachines",
+      "missingForPublication",
+      "summarizeSpecs",
       "supabase",
-      "updateRental",
-      "updateRentalStatus",
-      "updateRepairStatus",
+      "toPublicationRapideForm",
       "useEffect",
+      "useRef",
       "useState"
     ]
+  },
+  {
+    "name": "MachineFormData",
+    "kind": "type",
+    "line": 30,
+    "endLine": 49,
+    "lineCount": 20,
+    "internalRefs": [],
+    "importedRefs": []
   }
 ]

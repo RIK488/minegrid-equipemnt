@@ -39,8 +39,30 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const SOURCE_PATH = path.join(REPO_ROOT, 'src', 'pages', 'EnterpriseDashboard.tsx');
-const TARGET_DIR = path.join(REPO_ROOT, 'src', 'pages', 'enterprise', 'widgets');
+
+interface SourceConfig {
+  sourcePath: string;
+  targetDir: string;
+}
+
+const SOURCES: Record<string, SourceConfig> = {
+  enterprise: {
+    sourcePath: path.join(REPO_ROOT, 'src', 'pages', 'EnterpriseDashboard.tsx'),
+    targetDir: path.join(REPO_ROOT, 'src', 'pages', 'enterprise', 'widgets'),
+  },
+  pro: {
+    sourcePath: path.join(REPO_ROOT, 'src', 'pages', 'ProDashboard.tsx'),
+    targetDir: path.join(REPO_ROOT, 'src', 'pages', 'pro', 'widgets'),
+  },
+  vitrine: {
+    sourcePath: path.join(REPO_ROOT, 'src', 'pages', 'VitrinePersonnalisee.tsx'),
+    targetDir: path.join(REPO_ROOT, 'src', 'pages', 'vitrine', 'widgets'),
+  },
+  publication: {
+    sourcePath: path.join(REPO_ROOT, 'src', 'pages', 'PublicationRapide.tsx'),
+    targetDir: path.join(REPO_ROOT, 'src', 'pages', 'publication', 'widgets'),
+  },
+};
 
 interface ImportSource {
   moduleSpecifier: string;
@@ -53,12 +75,22 @@ function main() {
   const args = process.argv.slice(2);
   const dry = args.includes('--dry');
   const allowDeps = args.includes('--allow-deps');
-  const targetName = args.find((a) => !a.startsWith('--'));
+  const sourceArg = args.find((a) => a.startsWith('--source='));
+  const sourceKey = (sourceArg?.split('=')[1] ?? 'enterprise') as keyof typeof SOURCES;
+  const positional = args.filter((a) => !a.startsWith('--'));
+  const targetName = positional[0];
 
   if (!targetName) {
-    console.error('Usage: extract-widget.ts <SymbolName> [--dry] [--allow-deps]');
+    console.error(
+      'Usage: extract-widget.ts <SymbolName> [--dry] [--allow-deps] [--source=enterprise|pro]',
+    );
     process.exit(1);
   }
+  if (!SOURCES[sourceKey]) {
+    console.error(`Source inconnue: ${sourceKey}. Valeurs possibles: ${Object.keys(SOURCES).join(', ')}`);
+    process.exit(1);
+  }
+  const { sourcePath: SOURCE_PATH, targetDir: TARGET_DIR } = SOURCES[sourceKey];
 
   const project = new Project({
     tsConfigFilePath: path.join(REPO_ROOT, 'tsconfig.json'),
