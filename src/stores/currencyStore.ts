@@ -5,7 +5,9 @@ import type { Currency } from '../types';
 interface CurrencyState {
   currentCurrency: Currency;
   rates: Record<Currency, number>;
+  hasUserSelectedCurrency: boolean;
   setCurrency: (currency: Currency) => void;
+  setAutoCurrency: (currency: Currency) => void;
   setRates: (rates: Record<Currency, number>) => void;
 }
 
@@ -13,6 +15,7 @@ export const useCurrencyStore = create<CurrencyState>()(
   persist(
     (set) => ({
       currentCurrency: 'EUR',
+      hasUserSelectedCurrency: false,
       rates: {
         EUR: 1,
         USD: 1.09,
@@ -25,7 +28,9 @@ export const useCurrencyStore = create<CurrencyState>()(
         KES: 158.48,
         GHS: 13.89
       },
-      setCurrency: (currency) => set({ currentCurrency: currency }),
+      setCurrency: (currency) => set({ currentCurrency: currency, hasUserSelectedCurrency: true }),
+      setAutoCurrency: (currency) =>
+        set((state) => (state.hasUserSelectedCurrency ? state : { ...state, currentCurrency: currency })),
       setRates: (rates) => set({ rates })
     }),
     {

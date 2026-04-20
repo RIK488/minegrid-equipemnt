@@ -1,4 +1,12 @@
 import { supabaseClient } from '../utils/supabaseClient';
+import {
+  MESSAGE_LEAD_SEED_COLUMNS,
+  OFFER_LEAD_SEED_COLUMNS,
+  PIPELINE_ACTIONS_COLUMNS,
+  PIPELINE_INSIGHTS_COLUMNS,
+  PIPELINE_LEADS_COLUMNS,
+  PIPELINE_REPORTS_COLUMNS,
+} from '../constants/pipelineQueryFields';
 
 // Types pour le pipeline commercial réel
 export interface RealLead {
@@ -72,6 +80,14 @@ export interface RealPipelineReport {
 
 // Service principal pour le pipeline commercial réel
 export class RealPipelineService {
+  private static async getCurrentUserId(): Promise<string | null> {
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      return user?.id || null;
+    } catch {
+      return null;
+    }
+  }
   
   // ===== LEADS =====
   
@@ -80,9 +96,13 @@ export class RealPipelineService {
    */
   static async getLeads(): Promise<RealLead[]> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return [];
+
       const { data, error } = await supabaseClient
         .from('leads')
-        .select('*')
+        .select(PIPELINE_LEADS_COLUMNS)
+        .eq('seller_id', userId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -98,9 +118,12 @@ export class RealPipelineService {
    */
   static async createLead(leadData: Partial<RealLead>): Promise<RealLead | null> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return null;
+
       const { data, error } = await supabaseClient
         .from('leads')
-        .insert([leadData])
+        .insert([{ ...leadData, seller_id: leadData.seller_id || userId }])
         .select()
         .single();
       
@@ -117,10 +140,14 @@ export class RealPipelineService {
    */
   static async updateLead(leadId: string, updates: Partial<RealLead>): Promise<RealLead | null> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return null;
+
       const { data, error } = await supabaseClient
         .from('leads')
         .update(updates)
         .eq('id', leadId)
+        .eq('seller_id', userId)
         .select()
         .single();
       
@@ -137,10 +164,14 @@ export class RealPipelineService {
    */
   static async deleteLead(leadId: string): Promise<boolean> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return false;
+
       const { error } = await supabaseClient
         .from('leads')
         .delete()
-        .eq('id', leadId);
+        .eq('id', leadId)
+        .eq('seller_id', userId);
       
       if (error) throw error;
       return true;
@@ -155,10 +186,14 @@ export class RealPipelineService {
    */
   static async createLeadsFromMessages(): Promise<number> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return 0;
+
       // Récupérer les messages non traités
       const { data: messages } = await supabaseClient
         .from('messages')
-        .select('*')
+        .select(MESSAGE_LEAD_SEED_COLUMNS)
+        .eq('receiver_id', userId)
         .is('processed_for_lead', null);
 
       if (!messages || messages.length === 0) return 0;
@@ -178,6 +213,7 @@ export class RealPipelineService {
 
         // Créer le lead
         const leadData = {
+          seller_id: userId,
           title: `Prospect ${message.sender_id || 'Inconnu'}`,
           stage: 'Prospection' as const,
           priority: 'medium' as const,
@@ -216,10 +252,14 @@ export class RealPipelineService {
    */
   static async createLeadsFromOffers(): Promise<number> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return 0;
+
       // Récupérer les offres non traitées
       const { data: offers } = await supabaseClient
         .from('offers')
-        .select('*')
+        .select(OFFER_LEAD_SEED_COLUMNS)
+        .eq('seller_id', userId)
         .is('processed_for_lead', null);
 
       if (!offers || offers.length === 0) return 0;
@@ -239,6 +279,7 @@ export class RealPipelineService {
 
         // Créer le lead
         const leadData = {
+          seller_id: userId,
           title: `Offre ${offer.buyer_id || 'Inconnu'}`,
           stage: 'Négociation' as const,
           priority: 'high' as const,
@@ -278,9 +319,13 @@ export class RealPipelineService {
    */
   static async getPipelineActions(): Promise<RealPipelineAction[]> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return [];
+
       const { data, error } = await supabaseClient
         .from('pipeline_actions')
-        .select('*')
+        .select(PIPELINE_ACTIONS_COLUMNS)
+        .eq('seller_id', userId)
         .order('due_date', { ascending: true });
       
       if (error) throw error;
@@ -296,9 +341,12 @@ export class RealPipelineService {
    */
   static async createPipelineAction(actionData: Partial<RealPipelineAction>): Promise<RealPipelineAction | null> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return null;
+
       const { data, error } = await supabaseClient
         .from('pipeline_actions')
-        .insert([actionData])
+        .insert([{ ...actionData, seller_id: actionData.seller_id || userId }])
         .select()
         .single();
       
@@ -315,10 +363,14 @@ export class RealPipelineService {
    */
   static async updatePipelineAction(actionId: string, updates: Partial<RealPipelineAction>): Promise<RealPipelineAction | null> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return null;
+
       const { data, error } = await supabaseClient
         .from('pipeline_actions')
         .update(updates)
         .eq('id', actionId)
+        .eq('seller_id', userId)
         .select()
         .single();
       
@@ -379,9 +431,13 @@ export class RealPipelineService {
    */
   static async getPipelineInsights(): Promise<RealPipelineInsight[]> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return [];
+
       const { data, error } = await supabaseClient
         .from('pipeline_insights')
-        .select('*')
+        .select(PIPELINE_INSIGHTS_COLUMNS)
+        .eq('seller_id', userId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -397,9 +453,12 @@ export class RealPipelineService {
    */
   static async createPipelineInsight(insightData: Partial<RealPipelineInsight>): Promise<RealPipelineInsight | null> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return null;
+
       const { data, error } = await supabaseClient
         .from('pipeline_insights')
-        .insert([insightData])
+        .insert([{ ...insightData, seller_id: insightData.seller_id || userId }])
         .select()
         .single();
       
@@ -471,9 +530,13 @@ export class RealPipelineService {
    */
   static async getPipelineReports(): Promise<RealPipelineReport[]> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return [];
+
       const { data, error } = await supabaseClient
         .from('pipeline_reports')
-        .select('*')
+        .select(PIPELINE_REPORTS_COLUMNS)
+        .eq('seller_id', userId)
         .order('generated_at', { ascending: false });
       
       if (error) throw error;
@@ -489,9 +552,12 @@ export class RealPipelineService {
    */
   static async createPipelineReport(reportData: Partial<RealPipelineReport>): Promise<RealPipelineReport | null> {
     try {
+      const userId = await this.getCurrentUserId();
+      if (!userId) return null;
+
       const { data, error } = await supabaseClient
         .from('pipeline_reports')
-        .insert([reportData])
+        .insert([{ ...reportData, seller_id: reportData.seller_id || userId }])
         .select()
         .single();
       

@@ -1,0 +1,21 @@
+title,country,region,type,phase,lat,lon,budget_usd,start_date,end_date,source,source_url
+Mine d'or de Kédougou Phase 2,Senegal,Kédougou,mine,construction,12.56,-12.18,350000000,2025-06-01,2029-12-31,PPI Database,https://ppi.worldbank.org
+Autoroute Dakar-Saint-Louis,Senegal,Saint-Louis,road,tender,15.95,-16.27,820000000,2026-01-15,,PPI Database,https://ppi.worldbank.org
+Port en eaux profondes de Kribi Phase 2,Cameroon,Sud,port,construction,2.95,9.91,1200000000,2024-03-01,2028-06-30,PPI Database,https://ppi.worldbank.org
+Barrage de Nachtigal,Cameroon,Centre,dam,construction,4.35,11.63,680000000,2023-01-01,2027-12-31,PPI Database,https://ppi.worldbank.org
+Centrale solaire de Ouagadougou,Burkina Faso,Centre,energy,financing,12.37,-1.52,95000000,2026-06-01,2028-12-31,World Bank,https://worldbank.org
+Mine de bauxite de Sangarédi,Guinea,Boké,mine,ops,11.08,-13.84,1500000000,2020-01-01,,PPI Database,https://ppi.worldbank.org
+Route nationale Abidjan-Yamoussoukro,Côte d'Ivoire,Lagunes,road,construction,6.25,-5.35,450000000,2025-03-01,2028-09-30,PPI Database,https://ppi.worldbank.org
+Ligne ferroviaire Tema-Akosombo,Ghana,Greater Accra,rail,tender,5.67,-0.01,620000000,2026-09-01,,PPI Database,https://ppi.worldbank.org
+Parc éolien de Tarfaya Extension,Morocco,Guelmim-Oued Noun,energy,construction,27.94,-13.01,320000000,2025-01-01,2027-06-30,PPI Database,https://ppi.worldbank.org
+Zone industrielle de Diamniadio,Senegal,Dakar,industrial_zone,construction,14.72,-17.18,280000000,2024-06-01,2027-12-31,PPI Database,https://ppi.worldbank.org
+Mine de manganèse de Tambao,Burkina Faso,Sahel,mine,study,14.78,0.05,500000000,2027-01-01,,World Bank,https://worldbank.org
+Port de Lekki Deep Sea,Nigeria,Lagos,port,construction,6.42,3.54,1800000000,2023-06-01,2028-12-31,PPI Database,https://ppi.worldbank.org
+Autoroute Lagos-Ibadan,Nigeria,Oyo,road,construction,7.39,3.94,1200000000,2022-01-01,2026-12-31,PPI Database,https://ppi.worldbank.org
+Barrage de Kandadji,Niger,Tillabéri,dam,financing,14.6,0.97,740000000,2026-01-01,2030-12-31,World Bank,https://worldbank.org
+Centrale solaire de Noor Midelt,Morocco,Drâa-Tafilalet,energy,construction,32.68,-4.73,850000000,2024-01-01,2027-06-30,PPI Database,https://ppi.worldbank.org
+Mine d'or de Siguiri Extension,Guinea,Kankan,mine,ops,11.42,-9.17,400000000,2021-01-01,,PPI Database,https://ppi.worldbank.org
+Pont Brazzaville-Kinshasa,Congo,Pool,road,study,4.27,15.28,550000000,2027-06-01,2031-12-31,World Bank,https://worldbank.org
+Zone franche de Tanger Med III,Morocco,Tanger-Tétouan,industrial_zone,tender,35.87,-5.51,1100000000,2026-03-01,,PPI Database,https://ppi.worldbank.org
+Ligne BRT Dakar Phase 2,Senegal,Dakar,road,financing,14.69,-17.44,380000000,2026-09-01,2029-06-30,PPI Database,https://ppi.worldbank.org
+Raffinerie de pétrole Dangote,Nigeria,Lagos,energy,construction,6.38,3.36,19000000000,2021-01-01,2026-06-30,PPI Database,https://ppi.worldbank.org

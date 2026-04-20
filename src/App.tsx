@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import ErrorBoundary from './components/ErrorBoundary';
 import Header from './components/Header';
 import CategoryList from './components/CategoryList';
 import FeaturedMachines from './components/FeaturedMachines';
 import Machines from './pages/Machines';
 import MachineDetail from './pages/MachineDetail';
-import SubcategoryPage from './pages/SubcategoryPage';
 import Services from './pages/Services';
 import Contact from './pages/Contact';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Blog from './pages/Blog';
-import SellEquipment from './pages/SellEquipment';
 import Dashboard from './pages/Dashboard.jsx';
 import { useExchangeRates } from './hooks/useExchangeRates';
 import SectorMachines from './pages/SectorMachines';
@@ -21,51 +20,81 @@ import ForgotPassword from './pages/ForgotPassword';
 import UpdatePassword from './pages/UpdatePassword';
 import ChatWidget from './components/ChatWidget';
 import FinancingRequest from './pages/FinancingRequest';
-import ProDashboard from './pages/ProDashboard';
-import EnterpriseService from './pages/EnterpriseService';
-import EnterpriseDashboard from './pages/EnterpriseDashboardModular.tsx';
-import DashboardConfigurator from './pages/DashboardConfigurator';
-import EnterpriseDashboardDisplay from './pages/EnterpriseDashboardDisplay';
-import VendeurDashboardLegacy from './pages/VendeurDashboardLegacy';
-import VitrinePersonnalisee from './pages/VitrinePersonnalisee';
-import PublicationRapide from './pages/PublicationRapide';
-import DevisGenerator from './pages/DevisGenerator';
-import DocumentsEspace from './pages/DocumentsEspace';
-import MessagesBoite from './pages/MessagesBoite';
-import PlanningPro from './pages/PlanningPro';
-import AssistantIA from './pages/AssistantIA';
-import WidgetTest from './WidgetTest';
-import VendeurDashboardRestored from './pages/VendeurDashboardRestored';
-import EnterpriseDashboardVendeurDisplay from './pages/EnterpriseDashboardVendeurDisplay';
-import EnterpriseDashboardLoueurDisplay from './pages/EnterpriseDashboardLoueurDisplay';
-import EnterpriseDashboardMecanicienDisplay from './pages/EnterpriseDashboardMecanicienDisplay';
-import EnterpriseDashboardTransporteurDisplay from './pages/EnterpriseDashboardTransporteurDisplay';
-import EnterpriseDashboardTransitaireDisplay from './pages/EnterpriseDashboardTransitaireDisplay';
-import EnterpriseDashboardLogisticienDisplay from './pages/EnterpriseDashboardLogisticienDisplay';
-import EnterpriseDashboardInvestisseurDisplay from './pages/EnterpriseDashboardInvestisseurDisplay';
-import EnterpriseDashboardCourtierDisplay from './pages/EnterpriseDashboardCourtierDisplay';
-import PremiumDashboard from './pages/PremiumDashboard';
-import ApiDocs from './pages/ApiDocs';
-import PrioritySupport from './pages/PrioritySupport';
-import MultiUserManagement from './pages/MultiUserManagement';
-import GlobalMonitor from './pages/GlobalMonitor';
 import ProtectedRoute from './components/ProtectedRoute';
 
-console.log('🔥 App.tsx: import EnterpriseDashboard principal');
+const PageLoader = () => (
+  <div className="flex flex-col items-center justify-center min-h-[45vh] gap-3 text-gray-600">
+    <div className="animate-spin rounded-full h-10 w-10 border-2 border-orange-500 border-t-transparent" />
+    <span className="text-sm">Chargement du module…</span>
+  </div>
+);
 
-const queryClient = new QueryClient();
+const SellEquipment = lazy(() => import('./pages/SellEquipment'));
+const ProDashboard = lazy(() => import('./pages/ProDashboard'));
+const EnterpriseService = lazy(() => import('./pages/EnterpriseService'));
+const DashboardConfigurator = lazy(() => import('./pages/DashboardConfigurator'));
+const VendeurDashboardLegacy = lazy(() => import('./pages/VendeurDashboardLegacy'));
+const VitrinePersonnalisee = lazy(() => import('./pages/VitrinePersonnalisee'));
+const PublicationRapide = lazy(() => import('./pages/PublicationRapide'));
+const DevisGenerator = lazy(() => import('./pages/DevisGenerator'));
+const DocumentsEspace = lazy(() => import('./pages/DocumentsEspace'));
+const MessagesBoite = lazy(() => import('./pages/MessagesBoite'));
+const PlanningPro = lazy(() => import('./pages/PlanningPro'));
+const AssistantIA = lazy(() => import('./pages/AssistantIA'));
+const WidgetTest = lazy(() => import('./WidgetTest'));
+const VendeurDashboardRestored = lazy(() => import('./pages/VendeurDashboardRestored'));
+const EnterpriseDashboardVendeurDisplay = lazy(
+  () => import('./pages/EnterpriseDashboardVendeurDisplay')
+);
+const EnterpriseDashboardLoueurDisplay = lazy(
+  () => import('./pages/EnterpriseDashboardLoueurDisplay')
+);
+const EnterpriseDashboardMecanicienDisplay = lazy(
+  () => import('./pages/EnterpriseDashboardMecanicienDisplay')
+);
+const EnterpriseDashboardTransporteurDisplay = lazy(
+  () => import('./pages/EnterpriseDashboardTransporteurDisplay')
+);
+const EnterpriseDashboardTransitaireDisplay = lazy(
+  () => import('./pages/EnterpriseDashboardTransitaireDisplay')
+);
+const EnterpriseDashboardLogisticienDisplay = lazy(
+  () => import('./pages/EnterpriseDashboardLogisticienDisplay')
+);
+const EnterpriseDashboardInvestisseurDisplay = lazy(
+  () => import('./pages/EnterpriseDashboardInvestisseurDisplay')
+);
+const EnterpriseDashboardCourtierDisplay = lazy(
+  () => import('./pages/EnterpriseDashboardCourtierDisplay')
+);
+const PremiumDashboard = lazy(() => import('./pages/PremiumDashboard'));
+const ApiDocs = lazy(() => import('./pages/ApiDocs'));
+const PrioritySupport = lazy(() => import('./pages/PrioritySupport'));
+const MultiUserManagement = lazy(() => import('./pages/MultiUserManagement'));
+const GlobalMonitor = lazy(() => import('./pages/GlobalMonitor'));
+const SourcesAdmin = lazy(() => import('./pages/SourcesAdmin'));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      /** Réduit les rafales de requêtes quand beaucoup d’utilisateurs naviguent */
+      staleTime: 2 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function AppContent() {
   const [currentHash, setCurrentHash] = useState(() => window.location.hash || '#');
 
-
   useEffect(() => {
-    
     const handleHash = () => {
       setCurrentHash(window.location.hash || '#');
     };
 
-    handleHash(); // initial
+    handleHash();
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
@@ -77,18 +106,10 @@ function AppContent() {
   useExchangeRates();
 
   const renderContent = () => {
-      // 🔥 Ajouter cette condition spéciale AVANT le switch
-      if (window.location.pathname === '/update-password') {
-        return <UpdatePassword />;
-      }    
-      
-      console.log('=== NAVIGATION DEBUG ===');
-      console.log('Current hash:', currentHash);
-      console.log('Path parts:', pathParts);
-      console.log('Page:', pathParts[0]);
-      console.log('Full URL:', window.location.href);
-      console.log('========================');
-      
+    if (window.location.pathname === '/update-password') {
+      return <UpdatePassword />;
+    }
+
     switch (pathParts[0]) {
       case 'machines':
         if (pathParts.length === 2) {
@@ -122,7 +143,7 @@ function AppContent() {
 
       case 'update-password':
         return <UpdatePassword />;
-        
+
       case 'blog':
         return <Blog postId={pathParts[1]} />;
 
@@ -214,11 +235,22 @@ function AppContent() {
         return <MultiUserManagement />;
 
       case 'global-monitor':
-        return <ProtectedRoute><GlobalMonitor /></ProtectedRoute>;
+        return (
+          <ProtectedRoute>
+            <GlobalMonitor />
+          </ProtectedRoute>
+        );
+
+      case 'admin-sources':
+        return (
+          <ProtectedRoute>
+            <SourcesAdmin />
+          </ProtectedRoute>
+        );
 
       case 'test-widget':
         return <WidgetTest />;
-        
+
       default:
         return (
           <>
@@ -237,7 +269,9 @@ function AppContent() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main>
-        {renderContent()}
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>{renderContent()}</Suspense>
+        </ErrorBoundary>
       </main>
       <ChatWidget />
     </div>
@@ -247,7 +281,9 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }

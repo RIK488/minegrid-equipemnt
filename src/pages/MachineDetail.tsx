@@ -6,7 +6,13 @@ import {
 import type { Machine, MachineWithPremium } from '../types';
 import { isSeller, isOwner } from '../utils/auth';
 import supabase from '../utils/supabaseClient';
+import { MACHINE_LIST_COLUMNS } from '../constants/machineQueryFields';
 import { recordMachineView } from '../utils/api';
+import {
+  buildSrcSet,
+  getOptimizedImageUrl,
+  handleImageErrorFallback,
+} from '../utils/imageOptimization';
 import LogisticsSimulator from '../components/LogisticsSimulator';
 import TransportCard from '../components/TransportCard';
 import PremiumBadge from '../components/PremiumBadge';
@@ -51,6 +57,8 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   
 
   
@@ -65,7 +73,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
       // D'abord, essayer de charger la machine sans la relation seller
       supabase
       .from('machines')
-      .select('*')
+      .select(MACHINE_LIST_COLUMNS)
       .eq('id', id)
       .single()
       .abortSignal(new AbortController().signal)  // Force refresh
@@ -94,38 +102,74 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
                 console.log('Données vendeur chargées avec succès:', sellerData);
                 setMachineData({
                   ...data,
-                  seller: sellerData
+                  seller: {
+                    ...sellerData,
+                    location:
+                      (sellerData as any)?.location ||
+                      [data.city, data.region, data.country].filter(Boolean).join(', ') ||
+                      'Localisation inconnue',
+                  }
                 });
               } else {
                 console.error('Erreur chargement vendeur:', sellerError);
                 console.log('Vendeur non trouvé, utilisation des données de base');
-                setMachineData(data);
+                setMachineData({
+                  ...data,
+                  seller: {
+                    id: (data as any).sellerid || (data as any).seller_id || '',
+                    name: '',
+                    rating: 0,
+                    location: [data.city, data.region, data.country].filter(Boolean).join(', ') || 'Localisation inconnue',
+                  },
+                });
               }
               // Définir loading à false seulement après avoir tenté de charger le vendeur
               setLoading(false);
             });
           } else {
             console.log('Aucun sellerid trouvé dans les données de la machine');
-            setMachineData(data);
+            setMachineData({
+              ...data,
+              seller: {
+                id: (data as any).sellerid || (data as any).seller_id || '',
+                name: '',
+                rating: 0,
+                location: [data.city, data.region, data.country].filter(Boolean).join(', ') || 'Localisation inconnue',
+              },
+            });
             setLoading(false);
           }
     
-          // 🔁 Générer les URLs publiques à partir des noms d'images
+          // 🔁 Générer les URLs images : URL externe directe OU path Storage legacy.
           const urls: string[] = [];
-          if (data.images && Array.isArray(data.images)) {
-            data.images.forEach((img: string) => {
-              const { data: publicUrl } = supabase
-                .storage
-                .from('machine-image')
-                .getPublicUrl(img);
-    
-              if (publicUrl?.publicUrl) {
-                urls.push(publicUrl.publicUrl);
-              }
-            });
-          }
-    
-          setImageUrls(urls);
+          const imgCandidates: string[] = [];
+          if (Array.isArray(data.images)) imgCandidates.push(...data.images);
+          if (Array.isArray((data as any).photos)) imgCandidates.push(...(data as any).photos);
+          imgCandidates.forEach((img: string) => {
+            const raw = String(img || '').trim();
+            if (!raw) return;
+            if (raw.startsWith('http://') || raw.startsWith('https://')) {
+              urls.push(raw);
+              return;
+            }
+            const { data: publicUrl } = supabase.storage.from('machine-image').getPublicUrl(raw);
+            if (publicUrl?.publicUrl) urls.push(publicUrl.publicUrl);
+          });
+
+          const scoreImageUrl = (rawUrl: string): number => {
+            const url = String(rawUrl || '').toLowerCase();
+            if (!url) return -999;
+            let score = 0;
+            if (url.includes('original') || url.includes('large') || url.includes('xl')) score += 8;
+            if (url.includes('w=2000') || url.includes('w=1600') || url.includes('w=1200')) score += 6;
+            else if (url.includes('w=1000') || url.includes('w=900') || url.includes('w=800')) score += 4;
+            if (url.includes('thumb') || url.includes('thumbnail') || url.includes('small') || url.includes('icon')) score -= 8;
+            if (url.includes('placeholder') || url.includes('default')) score -= 12;
+            return score;
+          };
+
+          const sortedUrls = [...new Set(urls)].sort((a, b) => scoreImageUrl(b) - scoreImageUrl(a));
+          setImageUrls(sortedUrls);
 
           // 📊 Enregistrer la vue de la machine
           recordMachineView(id).catch(err => {
@@ -136,6 +180,21 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
     } else {
       setLoading(false);
       setError('ID de machine manquant');
+    }
+  }, [machineId]);
+
+  useEffect(() => {
+    if (!machineId) return;
+    const stored = window.localStorage.getItem('favorite_machine_ids');
+    if (!stored) {
+      setIsFavorite(false);
+      return;
+    }
+    try {
+      const ids = JSON.parse(stored);
+      setIsFavorite(Array.isArray(ids) && ids.includes(machineId));
+    } catch {
+      setIsFavorite(false);
     }
   }, [machineId]);
 
@@ -205,10 +264,11 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
 
   const downloadTechSheet = async () => {
     const model = machineData?.model || machineData?.name || "fiche-technique";
+    const scrapePdfUrl = import.meta.env.VITE_N8N_SCRAPE_PDF_URL || '';
 
     try {
       const response = await fetch(
-        `https://n8n.srv786179.hstgr.cloud/webhook/scrape-pdf?model=${encodeURIComponent(model)}`
+        `${scrapePdfUrl}?model=${encodeURIComponent(model)}`
       );
 
       if (!response.ok) {
@@ -227,6 +287,46 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
     } catch (error) {
       console.error("Erreur téléchargement fiche :", error);
       alert("❌ Une erreur est survenue.");
+    }
+  };
+
+  const toggleFavorite = () => {
+    if (!machineId) return;
+    const stored = window.localStorage.getItem('favorite_machine_ids');
+    let ids: string[] = [];
+    try {
+      ids = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(ids)) ids = [];
+    } catch {
+      ids = [];
+    }
+
+    const nextIds = isFavorite ? ids.filter((id) => id !== machineId) : [...new Set([...ids, machineId])];
+    window.localStorage.setItem('favorite_machine_ids', JSON.stringify(nextIds));
+    setIsFavorite(!isFavorite);
+  };
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}#machines/${machineId}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: machineData?.name || 'Annonce machine',
+          text: machineData?.model || '',
+          url: shareUrl,
+        });
+        setShareFeedback('Lien partagé');
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareFeedback('Lien copié');
+      } else {
+        window.prompt('Copiez ce lien :', shareUrl);
+        setShareFeedback('Lien prêt à copier');
+      }
+    } catch {
+      setShareFeedback('Partage annulé');
+    } finally {
+      window.setTimeout(() => setShareFeedback(null), 2000);
     }
   };
 
@@ -450,14 +550,34 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
         {/* Galerie */}
         <div className="lg:col-span-2">
           <div className="relative bg-gray-100 rounded-lg overflow-hidden">
-            <img
-              src={imageUrls[currentImageIndex] || '/public/image/Lentretien-de-premier-niveau-du-bouteur.jpg'}
-              alt={machineData.name}
-              className="w-full h-[500px] object-cover"
-              onError={(e) => {
-                e.currentTarget.src = '/public/image/Lentretien-de-premier-niveau-du-bouteur.jpg';
-              }}
-            />
+            {(() => {
+              const originalMain =
+                imageUrls[currentImageIndex] || '/public/image/Lentretien-de-premier-niveau-du-bouteur.jpg';
+              const optimizedMain = getOptimizedImageUrl(originalMain, {
+                width: 1600,
+                quality: 85,
+                resize: 'cover',
+              });
+              return (
+                <img
+                  src={optimizedMain}
+                  srcSet={buildSrcSet(originalMain, 1200, 85) || undefined}
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  alt={machineData.name}
+                  decoding="async"
+                  className="w-full h-[500px] object-cover"
+                  onError={(e) => {
+                    // 1er essai : URL originale sans transformation Supabase.
+                    if (e.currentTarget.dataset.fallbackApplied !== '1') {
+                      handleImageErrorFallback(e, originalMain);
+                      return;
+                    }
+                    // 2e essai : placeholder local.
+                    e.currentTarget.src = '/public/image/Lentretien-de-premier-niveau-du-bouteur.jpg';
+                  }}
+                />
+              );
+            })()}
             {imageUrls.length > 1 && (
               <>
                 <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full hover:bg-white">
@@ -479,15 +599,26 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
             )}
           </div>
           <div className="grid grid-cols-4 gap-4 mt-4">
-            {imageUrls.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentImageIndex(index)}
-                className={`relative rounded-lg overflow-hidden ${index === currentImageIndex ? 'ring-2 ring-primary-500 shadow-lg' : ''}`}
-              >
-                <img src={image} alt={`Vue ${index + 1}`} className="w-full h-24 object-cover" />
-              </button>
-            ))}
+            {imageUrls.map((image, index) => {
+              const thumb = getOptimizedImageUrl(image, { width: 300, quality: 75, resize: 'cover' });
+              return (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`relative rounded-lg overflow-hidden ${index === currentImageIndex ? 'ring-2 ring-primary-500 shadow-lg' : ''}`}
+                >
+                  <img
+                    src={thumb}
+                    srcSet={buildSrcSet(image, 300, 75) || undefined}
+                    alt={`Vue ${index + 1}`}
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => handleImageErrorFallback(e, image)}
+                    className="w-full h-24 object-cover"
+                  />
+                </button>
+              );
+            })}
           </div>
           <div className="bg-white rounded-lg shadow-md p-6 mt-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Description</h2>
@@ -579,14 +710,27 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
                 )}
               </div>
               <div className="flex space-x-2">
-                <button className="p-2 text-gray-500 hover:text-orange-600">
+                <button
+                  onClick={toggleFavorite}
+                  className={`p-2 transition-colors ${isFavorite ? 'text-red-500' : 'text-gray-500 hover:text-orange-600'}`}
+                  title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                  aria-label={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                >
                   <Heart className="h-6 w-6" />
                 </button>
-                <button className="p-2 text-gray-500 hover:text-orange-600">
+                <button
+                  onClick={handleShare}
+                  className="p-2 text-gray-500 hover:text-orange-600 transition-colors"
+                  title="Partager l'annonce"
+                  aria-label="Partager l'annonce"
+                >
                   <Share2 className="h-6 w-6" />
                 </button>
               </div>
             </div>
+            {shareFeedback && (
+              <p className="mb-3 text-sm text-green-600">{shareFeedback}</p>
+            )}
 
             <div className="text-3xl font-bold text-orange-600 mb-6">
               {machineData.price ? (

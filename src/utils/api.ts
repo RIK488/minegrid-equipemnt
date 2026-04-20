@@ -1,4 +1,14 @@
 import supabase from './supabaseClient';
+import {
+  MESSAGE_LIST_COLUMNS,
+  NOTIFICATION_APP_COLUMNS,
+  OFFER_LIST_COLUMNS,
+  PREMIUM_SERVICE_COLUMNS,
+  SERVICE_HISTORY_COLUMNS,
+  USER_PREFERENCES_COLUMNS,
+  USER_PROFILE_API_COLUMNS,
+} from '../constants/apiQueryFields';
+import { MACHINE_LIST_COLUMNS, SELLER_MACHINES_MAX_ROWS } from '../constants/machineQueryFields';
 
 // -------------------- TYPES --------------------
 
@@ -173,7 +183,11 @@ export async function registerUser(data: RegisterData) {
     }
   });
 
-  if (error) throw error;
+  if (error) {
+    // Normalise l'erreur pour qu'on puisse l'afficher proprement côté UI.
+    console.error('Supabase signUp error:', error);
+    throw new Error(error.message || 'Erreur inscription Supabase');
+  }
   return response;
 }
 
@@ -183,7 +197,11 @@ export async function loginUser(email: string, password: string) {
     password,
   });
 
-  if (error) throw error;
+  if (error) {
+    // Normalise l'erreur pour qu'on puisse l'afficher proprement côté UI.
+    console.error('Supabase signInWithPassword error:', error);
+    throw new Error(error.message || 'Erreur connexion Supabase');
+  }
   return data;
 }
 
@@ -220,10 +238,6 @@ export async function publishMachine(machineData: MachineData, images: File[]) {
       uploadedImageURLs.push(fileName);
 
   }
-  console.log("PAYLOAD ENVOYÉ :", {
-    ...machineData,
-    images: uploadedImageURLs
-  });
   
   const { data, error } = await supabase
     .from('machines')
@@ -238,13 +252,45 @@ export async function getSellerMachines() {
   const user = await getCurrentUser();
   if (!user) throw new Error('Utilisateur non connecté');
 
-  const { data, error } = await supabase
-    .from('machines')
-    .select('*')
-    .eq('sellerid', user.id);
+  const possibleColumns = ['sellerid', 'seller_id', 'user_id', 'owner_id'];
+  let data: any[] | null = null;
+  let lastError: any = null;
 
-  if (error) throw error;
+  for (const column of possibleColumns) {
+    const result = await supabase
+      .from('machines')
+      .select(MACHINE_LIST_COLUMNS)
+      .eq(column, user.id)
+      .limit(SELLER_MACHINES_MAX_ROWS);
+
+    if (result.error) {
+      lastError = result.error;
+      continue;
+    }
+
+    data = result.data || [];
+    break;
+  }
+
+  if (data === null && lastError) throw lastError;
   return data;
+}
+
+async function getSellerMachineIds(userId: string): Promise<string[]> {
+  const possibleColumns = ['sellerid', 'seller_id', 'user_id', 'owner_id'];
+  let ids: string[] | null = null;
+
+  for (const column of possibleColumns) {
+    const { data, error } = await supabase
+      .from('machines')
+      .select('id')
+      .eq(column, userId);
+    if (error) continue;
+    ids = (data || []).map((m: any) => m.id).filter(Boolean);
+    break;
+  }
+
+  return ids || [];
 }
 
 // -------------------- STATISTIQUES --------------------
@@ -273,13 +319,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const user = await getCurrentUser();
   if (!user) throw new Error('Utilisateur non connecté');
 
-  // Récupérer les IDs des machines du vendeur
-  const { data: machines } = await supabase
-    .from('machines')
-    .select('id')
-    .eq('sellerid', user.id);
-
-  const machineIds = machines?.map(m => m.id) || [];
+  // Récupérer les IDs des machines du vendeur (tolérant au nom de colonne)
+  const machineIds = await getSellerMachineIds(user.id);
 
   if (machineIds.length === 0) {
     return {
@@ -303,27 +344,27 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   // Vues totales
   const { count: totalViews } = await supabase
     .from('machine_views')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .in('machine_id', machineIds);
 
   // Vues cette semaine
   const { count: weeklyViews } = await supabase
     .from('machine_views')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .in('machine_id', machineIds)
     .gte('created_at', weekAgo.toISOString());
 
   // Vues ce mois
   const { count: monthlyViews } = await supabase
     .from('machine_views')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .in('machine_id', machineIds)
     .gte('created_at', monthAgo.toISOString());
 
   // Vues semaine précédente (pour calculer la croissance)
   const { count: previousWeekViews } = await supabase
     .from('machine_views')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .in('machine_id', machineIds)
     .gte('created_at', twoWeeksAgo.toISOString())
     .lt('created_at', weekAgo.toISOString());
@@ -331,7 +372,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   // Vues mois précédent
   const { count: previousMonthViews } = await supabase
     .from('machine_views')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .in('machine_id', machineIds)
     .gte('created_at', twoMonthsAgo.toISOString())
     .lt('created_at', monthAgo.toISOString());
@@ -339,13 +380,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   // Messages reçus
   const { count: totalMessages } = await supabase
     .from('messages')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .or(`receiver_id.eq.${user.id},seller_id.eq.${user.id}`);
 
   // Offres reçues
   const { count: totalOffers } = await supabase
     .from('offers')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('seller_id', user.id);
 
   // Calculer les pourcentages de croissance
@@ -372,12 +413,7 @@ export async function getWeeklyActivityData() {
   const user = await getCurrentUser();
   if (!user) throw new Error('Utilisateur non connecté');
 
-  const { data: machines } = await supabase
-    .from('machines')
-    .select('id')
-    .eq('sellerid', user.id);
-
-  const machineIds = machines?.map(m => m.id) || [];
+  const machineIds = await getSellerMachineIds(user.id);
   
   if (machineIds.length === 0) {
     return Array(7).fill(0);
@@ -414,7 +450,7 @@ export async function getMessages() {
   try {
     const { data, error } = await supabase
       .from('messages')
-      .select('*')
+      .select(MESSAGE_LIST_COLUMNS)
       .or(`receiver_id.eq.${user.id},seller_id.eq.${user.id}`)
       .order('created_at', { ascending: false });
 
@@ -469,7 +505,7 @@ export async function getOffers() {
   try {
     const { data, error } = await supabase
       .from('offers')
-      .select('*')
+      .select(OFFER_LIST_COLUMNS)
       .eq('seller_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -524,7 +560,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 
   const { data, error } = await supabase
     .from('user_profiles')
-    .select('*')
+    .select(USER_PROFILE_API_COLUMNS)
     .eq('id', user.id)
     .single();
 
@@ -601,7 +637,7 @@ export async function getUserPreferences(): Promise<UserPreferences | null> {
 
   const { data, error } = await supabase
     .from('user_preferences')
-    .select('*')
+    .select(USER_PREFERENCES_COLUMNS)
     .eq('user_id', user.id)
     .single();
 
@@ -665,7 +701,7 @@ export async function getNotifications(): Promise<Notification[]> {
 
   const { data, error } = await supabase
     .from('notifications')
-    .select('*')
+    .select(NOTIFICATION_APP_COLUMNS)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -728,7 +764,7 @@ export async function getPremiumService(): Promise<PremiumService | null> {
 
   const { data, error } = await supabase
     .from('premium_services')
-    .select('*')
+    .select(PREMIUM_SERVICE_COLUMNS)
     .eq('user_id', user.id)
     .eq('status', 'active')
     .single();
@@ -737,7 +773,6 @@ export async function getPremiumService(): Promise<PremiumService | null> {
   
   // Si pas de service premium, créer un service de base pour les tests
   if (!data) {
-    console.log('🔄 Aucun service premium trouvé, création d\'un service de base...');
     const baseService = {
       id: 'base-service',
       user_id: user.id,
@@ -818,7 +853,7 @@ export async function getServiceHistory(): Promise<ServiceHistory[]> {
 
   const { data, error } = await supabase
     .from('service_history')
-    .select('*')
+    .select(SERVICE_HISTORY_COLUMNS)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(20);
@@ -873,7 +908,6 @@ export async function getActiveSessions() {
 
 export async function revokeSession(sessionId: string) {
   // En production, vous supprimeriez la session de la base de données
-  console.log(`Session ${sessionId} révoquée`);
   return { success: true };
 }
 
@@ -895,67 +929,6 @@ export async function deleteUserAccount() {
   if (error) throw error;
 
   return { success: true };
-}
-
-// -------------------- HOOKS --------------------
-
-import { useState, useCallback } from 'react';
-
-export function useApiService() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const apiCall = useCallback(async (method: string, endpoint: string, data?: any) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Simulation d'appel API pour les widgets
-      console.log(`API Call: ${method} ${endpoint}`, data);
-      
-      // Simuler un délai réseau
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Retourner des données simulées selon l'endpoint
-      switch (endpoint) {
-        case '/api/actions/start':
-          return { success: true, message: 'Action démarrée' };
-        case '/api/actions/complete':
-          return { success: true, message: 'Action terminée' };
-        case '/api/actions/reschedule':
-          return { success: true, message: 'Action reprogrammée' };
-        case '/api/actions/create':
-          return { success: true, id: Date.now().toString() };
-        case '/api/actions/auto-followup':
-          return { success: true, count: data?.actions?.length || 0 };
-        case '/api/actions/schedule':
-          return { success: true, scheduled: data?.actions?.length || 0 };
-        case '/api/actions/ai-report':
-          return { 
-            success: true, 
-            report: {
-              total: data?.actions?.length || 0,
-              highPriority: data?.actions?.filter((a: any) => a.priority === 'high').length || 0,
-              recommendations: ['Optimiser le planning', 'Prioriser les contacts']
-            }
-          };
-        case '/api/actions/sync-crm':
-          return { success: true, synced: data?.actions?.length || 0 };
-        case '/api/actions/optimize-schedule':
-          return { success: true, optimized: true };
-        default:
-          return { success: true, data: 'Opération réussie' };
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return { apiCall, loading, error };
 }
 
 // -------------------- DASHBOARD VENDEUR --------------------
@@ -998,36 +971,60 @@ interface SalesPerformanceData {
 export async function getSalesPerformanceData(): Promise<SalesPerformanceData> {
   try {
     const user = await getCurrentUser();
-    
-    // Récupérer les annonces du vendeur
-    const { data: machines, error: machinesError } = await supabase
-      .from('machines')
-      .select('*')
-      .eq('sellerid', user.id);
 
-    if (machinesError) throw machinesError;
+    // Récupérer les annonces du vendeur (tolérant au nom de colonne)
+    const possibleColumns = ['sellerid', 'seller_id', 'user_id', 'owner_id'];
+    let machines: any[] | null = null;
+    let machinesError: any = null;
+
+    for (const column of possibleColumns) {
+      const result = await supabase
+        .from('machines')
+        .select(MACHINE_LIST_COLUMNS)
+        .eq(column, user.id)
+        .limit(SELLER_MACHINES_MAX_ROWS);
+
+      if (result.error) {
+        machinesError = result.error;
+        continue;
+      }
+
+      machines = result.data || [];
+      machinesError = null;
+      break;
+    }
+
+    if (machines === null && machinesError) throw machinesError;
+    if (!machines) machines = [];
 
     // Récupérer les vues des annonces
-    const { data: views, error: viewsError } = await supabase
-      .from('machine_views')
-      .select('*')
-      .in('machine_id', machines?.map(m => m.id) || []);
+    const machineIds = machines?.map((m) => m.id).filter(Boolean) || [];
+    const { data: views, error: viewsError } =
+      machineIds.length > 0
+        ? await supabase
+            .from('machine_views')
+            .select('id, machine_id, created_at')
+            .in('machine_id', machineIds)
+            .limit(20000)
+        : { data: [], error: null };
 
     if (viewsError) throw viewsError;
 
     // Récupérer les messages reçus
     const { data: messages, error: messagesError } = await supabase
       .from('messages')
-      .select('*')
-      .eq('receiver_id', user.id);
+      .select('id, receiver_id, response_time, created_at')
+      .eq('receiver_id', user.id)
+      .limit(10000);
 
     if (messagesError) throw messagesError;
 
     // Récupérer les offres reçues
     const { data: offers, error: offersError } = await supabase
       .from('offers')
-      .select('*')
-      .eq('seller_id', user.id);
+      .select('id, seller_id, created_at')
+      .eq('seller_id', user.id)
+      .limit(10000);
 
     if (offersError) throw offersError;
 

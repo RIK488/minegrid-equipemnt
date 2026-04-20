@@ -1,4 +1,11 @@
 import supabase from './supabaseClient';
+import {
+  INVENTORY_LIST_COLUMNS,
+  INTERVENTION_URGENT_COLUMNS,
+  REPAIRS_LIST_COLUMNS,
+  TASK_LIST_COLUMNS,
+  TECHNICIAN_FULL_COLUMNS,
+} from '../constants/enterpriseApiQueryFields';
 
 // Types pour les données
 interface Intervention {
@@ -86,7 +93,7 @@ export const getRepairsStatus = async () => {
   try {
     const { data, error } = await supabase
       .from('repairs')
-      .select('*')
+      .select(REPAIRS_LIST_COLUMNS)
       .not('status', 'eq', 'Terminé')
       .order('created_at', { ascending: false });
 
@@ -152,7 +159,7 @@ export const getInventoryStatus = async () => {
   try {
     const { data, error } = await supabase
       .from('inventory')
-      .select('*')
+      .select(INVENTORY_LIST_COLUMNS)
       .order('category', { ascending: true });
 
     if (error) throw error;
@@ -220,14 +227,14 @@ export const getTechniciansWorkload = async () => {
   try {
     const { data: technicians, error: techError } = await supabase
       .from('technicians')
-      .select('*')
+      .select(TECHNICIAN_FULL_COLUMNS)
       .order('name', { ascending: true });
 
     if (techError) throw techError;
 
     const { data: tasks, error: taskError } = await supabase
       .from('tasks')
-      .select('*')
+      .select(TASK_LIST_COLUMNS)
       .not('status', 'eq', 'Terminé');
 
     if (taskError) throw taskError;
@@ -262,7 +269,7 @@ export const getTechnicianTasks = async (technicianId: string) => {
   try {
     const { data, error } = await supabase
       .from('tasks')
-      .select('*')
+      .select(TASK_LIST_COLUMNS)
       .eq('technician_id', technicianId)
       .not('status', 'eq', 'Terminé')
       .order('due_date', { ascending: true });
@@ -331,7 +338,7 @@ export const getStockAlerts = async () => {
   try {
     const { data, error } = await supabase
       .from('inventory')
-      .select('*')
+      .select(INVENTORY_LIST_COLUMNS)
       .lt('current_stock', 'minimum_stock');
 
     if (error) throw error;
@@ -346,7 +353,7 @@ export const getUrgentInterventions = async () => {
   try {
     const { data, error } = await supabase
       .from('interventions')
-      .select('*')
+      .select(INTERVENTION_URGENT_COLUMNS)
       .eq('priority', 'Urgente')
       .not('status', 'eq', 'Terminé')
       .order('scheduled_date', { ascending: true });
@@ -379,7 +386,7 @@ export const getMechanicStats = async () => {
     // Stock critique
     const { data: criticalStock } = await supabase
       .from('inventory')
-      .select('*')
+      .select(INVENTORY_LIST_COLUMNS)
       .lt('current_stock', 'minimum_stock');
 
     // Techniciens disponibles

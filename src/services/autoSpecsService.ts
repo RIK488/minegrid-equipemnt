@@ -126,7 +126,7 @@ function normalizeToSpecs(input: any, fallbackBrand: string, fallbackModel: stri
 }
 
 export async function fetchModelSpecs(brand: string, model: string): Promise<NormalizedSpecs | null> {
-  const url = 'https://n8n.srv786179.hstgr.cloud/webhook/auto_specs';
+  const url = import.meta.env.VITE_N8N_AUTO_SPECS_URL || '';
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -172,7 +172,7 @@ export async function fetchModelSpecsFull(
   model: string,
   context?: Record<string, any>
 ): Promise<{ specs: NormalizedSpecs | null; missing?: string[]; suggestions?: Record<string, any> }>{
-  const url = 'https://n8n.srv786179.hstgr.cloud/webhook/auto_specs';
+  const url = import.meta.env.VITE_N8N_AUTO_SPECS_URL || '';
   const payload = { schema: 'minegrid.auto_specs.v1', includeMissing: true, brand, model, ...(context || {}) } as Record<string, any>;
   try { console.log('🧪 AutoSpecs payload →', payload); } catch {}
   showDebugPayload('Payload AutoSpecs envoyé', payload);

@@ -12,25 +12,11 @@ export default function Contact() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [tempWidgetsGranted, setTempWidgetsGranted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simuler l'envoi du formulaire
     setSubmitted(true);
-    
-    // Temporairement : activer l'abonnement entreprise après envoi du message
-    setTimeout(() => {
-      setSubmitted(false);
-      // Rediriger vers le dashboard avec l'abonnement entreprise activé
-      window.location.href = '/#dashboard/overview';
-      
-      // Stocker temporairement l'abonnement entreprise dans localStorage
-      localStorage.setItem('tempSubscription', 'entreprise');
-      localStorage.setItem('tempHasActiveSubscription', 'true');
-      
-      // Afficher un message de confirmation
-      alert('Message envoyé avec succès ! Accès temporaire à l\'abonnement Entreprise activé.');
-    }, 2000);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -38,6 +24,29 @@ export default function Contact() {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const grantTemporaryWidgetsAccess = () => {
+    // Accès temporaire : déverrouiller le "service entreprise" (configuration),
+    // mais ne pas marquer le dashboard comme "configured" (sinon on redirige
+    // directement vers l'affichage des widgets).
+    localStorage.setItem('userSubscription', 'entreprise');
+    localStorage.setItem('enterpriseService', 'true');
+    localStorage.setItem('userServices', 'enterprise');
+    localStorage.setItem('tempSubscription', 'entreprise');
+    localStorage.setItem('tempHasActiveSubscription', 'true');
+    localStorage.setItem('widgetsTemporaryAccess', 'granted');
+    localStorage.removeItem('enterpriseDashboardConfigured');
+    localStorage.removeItem('enterpriseDashboardConfig_vendeur');
+    localStorage.removeItem('enterpriseDashboardConfig');
+    localStorage.removeItem('subscriptionCancelled');
+    window.dispatchEvent(new CustomEvent('enterpriseSubscriptionActivated', {
+      detail: { planType: 'entreprise', source: 'contact-temp-widgets' },
+    }));
+    setTempWidgetsGranted(true);
+    // Rediriger vers le service entreprise (configuration des widgets),
+    // pas directement vers l'affichage des widgets.
+    window.location.href = '/#dashboard-entreprise';
   };
 
   return (
@@ -145,28 +154,25 @@ export default function Contact() {
                 Envoyer le message
               </button>
 
-              {/* Bouton temporaire pour valider la formule entreprise */}
-              <div className="border-t pt-6 mt-6">
-                <div className="text-center mb-4">
-                  <p className="text-sm text-gray-600 mb-2">🔧 <strong>Fonctionnalité temporaire</strong></p>
-                  <p className="text-xs text-gray-500">Validez directement l'abonnement Entreprise pour tester</p>
-                </div>
+              <div className="border-t border-gray-200 pt-5">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                  Accès temporaire service entreprise (configuration)
+                </h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Active un accès de test pour déverrouiller la configuration du service entreprise.
+                </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    // Activer directement l'abonnement entreprise
-                    localStorage.setItem('userSubscription', 'entreprise');
-                    localStorage.removeItem('subscriptionCancelled');
-                    
-                    // Rediriger vers le dashboard
-                    window.location.href = '/#dashboard/overview';
-                    
-                    alert('✅ Abonnement Entreprise activé avec succès ! Vous pouvez maintenant accéder à votre tableau de bord.');
-                  }}
-                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-md hover:from-orange-600 hover:to-orange-700 transition-all duration-200 flex items-center justify-center font-medium shadow-lg"
+                  onClick={grantTemporaryWidgetsAccess}
+                  className="w-full bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700 transition-colors"
                 >
-                  🚀 Valider l'abonnement Entreprise
+                  Activer l'accès temporaire service entreprise
                 </button>
+                {tempWidgetsGranted && (
+                  <p className="mt-2 text-xs text-green-700 bg-green-50 px-3 py-2 rounded-md">
+                    Accès service entreprise activé. Redirection vers la configuration...
+                  </p>
+                )}
               </div>
 
               {submitted && (
@@ -212,9 +218,9 @@ export default function Contact() {
                 <div>
                   <h3 className="font-medium text-gray-900">Téléphone</h3>
                   <p className="text-gray-600">
-                    Standard: +212 5XX-XXXXXX<br />
-                    Support technique: +212 5XX-XXXXXX<br />
-                    Service commercial: +212 5XX-XXXXXX
+                    Standard: +212 524-000000<br />
+                    Support technique: +212 524-000001<br />
+                    Service commercial: +212 524-000002
                   </p>
                 </div>
               </div>
@@ -224,9 +230,9 @@ export default function Contact() {
                 <div>
                   <h3 className="font-medium text-gray-900">Email</h3>
                   <p className="text-gray-600">
-                    Information: contact@minegrid.equipement<br />
-                    Support: support@minegrid.equipement<br />
-                    Commercial: sales@minegrid.equipement
+                    Information: contact@minegrid.com<br />
+                    Support: support@minegrid.com<br />
+                    Commercial: sales@minegrid.com
                   </p>
                 </div>
               </div>
@@ -262,7 +268,7 @@ export default function Contact() {
               Une urgence technique ? Notre équipe de support est disponible 24h/24 et 7j/7 pour les situations critiques.
             </p>
             <a
-              href="tel:+212XXXXXXXX"
+              href="tel:+212524000000"
               className="inline-flex items-center bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 transition-colors"
             >
               <Phone className="h-5 w-5 mr-2" />

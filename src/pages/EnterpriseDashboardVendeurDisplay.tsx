@@ -34,7 +34,7 @@ const WIDGETS_VENDEUR_IDS = [
   'stock-status',
   'sales-evolution',
   'sales-pipeline',
-  'daily-actions-priority',
+  'daily-actions',
   'ai-insights',           // Nouveau widget IA
   'ai-optimization'        // Nouveau widget IA
 ];
@@ -174,7 +174,14 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   // 1. Chargement initial
   useEffect(() => {
     const saved = localStorage.getItem('enterpriseDashboardConfig_vendeur');
-    let parsed = saved ? JSON.parse(saved) : null;
+    let parsed: any = null;
+    if (saved) {
+      try {
+        parsed = JSON.parse(saved);
+      } catch {
+        localStorage.removeItem('enterpriseDashboardConfig_vendeur');
+      }
+    }
     let shouldUpdate = false;
 
     // Si pas de config ou config invalide, créer une nouvelle config complète
@@ -222,6 +229,78 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       }));
     }
 
+    // Sécurité pro: si la config locale est incomplète, on reconstruit un set de widgets
+    // pour éviter une page "vide" (widgets non rendus).
+    const widgetIds = (parsed.widgets || []).map((w: any) => w.id);
+    const isComplete = validIds.every((id) => widgetIds.includes(id)) && widgetIds.length === validIds.length;
+    const layoutItems = (parsed.layout?.lg || []) as any[];
+    const layoutIds = layoutItems.map((l: any) => l?.i).filter(Boolean);
+    const isLayoutComplete =
+      validIds.every((id) => layoutIds.includes(id)) && layoutIds.length === validIds.length;
+
+    // Si soit les widgets, soit le layout sont incomplets (ex: layout vide), on reconstruit.
+    if (!isComplete || !isLayoutComplete) {
+      const defaultWidgets = [
+        {
+          id: 'sales-performance-score',
+          type: 'performance',
+          title: 'Score de Performance Commerciale',
+          enabled: true,
+          position: 0,
+          size: '1/3',
+        },
+        {
+          id: 'sales-evolution',
+          type: 'chart',
+          title: 'Évolution des ventes enrichie',
+          enabled: true,
+          position: 1,
+          size: '1/3',
+        },
+        {
+          id: 'stock-status',
+          type: 'list',
+          title: 'Pipeline Commercial',
+          enabled: true,
+          position: 2,
+          size: '1/3',
+        },
+        {
+          id: 'sales-pipeline',
+          type: 'list',
+          title: 'Pipeline Commercial',
+          enabled: true,
+          position: 3,
+          size: '1/3',
+        },
+        {
+          id: 'daily-actions',
+          type: 'daily-actions',
+          title: 'Actions Commerciales Prioritaires',
+          enabled: true,
+          position: 4,
+          size: '1/3',
+        },
+      ];
+
+      const defaultWidgetSizes = Object.fromEntries(defaultWidgets.map((w) => [w.id, w.size]));
+      const effectiveWidgetSizes =
+        parsed.widgetSizes && Object.keys(parsed.widgetSizes).length > 0
+          ? parsed.widgetSizes
+          : defaultWidgetSizes;
+
+      const defaultLayout = generatePreviewLayout(defaultWidgets, effectiveWidgetSizes);
+
+      parsed = {
+        widgets: defaultWidgets,
+        layout: { lg: defaultLayout },
+        widgetSizes: effectiveWidgetSizes,
+        theme: 'light',
+        refreshInterval: 30,
+        notifications: true,
+      };
+    }
+
     setConfig(parsed);
     setLayout(parsed.layout || { lg: [] });
   }, []);
@@ -230,20 +309,26 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
   useEffect(() => {
     const saved = localStorage.getItem('enterpriseDashboardConfig_vendeur');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      let updated = false;
-      if (parsed.widgets) {
-        parsed.widgets = parsed.widgets.map(w => {
-          if (w.id === 'stock-status' && w.title !== 'Pipeline Commercial') {
-            updated = true;
-            return { ...w, title: 'Pipeline Commercial' };
-          }
-          return w;
-        });
-      }
-      if (updated) {
-        localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(parsed));
-        window.location.reload();
+      try {
+        const parsed = JSON.parse(saved);
+        let updated = false;
+        if (parsed.widgets) {
+          parsed.widgets = parsed.widgets.map(w => {
+            if (w.id === 'stock-status' && w.title !== 'Pipeline Commercial') {
+              updated = true;
+              return { ...w, title: 'Pipeline Commercial' };
+            }
+            return w;
+          });
+        }
+        if (updated) {
+          localStorage.setItem('enterpriseDashboardConfig_vendeur', JSON.stringify(parsed));
+          // Eviter le reload complet (qui fait "disparaître" puis réapparaître les widgets)
+          setConfig(parsed);
+          setLayout(parsed.layout || { lg: [] });
+        }
+      } catch {
+        localStorage.removeItem('enterpriseDashboardConfig_vendeur');
       }
     }
   }, []);
@@ -271,56 +356,57 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     ];
     const saved = localStorage.getItem('enterpriseDashboardConfig_vendeur');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      const widgetIds = (parsed.widgets || []).map((w: any) => w.id);
-      const isValid = validIds.every(id => widgetIds.includes(id)) && widgetIds.length === validIds.length;
-      if (!isValid) {
-        localStorage.removeItem('enterpriseDashboardConfig_vendeur');
-        // Récupère le mapping des tailles depuis la config précédente si présent
-        const previousWidgetSizes = parsed && parsed.widgetSizes ? parsed.widgetSizes : {};
-        // Crée les widgets par défaut en injectant la taille si connue
-        const defaultWidgets = [
-          {
-            id: 'sales-performance-score',
-            type: 'performance',
-            title: 'Score de Performance Commerciale',
-            enabled: true,
-            position: 0,
-            size: previousWidgetSizes['sales-performance-score'] || '1/3'
-          },
-          {
-            id: 'sales-evolution',
-            type: 'chart',
-            title: 'Évolution des ventes enrichie',
-            enabled: true,
-            position: 1,
-            size: previousWidgetSizes['sales-evolution'] || '1/3'
-          },
-          {
-            id: 'stock-status',
-            type: 'list',
-            title: 'Plan d\'action stock & revente',
-            enabled: true,
-            position: 2,
-            size: previousWidgetSizes['stock-status'] || '1/3'
-          },
-          {
-            id: 'sales-pipeline',
-            type: 'list',
-            title: 'Pipeline commercial',
-            enabled: true,
-            position: 3,
-            size: previousWidgetSizes['sales-pipeline'] || '1/3'
-          },
-          {
-            id: 'daily-actions',
-            type: 'daily-actions',
-            title: 'Actions Commerciales Prioritaires',
-            enabled: true,
-            position: 4,
-            size: previousWidgetSizes['daily-actions'] || '1/3'
-          }
-        ];
+      try {
+        const parsed = JSON.parse(saved);
+        const widgetIds = (parsed.widgets || []).map((w: any) => w.id);
+        const isValid = validIds.every(id => widgetIds.includes(id)) && widgetIds.length === validIds.length;
+        if (!isValid) {
+          localStorage.removeItem('enterpriseDashboardConfig_vendeur');
+          // Récupère le mapping des tailles depuis la config précédente si présent
+          const previousWidgetSizes = parsed && parsed.widgetSizes ? parsed.widgetSizes : {};
+          // Crée les widgets par défaut en injectant la taille si connue
+          const defaultWidgets = [
+            {
+              id: 'sales-performance-score',
+              type: 'performance',
+              title: 'Score de Performance Commerciale',
+              enabled: true,
+              position: 0,
+              size: previousWidgetSizes['sales-performance-score'] || '1/3'
+            },
+            {
+              id: 'sales-evolution',
+              type: 'chart',
+              title: 'Évolution des ventes enrichie',
+              enabled: true,
+              position: 1,
+              size: previousWidgetSizes['sales-evolution'] || '1/3'
+            },
+            {
+              id: 'stock-status',
+              type: 'list',
+              title: 'Plan d\'action stock & revente',
+              enabled: true,
+              position: 2,
+              size: previousWidgetSizes['stock-status'] || '1/3'
+            },
+            {
+              id: 'sales-pipeline',
+              type: 'list',
+              title: 'Pipeline commercial',
+              enabled: true,
+              position: 3,
+              size: previousWidgetSizes['sales-pipeline'] || '1/3'
+            },
+            {
+              id: 'daily-actions',
+              type: 'daily-actions',
+              title: 'Actions Commerciales Prioritaires',
+              enabled: true,
+              position: 4,
+              size: previousWidgetSizes['daily-actions'] || '1/3'
+            }
+          ];
         const defaultLayout = generatePreviewLayout(defaultWidgets, previousWidgetSizes);
         const newConfig = {
           widgets: defaultWidgets,
@@ -334,6 +420,9 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
         setConfig(newConfig);
         setLayout({ lg: defaultLayout });
         return;
+        }
+      } catch {
+        localStorage.removeItem('enterpriseDashboardConfig_vendeur');
       }
     }
   }, []);
@@ -346,6 +435,13 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
 
   // 3. À chaque action (drag, resize, suppression, ajout, changement de taille) - avec debounce
   const onLayoutChange = useCallback((newLayout: any[], allLayouts?: any) => {
+    // React-Grid-Layout peut renvoyer brièvement un layout vide pendant certaines
+    // transitions (ajout/resize). Si on persiste ce layout vide, les widgets
+    // disparaissent jusqu'au prochain re-render.
+    if (!Array.isArray(newLayout) || newLayout.length === 0) {
+      return;
+    }
+
     setLayout(prev => ({ ...prev, lg: newLayout }));
     
     // Debounce pour éviter les sauvegardes trop fréquentes
@@ -396,7 +492,14 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     if (currentLayoutItem) {
       // Créer ou mettre à jour le backup avec la position du widget supprimé
       const existingBackup = localStorage.getItem('enterpriseDashboardConfig_vendeur_backup');
-      let backupConfig = existingBackup ? JSON.parse(existingBackup) : { layout: { lg: [] } };
+      let backupConfig = { layout: { lg: [] } };
+      if (existingBackup) {
+        try {
+          backupConfig = JSON.parse(existingBackup);
+        } catch {
+          localStorage.removeItem('enterpriseDashboardConfig_vendeur_backup');
+        }
+      }
       
       // Ajouter ou mettre à jour la position du widget dans le backup
       const existingIndex = backupConfig.layout.lg.findIndex((l: any) => l.i === widgetId);
@@ -441,8 +544,8 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
           originalPosition = originalLayoutItem;
           console.log('Position originale trouvée:', originalPosition);
         }
-      } catch (error) {
-        console.log('Erreur lors de la lecture du backup:', error);
+      } catch {
+        localStorage.removeItem('enterpriseDashboardConfig_vendeur_backup');
       }
     }
     
@@ -488,8 +591,8 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
           backupConfig.layout.lg = backupConfig.layout.lg.filter((l: any) => l.i !== widgetId);
           localStorage.setItem('enterpriseDashboardConfig_vendeur_backup', JSON.stringify(backupConfig));
           console.log('Backup nettoyé pour', widgetId);
-        } catch (error) {
-          console.log('Erreur lors du nettoyage du backup:', error);
+        } catch {
+          localStorage.removeItem('enterpriseDashboardConfig_vendeur_backup');
         }
       }
     }, 1500);
@@ -629,18 +732,6 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
     }
   };
 
-  if (!config) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Chargement du tableau de bord...</h1>
-          <p className="text-gray-600">Aucune configuration trouvée.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Services communs interactifs (boutons/onglets) - avec liens corrects
   const renderCommonServices = () => (
     <div className="mb-6">
@@ -712,6 +803,7 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
         rowHeight={90}
         isDraggable={true}
         isResizable={true}
+        draggableHandle=".widget-drag-handle"
         margin={[16, 16]}
         useCSSTransforms={true}
         compactType="vertical"
@@ -723,15 +815,16 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
           if (!widget) return null;
           return (
             <div 
-              key={`${widget.id}-${l.x}-${l.y}-${l.w}-${l.h}`} 
+              // Clé stable : évite un remount des widgets pendant les recalculs/animations RGL
+              key={widget.id}
               data-grid={l} 
               className="bg-orange-50 border border-orange-200 rounded-lg flex flex-col h-full group relative"
             >
               <div className="h-full flex flex-col">
                 {/* Header du widget */}
-                <div className="flex justify-between items-center p-4 pb-2 border-b">
-                  <h3 className="text-lg font-bold text-gray-900">{widget.id === 'stock-status' ? "Plan d’action Stock & Revente" : widget.title}</h3>
-                  <div className="flex space-x-1">
+                <div className="widget-drag-handle flex justify-between items-center p-4 pb-2 border-b cursor-grab active:cursor-grabbing">
+                  <h3 className="text-lg font-bold text-gray-900 select-none">{widget.id === 'stock-status' ? "Plan d’action Stock & Revente" : widget.title}</h3>
+                  <div className="flex space-x-1" onMouseDown={(e) => e.stopPropagation()}>
                     <button
                       className="p-1 bg-white rounded-full shadow hover:bg-orange-100 transition-colors"
                       title="Agrandir/Réduire la hauteur"
@@ -770,6 +863,18 @@ const EnterpriseDashboardVendeurDisplay: React.FC = () => {
       </ResponsiveGridLayout>
     );
   }, [orderedLayouts, widgetsById, handleWidgetAction]);
+
+  if (!config) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Chargement du tableau de bord...</h1>
+          <p className="text-gray-600">Aucune configuration trouvée.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

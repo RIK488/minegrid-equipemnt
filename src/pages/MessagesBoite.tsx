@@ -22,6 +22,7 @@ import {
   Tag
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
+import { MESSAGES_INBOX_COLUMNS } from '../constants/apiQueryFields';
 
 interface Message {
   id: string;
@@ -60,7 +61,7 @@ export default function MessagesBoite() {
 
       const { data, error } = await supabase
         .from('messages')
-        .select('*')
+        .select(MESSAGES_INBOX_COLUMNS)
         .eq('sellerid', user.id)
         .order('created_at', { ascending: false });
 

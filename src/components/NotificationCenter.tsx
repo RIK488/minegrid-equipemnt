@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, X, Check, AlertCircle, MessageSquare } from 'lucide-react';
 import { supabaseClient as supabase } from '../utils/supabaseClient';
+import { NOTIFICATION_CENTER_COLUMNS } from '../constants/apiQueryFields';
 
 interface Notification {
   id: string;
@@ -29,7 +30,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userEmail }) =>
     try {
       const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select(NOTIFICATION_CENTER_COLUMNS)
         .eq('user_email', userEmail)
         .order('created_at', { ascending: false })
         .limit(50);

@@ -1,103 +1,124 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import MachineCard from './MachineCard';
 import type { Machine } from '../types';
-
-const featuredMachines: Machine[] = [
-  {
-    id: '1',
-    name: 'Finisseur VÖGELE SUPER 1800-3i',
-    brand: 'VÖGELE',
-    model: 'SUPER 1800-3i',
-    category: 'Matériel de Voirie',
-    year: 2023,
-    price: 45000,
-    condition: 'new',
-    description: 'Finisseur haute performance pour travaux routiers',
-    specifications: {
-      weight: 19500,
-      dimensions: '6.1m x 2.55m x 3.0m',
-      power: {
-        value: 127,
-        unit: 'kW'
-      },
-      operatingCapacity: 18500,
-      workingWeight: 19500
-    },
-    images: ['https://www.wirtgen-group.com/media/82-wirtgen-group/voegele/super-paver/super_1800_3i/voegele-super-1800-3i-1.jpg'],
-    seller: {
-      id: 's1',
-      name: 'Minegrid Equipment Pro',
-      rating: 4.8,
-      location: 'Casablanca',
-    },
-  },
-  {
-    id: '2',
-    name: 'Grue Mobile Liebherr LTM 1300',
-    brand: 'Liebherr',
-    model: 'LTM 1300',
-    category: 'Grues & Levage',
-    year: 2022,
-    price: 98000,
-    condition: 'used',
-    description: 'Grue mobile tout-terrain haute capacité',
-    specifications: {
-      weight: 72000,
-      dimensions: '15.3m x 3.0m x 4.0m',
-      power: {
-        value: 450,
-        unit: 'kW'
-      },
-      operatingCapacity: 300000,
-      workingWeight: 72000
-    },
-    images: ['https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=800&q=80'],
-    seller: {
-      id: 's2',
-      name: 'Solutions BTP Maroc',
-      rating: 4.6,
-      location: 'Rabat',
-    },
-  },
-  {
-    id: '3',
-    name: 'Concasseur Mobile KLEEMANN MC 110 Zi EVO',
-    brand: 'KLEEMANN',
-    model: 'MC 110 Zi EVO',
-    category: 'Concasseurs',
-    year: 2023,
-    price: 52000,
-    condition: 'new',
-    description: 'Concasseur mobile à mâchoires pour applications minières',
-    specifications: {
-      weight: 38500,
-      dimensions: '13.9m x 3.0m x 3.6m',
-      power: {
-        value: 240,
-        unit: 'kW'
-      },
-      operatingCapacity: 35000,
-      workingWeight: 38500
-    },
-    images: ['https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=800&q=80'],
-    seller: {
-      id: 's3',
-      name: 'WIRTGEN GROUP Maroc',
-      rating: 4.9,
-      location: 'Tanger',
-    },
-  },
-];
+import supabase from '../utils/supabaseClient';
+import { MACHINE_LIST_COLUMNS } from '../constants/machineQueryFields';
 
 export default function FeaturedMachines() {
+  const [featuredMachines, setFeaturedMachines] = useState<Machine[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const imageQualityScore = (urls: string[]): number => {
+      if (!urls.length) return 0;
+      let score = 0;
+      for (const raw of urls) {
+        const u = String(raw || '').toLowerCase();
+        if (!u) continue;
+        // Penalize obvious placeholders or tiny thumbnails.
+        if (u.includes('placeholder') || u.includes('default') || u.includes('thumb')) {
+          score -= 2;
+        }
+        // Reward likely high-res image URLs.
+        if (u.includes('w=1200') || u.includes('w=1600') || u.includes('large') || u.includes('original')) {
+          score += 3;
+        } else if (u.includes('w=800') || u.includes('medium')) {
+          score += 2;
+        } else {
+          score += 1;
+        }
+      }
+      return Math.max(score, 0);
+    };
+
+    const computeQualityScore = (m: any): number => {
+      const imageList = Array.isArray(m.images) ? m.images : [];
+      const photoList = Array.isArray(m.photos) ? m.photos : [];
+      const mergedMedia = [...imageList, ...photoList].filter(Boolean);
+      const mediaCount = mergedMedia.length;
+      const mediaQuality = imageQualityScore(mergedMedia);
+      const descriptionLength = String(m.description || '').trim().length;
+      const specsCount = m.specifications && typeof m.specifications === 'object'
+        ? Object.keys(m.specifications).filter((k) => m.specifications[k] !== null && m.specifications[k] !== '').length
+        : 0;
+      const hasPrice = Number(m.price || 0) > 0;
+      const year = Number(m.year || 0);
+      const isVeryRecent = year >= 2021;
+      const isRecent = year >= 2018;
+      const isPremium = !!m.premium;
+      const createdAt = new Date(m.created_at || 0).getTime();
+      const now = Date.now();
+      const ageDays = createdAt > 0 ? (now - createdAt) / (1000 * 60 * 60 * 24) : 9999;
+      const isFreshListing = ageDays <= 45;
+
+      let score = 0;
+      score += mediaQuality * 2; // quality of URLs
+      score += Math.min(mediaCount, 8) * 3; // quantity of photos
+      score += descriptionLength >= 80 ? 8 : descriptionLength >= 30 ? 4 : 0;
+      score += specsCount >= 4 ? 8 : specsCount >= 2 ? 4 : 0;
+      score += hasPrice ? 6 : 0;
+      score += isVeryRecent ? 8 : isRecent ? 4 : 0;
+      score += isFreshListing ? 6 : 0;
+      score += isPremium ? 3 : 0;
+      return score;
+    };
+
+    const fetchFeatured = async () => {
+      const { data, error } = await supabase
+        .from('machines')
+        .select(MACHINE_LIST_COLUMNS)
+        .order('created_at', { ascending: false })
+        .limit(80);
+
+      if (error || !data) {
+        setLoading(false);
+        return;
+      }
+
+      const withImages = data
+        .filter((m: any) => (Array.isArray(m.images) && m.images.length > 0) || (Array.isArray(m.photos) && m.photos.length > 0))
+        .map((m: any) => ({ ...m, __qualityScore: computeQualityScore(m) }))
+        .filter((m: any) => m.__qualityScore >= 18)
+        .sort((a: any, b: any) => {
+          if (b.__qualityScore !== a.__qualityScore) return b.__qualityScore - a.__qualityScore;
+          // Tie-breakers: recent listing first, then newer machine year.
+          const createdDelta = new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+          if (createdDelta !== 0) return createdDelta;
+          return Number(b.year || 0) - Number(a.year || 0);
+        })
+        .slice(0, 3)
+        .map((m: any) => ({
+          ...m,
+          seller: m.seller || {
+            id: m.sellerid || m.seller_id || '',
+            name: '',
+            rating: 0,
+            location: [m.city, m.region, m.country].filter(Boolean).join(', ') || 'Localisation inconnue',
+          },
+          specifications: m.specifications || {},
+        }));
+
+      setFeaturedMachines(withImages as Machine[]);
+      setLoading(false);
+    };
+
+    fetchFeatured();
+  }, []);
+
   return (
     <div className="py-8 bg-gradient-to-b from-primary-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Machines en Vedette</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredMachines.map((machine) => (
-            <MachineCard key={machine.id} machine={machine} />
-          ))}
+          {loading ? (
+            <p className="col-span-full text-gray-500">Chargement des machines...</p>
+          ) : featuredMachines.length === 0 ? (
+            <p className="col-span-full text-gray-500">Aucune machine en vedette disponible.</p>
+          ) : (
+            featuredMachines.map((machine) => (
+              <MachineCard key={machine.id} machine={machine} />
+            ))
+          )}
         </div>
       </div>
     </div>

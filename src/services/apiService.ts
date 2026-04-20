@@ -1,4 +1,9 @@
 import { supabaseClient } from '../utils/supabaseClient';
+import {
+  API_SERVICE_ACTION_COLUMNS,
+  API_SERVICE_EQUIPMENT_COLUMNS,
+  API_SERVICE_LEAD_COLUMNS,
+} from '../constants/apiServiceQueryFields';
 
 // Types pour les données
 export interface ApiResponse<T> {
@@ -196,7 +201,7 @@ class ApiService {
     try {
       const { data, error } = await supabaseClient
         .from('actions')
-        .select('*')
+        .select(API_SERVICE_ACTION_COLUMNS)
         .order('dueTime', { ascending: true });
 
       if (error) throw error;
@@ -292,7 +297,7 @@ class ApiService {
     try {
       const { data, error } = await supabaseClient
         .from('leads')
-        .select('*')
+        .select(API_SERVICE_LEAD_COLUMNS)
         .order('createdAt', { ascending: false });
 
       if (error) throw error;
@@ -365,7 +370,7 @@ class ApiService {
     try {
       const { data, error } = await supabaseClient
         .from('equipments')
-        .select('*')
+        .select(API_SERVICE_EQUIPMENT_COLUMNS)
         .order('createdAt', { ascending: false });
 
       if (error) throw error;

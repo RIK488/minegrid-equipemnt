@@ -432,9 +432,8 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
   };
 
   // Actions rapides avec réactivité maximale
-  const handleQuickAction = (action: string, lead?: any) => {
-    // Feedback visuel immédiat
-    const button = event?.target as HTMLButtonElement;
+  const handleQuickAction = (action: string, lead?: any, e?: React.MouseEvent) => {
+    const button = e?.currentTarget as HTMLButtonElement | undefined;
     if (button) {
       button.disabled = true;
       button.style.opacity = '0.6';
@@ -835,7 +834,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
         {showQuickActions && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <button
-              onClick={() => handleQuickAction('add-lead')}
+              onClick={(e) => handleQuickAction('add-lead', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Plus className="w-4 h-4 text-orange-600 mb-1" />
@@ -843,7 +842,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('export-pipeline')}
+              onClick={(e) => handleQuickAction('export-pipeline', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Download className="w-4 h-4 text-orange-600 mb-1" />
@@ -851,7 +850,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('send-followup')}
+              onClick={(e) => handleQuickAction('send-followup', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Send className="w-4 h-4 text-orange-600 mb-1" />
@@ -859,7 +858,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('schedule-meeting')}
+              onClick={(e) => handleQuickAction('schedule-meeting', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Calendar className="w-4 h-4 text-orange-600 mb-1" />
@@ -867,7 +866,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('generate-report')}
+              onClick={(e) => handleQuickAction('generate-report', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <FileText className="w-4 h-4 text-orange-600 mb-1" />
@@ -875,7 +874,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('relance-automatique')}
+              onClick={(e) => handleQuickAction('relance-automatique', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Mail className="w-4 h-4 text-orange-600 mb-1" />
@@ -883,7 +882,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('analyse-performance')}
+              onClick={(e) => handleQuickAction('analyse-performance', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <TrendingUp className="w-4 h-4 text-orange-600 mb-1" />
@@ -891,7 +890,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('optimisation-ia')}
+              onClick={(e) => handleQuickAction('optimisation-ia', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Brain className="w-4 h-4 text-orange-600 mb-1" />

@@ -70,6 +70,7 @@ import {
   canExportReports
 } from '../utils/permissions';
 import supabase from '../utils/supabaseClient';
+import { TECHNICAL_DOCUMENT_COLUMNS } from '../constants/proClientQueryFields';
 import type { 
   ProClient, 
   ClientEquipment, 
@@ -3687,7 +3688,7 @@ function DocumentsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
       setLoading(true);
       const { data, error } = await supabase
         .from('technical_documents')
-        .select('*')
+        .select(TECHNICAL_DOCUMENT_COLUMNS)
         .order('created_at', { ascending: false });
 
       if (error) {

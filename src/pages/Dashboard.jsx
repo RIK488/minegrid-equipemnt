@@ -619,7 +619,7 @@ export default function Dashboard({ section = 'overview' }) {
     };
 
     const handlePromoCodeValidation = () => {
-        if (promoCode === '082025') {
+        if (promoCode === 'minegrid2026') {
             alert('✅ Code promo valide ! Accès temporaire de 30 jours.');
             activateSubscriptionWithPromo();
         } else {
@@ -689,9 +689,9 @@ export default function Dashboard({ section = 'overview' }) {
 
     const getPlanPrice = (planType) => {
         switch (planType) {
-            case 'premium': return 49;
-            case 'pro': return 149;
-            case 'enterprise': return 499;
+            case 'premium': return 30;
+            case 'pro': return 70;
+            case 'enterprise': return 200;
             default: return 0;
         }
     };
@@ -1194,9 +1194,9 @@ export default function Dashboard({ section = 'overview' }) {
                                                 <h4 className="font-semibold text-blue-800 mb-2">Prochain paiement</h4>
                                                 <p className="text-sm text-blue-700">
                                                     15 juillet 2024 - 
-                                                    {subscriptionType === 'premium' ? ' 49€/mois' : 
-                                                     subscriptionType === 'pro' ? ' 149€/mois' : 
-                                                     subscriptionType === 'entreprise' ? ' Sur devis' : ' 0€/mois'}
+                                                    {subscriptionType === 'premium' ? ' 30 USD/mois' : 
+                                                     subscriptionType === 'pro' ? ' 70 USD/mois' : 
+                                                     subscriptionType === 'entreprise' ? ' 200 USD/mois' : ' 0 USD/mois'}
                                                 </p>
                                             </div>
                                         </div>
@@ -1224,7 +1224,7 @@ export default function Dashboard({ section = 'overview' }) {
                                             <div className="bg-white rounded-xl shadow-lg p-6 border border-orange-200 relative">
                                                 <div className="text-center">
                                                     <h3 className="text-xl font-semibold text-gray-900 mb-2">Premium</h3>
-                                                    <div className="text-3xl font-bold text-orange-600 mb-4">49€<span className="text-lg text-gray-500">/mois</span></div>
+                                                    <div className="text-3xl font-bold text-orange-600 mb-4">30 USD<span className="text-lg text-gray-500">/mois</span></div>
                                                     <ul className="text-sm text-gray-600 space-y-2 mb-6">
                                                         <li>• Visibilité renforcée sur la page d'accueil</li>
                                                         <li>• Jusqu'à 10 images par annonce</li>
@@ -1249,7 +1249,7 @@ export default function Dashboard({ section = 'overview' }) {
                                                 </div>
                                                 <div className="text-center pt-8">
                                                     <h3 className="text-xl font-semibold text-gray-900 mb-2">Pro</h3>
-                                                    <div className="text-3xl font-bold text-orange-600 mb-4">149€<span className="text-lg text-gray-500">/mois</span></div>
+                                                    <div className="text-3xl font-bold text-orange-600 mb-4">70 USD<span className="text-lg text-gray-500">/mois</span></div>
                                                     <ul className="text-sm text-gray-600 space-y-2 mb-6">
                                                         <li>• Visibilité maximale et positionnement prioritaire</li>
                                                         <li>• Jusqu'à 12 images par annonce</li>
@@ -1278,7 +1278,7 @@ export default function Dashboard({ section = 'overview' }) {
                                                 </div>
                                                 <div className="text-center pt-8">
                                                     <h3 className="text-xl font-semibold text-gray-900 mb-2">Entreprise</h3>
-                                                    <div className="text-3xl font-bold text-orange-600 mb-4">Sur devis</div>
+                                                    <div className="text-3xl font-bold text-orange-600 mb-4">À partir de 200 USD<span className="text-lg text-gray-500">/mois</span></div>
                                                     <div className="text-sm text-gray-500 mb-4">Appel conseiller</div>
                                                     <ul className="text-sm text-gray-600 space-y-2 mb-6">
                                                         <li>• Visibilité renforcée sur la page d'accueil</li>
@@ -2081,7 +2081,7 @@ export default function Dashboard({ section = 'overview' }) {
                             <div className="mb-6">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                                     {selectedPlanForPayment === 'premium' ? 'Premium' : 
-                                     selectedPlanForPayment === 'pro' ? 'Pro' : 'Enterprise'} - {getPlanPrice(selectedPlanForPayment)}€/mois
+                                     selectedPlanForPayment === 'pro' ? 'Pro' : 'Enterprise'} - {getPlanPrice(selectedPlanForPayment)} USD/mois
                                 </h3>
                             </div>
 
@@ -2159,7 +2159,7 @@ export default function Dashboard({ section = 'overview' }) {
                                             <span className="font-medium">Offre spéciale</span>
                                         </div>
                                         <p className="text-sm text-orange-700 mt-1">
-                                            Utilisez le code <strong>082025</strong> pour un accès temporaire de 30 jours
+                                            Utilisez le code <strong>minegrid2026</strong> pour un accès temporaire de 30 jours
                                         </p>
                                     </div>
                                 </div>
@@ -2174,7 +2174,7 @@ export default function Dashboard({ section = 'overview' }) {
                                          selectedPlanForPayment === 'pro' ? 'Pro' : 'Enterprise'} - Abonnement mensuel
                                     </span>
                                     <span className="font-semibold text-lg">
-                                        {paymentMethod === 'promo' ? '0€' : `${getPlanPrice(selectedPlanForPayment)}€`}
+                                        {paymentMethod === 'promo' ? '0 USD' : `${getPlanPrice(selectedPlanForPayment)} USD`}
                                     </span>
                                 </div>
                             </div>

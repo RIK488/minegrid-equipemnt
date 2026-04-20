@@ -340,9 +340,8 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
     }).format(amount);
   };
 
-  const handleActionClick = (action: DailyAction, actionType: string) => {
-    // Feedback visuel immédiat
-    const button = event?.target as HTMLButtonElement;
+  const handleActionClick = (action: DailyAction, actionType: string, e?: React.MouseEvent) => {
+    const button = e?.currentTarget as HTMLButtonElement | undefined;
     if (button) {
       button.disabled = true;
       button.style.opacity = '0.6';
@@ -516,9 +515,8 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
   };
 
   // Actions rapides avec réactivité maximale
-  const handleQuickAction = (action: string) => {
-    // Feedback visuel immédiat
-    const button = event?.target as HTMLButtonElement;
+  const handleQuickAction = (action: string, e?: React.MouseEvent) => {
+    const button = e?.currentTarget as HTMLButtonElement | undefined;
     if (button) {
       button.disabled = true;
       button.style.opacity = '0.6';
@@ -911,13 +909,13 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
                   {action.status === 'pending' && (
                     <>
                       <button
-                        onClick={() => handleActionClick(action, 'start')}
+                        onClick={(e) => handleActionClick(action, 'start', e)}
                         className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                       >
                         Démarrer
                       </button>
                       <button
-                        onClick={() => handleActionClick(action, 'contact')}
+                        onClick={(e) => handleActionClick(action, 'contact', e)}
                         className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                       >
                         Contacter
@@ -927,7 +925,7 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
                   
                   {action.status === 'in-progress' && (
                     <button
-                      onClick={() => handleActionClick(action, 'complete')}
+                      onClick={(e) => handleActionClick(action, 'complete', e)}
                       className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                     >
                       Terminer
@@ -935,7 +933,7 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
                   )}
                   
                   <button
-                    onClick={() => handleActionClick(action, 'reschedule')}
+                    onClick={(e) => handleActionClick(action, 'reschedule', e)}
                     className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors"
                   >
                     Reprogrammer
@@ -964,49 +962,49 @@ const DailyActionsPriorityWidget: React.FC<Props> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <button 
               className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
-              onClick={() => handleQuickAction('new-task')}
+              onClick={(e) => handleQuickAction('new-task', e)}
             >
               Nouvelle tâche
             </button>
             <button 
               className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
-              onClick={() => handleQuickAction('auto-followup')}
+              onClick={(e) => handleQuickAction('auto-followup', e)}
             >
               Relance auto
             </button>
             <button 
               className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
-              onClick={() => handleQuickAction('schedule')}
+              onClick={(e) => handleQuickAction('schedule', e)}
             >
               Planifier
             </button>
             <button 
               className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
-              onClick={() => handleQuickAction('ai-report')}
+              onClick={(e) => handleQuickAction('ai-report', e)}
             >
               Rapport IA
             </button>
             <button 
               className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
-              onClick={() => handleQuickAction('export-actions')}
+              onClick={(e) => handleQuickAction('export-actions', e)}
             >
               Exporter
             </button>
             <button 
               className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
-              onClick={() => handleQuickAction('notify-team')}
+              onClick={(e) => handleQuickAction('notify-team', e)}
             >
               Notifier équipe
             </button>
             <button 
               className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
-              onClick={() => handleQuickAction('sync-crm')}
+              onClick={(e) => handleQuickAction('sync-crm', e)}
             >
               Sync CRM
             </button>
             <button 
               className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-2 rounded-lg hover:bg-orange-200 transition-colors" 
-              onClick={() => handleQuickAction('optimize-schedule')}
+              onClick={(e) => handleQuickAction('optimize-schedule', e)}
             >
               Optimiser IA
             </button>

@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Mail, Lock, ChevronRight } from 'lucide-react';
 import { loginUser } from '../utils/api';
 
+// TODO: retirer ce code d'accès temporaire avant la mise en production
+const TEMP_ACCESS_CODE = 'minegrid2026';
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -144,8 +147,73 @@ export default function Login() {
               </button>
             </div>
           </div>
+
+          <TempAccessBlock />
         </div>
       </div>
+    </div>
+  );
+}
+
+function TempAccessBlock() {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [error, setError] = useState(false);
+
+  const handleAccess = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (code.trim() === TEMP_ACCESS_CODE) {
+      sessionStorage.setItem('monitor_temp_access', 'granted');
+      localStorage.setItem('user', JSON.stringify({
+        email: 'demo@minegrid.com',
+        firstName: 'Démo',
+        lastName: 'Minegrid',
+      }));
+      localStorage.setItem('selectedSubscription', 'gratuit');
+      window.location.hash = '#dashboard';
+    } else {
+      setError(true);
+    }
+  };
+
+  if (!open) {
+    return (
+      <div className="mt-6 text-center">
+        <button
+          onClick={() => setOpen(true)}
+          className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          Accès démo (code temporaire)
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 border border-gray-200 rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Lock className="h-4 w-4 text-gray-400" />
+        <span className="text-sm font-medium text-gray-700">Accès démo temporaire</span>
+      </div>
+      <form onSubmit={handleAccess} className="flex gap-2">
+        <input
+          type="password"
+          value={code}
+          onChange={(e) => { setCode(e.target.value); setError(false); }}
+          placeholder="Code d'accès"
+          className={`flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 ${
+            error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+          }`}
+          autoFocus
+        />
+        <button
+          type="submit"
+          className="px-4 py-2 rounded-lg bg-gray-700 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+        >
+          Accéder
+        </button>
+      </form>
+      {error && <p className="text-xs text-red-600 mt-2">Code incorrect.</p>}
     </div>
   );
 }

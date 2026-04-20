@@ -1,0 +1,18 @@
+project_name,country,region,sector,status,total_investment,financial_closure,url
+Extension mine de phosphate de Khouribga,Morocco,Beni Mellal-Khenifra,Mining,Construction,320000000,2026,https://example.org/mining/ma-khouribga
+Projet aurifere de Tamanrasset,Algeria,Tamanrasset,Mining,Financing,280000000,2026,https://example.org/mining/dz-tamanrasset
+Mine de fer de Zouerate - modernisation,Mauritania,Tiris Zemmour,Mining,Construction,410000000,2025,https://example.org/mining/mr-zouerate
+Mine d'or du Desert Oriental,Egypt,Red Sea,Mining,Study,350000000,2026,https://example.org/mining/eg-eastern-desert
+Mine de phosphates de Gafsa - phase 2,Tunisia,Gafsa,Mining,Construction,190000000,2025,https://example.org/mining/tn-gafsa
+Projet de cuivre de Murzuq,Libya,Murzuq,Mining,Study,220000000,2026,https://example.org/mining/ly-murzuq
+Mine de bauxite de Boké - extension,Guinea,Boke,Mining,Construction,540000000,2025,https://example.org/mining/gn-boke
+Mine d'or de Kédougou - nouvelle tranche,Senegal,Kedougou,Mining,Financing,210000000,2026,https://example.org/mining/sn-kedougou
+Mine de manganèse de Bondoukou,Côte d'Ivoire,Gontougo,Mining,Study,170000000,2027,https://example.org/mining/ci-bondoukou
+Mine de fer de Itakpe - capacity increase,Nigeria,Kogi,Mining,Construction,460000000,2025,https://example.org/mining/ng-itakpe
+Mine d'or de Bibiani - reactivation,Ghana,Western North,Mining,Financing,240000000,2026,https://example.org/mining/gh-bibiani
+Mine de zinc de Perkoa - extension,Burkina Faso,Centre-Ouest,Mining,Construction,160000000,2025,https://example.org/mining/bf-perkoa
+Mine d'or de Sadiola - nouvelle unité,Mali,Kayes,Mining,Construction,300000000,2025,https://example.org/mining/ml-sadiola
+Projet uranifere de Arlit,Niger,Agadez,Mining,Study,260000000,2027,https://example.org/mining/ne-arlit
+Mine de phosphate de Mekrou,Benin,Alibori,Mining,Study,110000000,2027,https://example.org/mining/bj-mekrou
+Projet calcaire minier de Tabligbo,Togo,Maritime,Mining,Financing,95000000,2026,https://example.org/mining/tg-tabligbo
+Mine polymetallique de Kilo-Moto,Cameroon,East,Mining,Study,180000000,2027,https://example.org/mining/cm-kilo-moto

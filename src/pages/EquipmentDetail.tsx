@@ -52,6 +52,47 @@ const equipmentData: Equipment = {
 export default function EquipmentDetail() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showContactForm, setShowContactForm] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+  const equipmentId = equipmentData.id;
+
+  const toggleFavorite = () => {
+    const stored = window.localStorage.getItem('favorite_machine_ids');
+    let ids: string[] = [];
+    try {
+      ids = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(ids)) ids = [];
+    } catch {
+      ids = [];
+    }
+    const nextIds = isFavorite ? ids.filter((id) => id !== equipmentId) : [...new Set([...ids, equipmentId])];
+    window.localStorage.setItem('favorite_machine_ids', JSON.stringify(nextIds));
+    setIsFavorite(!isFavorite);
+  };
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}#machines/${equipmentId}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: equipmentData.name,
+          text: equipmentData.model,
+          url: shareUrl,
+        });
+        setShareFeedback('Lien partagé');
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareFeedback('Lien copié');
+      } else {
+        window.prompt('Copiez ce lien :', shareUrl);
+        setShareFeedback('Lien prêt à copier');
+      }
+    } catch {
+      setShareFeedback('Partage annulé');
+    } finally {
+      window.setTimeout(() => setShareFeedback(null), 2000);
+    }
+  };
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => 
@@ -71,9 +112,9 @@ export default function EquipmentDetail() {
       <div className="flex items-center text-sm text-gray-500 mb-8">
         <a href="#" className="hover:text-primary-600">Accueil</a>
         <ChevronRight className="h-4 w-4 mx-2" />
-        <a href="#equipements" className="hover:text-primary-600">Équipements</a>
+        <a href="#machines" className="hover:text-primary-600">Équipements</a>
         <ChevronRight className="h-4 w-4 mx-2" />
-        <a href="#equipements/materiels-voirie" className="hover:text-primary-600">
+        <a href="#machines" className="hover:text-primary-600">
           {equipmentData.category}
         </a>
         <ChevronRight className="h-4 w-4 mx-2" />
@@ -147,14 +188,27 @@ export default function EquipmentDetail() {
                 <p className="text-lg text-gray-600">{equipmentData.brand} {equipmentData.model}</p>
               </div>
               <div className="flex space-x-2">
-                <button className="p-2 text-gray-500 hover:text-primary-600">
+                <button
+                  onClick={toggleFavorite}
+                  className={`p-2 transition-colors ${isFavorite ? 'text-red-500' : 'text-gray-500 hover:text-primary-600'}`}
+                  title={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                  aria-label={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                >
                   <Heart className="h-6 w-6" />
                 </button>
-                <button className="p-2 text-gray-500 hover:text-primary-600">
+                <button
+                  onClick={handleShare}
+                  className="p-2 text-gray-500 hover:text-primary-600 transition-colors"
+                  title="Partager l'annonce"
+                  aria-label="Partager l'annonce"
+                >
                   <Share2 className="h-6 w-6" />
                 </button>
               </div>
             </div>
+            {shareFeedback && (
+              <p className="mb-3 text-sm text-green-600">{shareFeedback}</p>
+            )}
 
             <div className="text-3xl font-bold text-primary-600 mb-6">
             {equipmentData.price ? equipmentData.price.toLocaleString() + ' €' : 'Non renseigné'}
@@ -275,7 +329,12 @@ export default function EquipmentDetail() {
         <div className={`lg:col-span-1 ${showContactForm ? 'block' : 'hidden lg:block'}`}>
           <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Contacter le vendeur</h2>
-            <form className="space-y-4">
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+            >
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Nom complet

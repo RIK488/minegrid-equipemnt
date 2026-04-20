@@ -45,7 +45,7 @@ export default function CategoryList() {
 
         return (
           <a
-          href={`#secteur?secteur=${encodeURIComponent(category.name)}`}
+          href={`#machines?categorie=${encodeURIComponent(category.name)}`}
 
             key={category.id}
             className="flex flex-col items-center p-4 bg-white rounded-xl border border-gray-100 shadow hover:shadow-md hover:bg-gray-50 transition duration-200 group"

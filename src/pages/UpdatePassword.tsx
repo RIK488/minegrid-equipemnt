@@ -15,7 +15,7 @@ export default function UpdatePassword() {
     const access_token = urlParams.get('access_token');
     const refresh_token = urlParams.get('refresh_token');
 
-    console.log('🔍 Tokens reçus:', { access_token: !!access_token, refresh_token: !!refresh_token });
+    if (import.meta.env.DEV) console.log('Tokens reçus:', { access_token: !!access_token, refresh_token: !!refresh_token });
 
     if (access_token) {
       supabase.auth.setSession({
@@ -23,15 +23,15 @@ export default function UpdatePassword() {
         refresh_token: refresh_token || access_token,
       }).then(({ error }) => {
         if (error) {
-          console.error('❌ Erreur session:', error);
+          if (import.meta.env.DEV) console.error('Erreur session:', error);
           setMessage('❌ Erreur de session: ' + error.message);
         } else {
-          console.log('✅ Session initialisée avec succès');
+          if (import.meta.env.DEV) console.log('Session initialisée');
         }
         setLoading(false);
       });
     } else {
-      console.log('⚠️ Aucun token trouvé dans l\'URL');
+      if (import.meta.env.DEV) console.log('Aucun token trouvé dans l\'URL');
       setLoading(false);
     }
   }, []);

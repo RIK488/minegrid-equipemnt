@@ -3,6 +3,11 @@ import type { Machine } from '../types';
 import { MapPin, Star, Calendar, Wrench } from 'lucide-react';
 import Price from './Price';
 import supabase from '../utils/supabaseClient';
+import {
+  buildSrcSet,
+  getOptimizedImageUrl,
+  handleImageErrorFallback,
+} from '../utils/imageOptimization';
 
 interface MachineCardProps {
   machine: Machine;
@@ -10,21 +15,70 @@ interface MachineCardProps {
 
 export default function MachineCard({ machine }: MachineCardProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (Array.isArray(machine.images) && machine.images.length > 0) {
-      const path = machine.images[0];
-      if (path) {
-        const { data } = supabase.storage
-          .from('machine-image')
-          .getPublicUrl(path);
-        
-        if (data && data.publicUrl) {
-          setImageUrl(data.publicUrl);
-        }
-      }
+    const scoreImageUrl = (rawUrl: string): number => {
+      const url = String(rawUrl || '').toLowerCase();
+      if (!url) return -999;
+      let score = 0;
+      if (url.startsWith('https://')) score += 1;
+      if (url.includes('original') || url.includes('large') || url.includes('xl')) score += 8;
+      if (url.includes('w=2000') || url.includes('w=1600') || url.includes('w=1200')) score += 6;
+      else if (url.includes('w=1000') || url.includes('w=900') || url.includes('w=800')) score += 4;
+      if (url.includes('thumb') || url.includes('thumbnail') || url.includes('small') || url.includes('icon')) score -= 8;
+      if (url.includes('placeholder') || url.includes('default')) score -= 12;
+      return score;
+    };
+
+    const candidates: string[] = [];
+    if (Array.isArray(machine.images)) {
+      candidates.push(...machine.images);
     }
-  }, [machine.id, machine.images]);
+    const photos = (machine as any)?.photos;
+    if (Array.isArray(photos)) {
+      candidates.push(...photos);
+    }
+
+    if (!candidates.length) {
+      setImageUrl(null);
+      return;
+    }
+
+    const best = [...candidates]
+      .map((u) => String(u || '').trim())
+      .filter(Boolean)
+      .sort((a, b) => scoreImageUrl(b) - scoreImageUrl(a))[0];
+
+    if (!best) {
+      setImageUrl(null);
+      setOriginalImageUrl(null);
+      return;
+    }
+
+    // Mascus/Piloterr : URL externe déjà complète.
+    // Legacy : chemin dans le bucket Supabase `machine-image`.
+    const publicUrl =
+      best.startsWith('http://') || best.startsWith('https://')
+        ? best
+        : supabase.storage.from('machine-image').getPublicUrl(best).data?.publicUrl || null;
+
+    if (!publicUrl) {
+      setImageUrl(null);
+      setOriginalImageUrl(null);
+      return;
+    }
+
+    // Carte catalogue = zone ~400-600px affichée, on vise 800px (x2 pour Retina = 1600px via srcSet).
+    const optimized = getOptimizedImageUrl(publicUrl, {
+      width: 800,
+      quality: 80,
+      resize: 'cover',
+    });
+
+    setOriginalImageUrl(publicUrl);
+    setImageUrl(optimized);
+  }, [machine]);
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
@@ -33,7 +87,12 @@ export default function MachineCard({ machine }: MachineCardProps) {
           {imageUrl ? (
             <img
               src={imageUrl}
+              srcSet={buildSrcSet(originalImageUrl || imageUrl, 800, 80) || undefined}
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
               alt={machine.name}
+              loading="lazy"
+              decoding="async"
+              onError={(e) => handleImageErrorFallback(e, originalImageUrl || imageUrl)}
               className="w-full h-full object-cover"
             />
           ) : (

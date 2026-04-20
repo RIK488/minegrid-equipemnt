@@ -19,6 +19,7 @@ import {
   X
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
+import { DOCUMENTS_ESPACE_COLUMNS } from '../constants/apiQueryFields';
 
 interface Document {
   id: string;
@@ -82,7 +83,7 @@ export default function DocumentsEspace() {
 
       const { data, error } = await supabase
         .from('documents')
-        .select('*')
+        .select(DOCUMENTS_ESPACE_COLUMNS)
         .eq('user_id', user.id)
         .order('uploaded_at', { ascending: false });
 

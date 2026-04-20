@@ -9,7 +9,7 @@ interface EquipmentCardProps {
 export default function EquipmentCard({ equipment }: EquipmentCardProps) {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-      <a href={`#equipements/${equipment.id}`} className="block">
+      <a href={`#machines/${equipment.id}`} className="block">
         <div className="relative">
           <img
             src={equipment.images[0]}

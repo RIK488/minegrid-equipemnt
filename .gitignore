@@ -17,7 +17,6 @@ AppData/
 *.backup
 
 # Fichiers de configuration système
-*.ini
 *.cfg
 
 # Fichiers de base de données
@@ -32,3 +31,17 @@ logs/
 # Fichiers de cache
 cache/
 *.cache
+
+# Environment variables — NEVER commit real secrets
+.env
+.env.local
+.env.*.local
+services/monitor-service/.env
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/

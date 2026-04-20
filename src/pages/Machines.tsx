@@ -1,17 +1,127 @@
-import React, { useEffect, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { ChevronRight, Search } from 'lucide-react';
 import MachineCard from '../components/MachineCard';
 import { categories, iconMap } from '../data/categories';
 import type { Machine } from '../types';
 import supabase from '../utils/supabaseClient';
+import {
+  MACHINE_LIST_COLUMNS,
+  MACHINES_CATALOG_INITIAL_LIMIT,
+  MACHINES_CATALOG_MEMORY_CAP,
+  MACHINES_CATALOG_STEP,
+} from '../constants/machineQueryFields';
 import { jobCategories } from '../data/jobcategories'; // ajout pour catégorie métier
 
+const subtypeToGroupName = new Map<string, string>();
+const subtypeToLabel = new Map<string, string>();
+categories.forEach((group) => {
+  (group.subcategories || []).forEach((sub) => {
+    subtypeToGroupName.set(String(sub.id || '').toLowerCase(), String(group.name || '').toLowerCase());
+    subtypeToLabel.set(String(sub.id || '').toLowerCase(), String(sub.name || ''));
+  });
+});
+
+const mascusCategoryAliases: Record<string, string> = {
+  crawlerexcavators: 'pelle-chenilles',
+  wheeledexcavators: 'pelle-pneus',
+  wheelloaders: 'chargeuse-pneus',
+  backhoeloaders: 'chargeuse-pelleteuse',
+  dozers: 'bulldozer',
+  motorgraders: 'niveleuse',
+  dumptrucks: 'camion-benne',
+  articulateddumptrucks: 'camion-benne',
+  rigiddumptrucks: 'tombereau-rigide',
+  singledrumrollers: 'compacteur-monocylindre',
+  tandemrollers: 'compacteur-tandem',
+  forklifts: 'chariot-elevateur',
+  telehandlers: 'telescopique',
+  asphaltpavers: 'finisseur',
+  generators: 'groupe-electrogene',
+  compressors: 'compresseur',
+  concretemixers: 'camion-melangeur',
+  crushers: 'concasseur',
+  screeners: 'crible',
+  drillingrigs: 'foreuse',
+  tractors: 'tracteur-routier',
+};
+
+const labelToSubtypeId: Record<string, string> = {};
+categories.forEach((group) => {
+  (group.subcategories || []).forEach((sub) => {
+    labelToSubtypeId[String(sub.name || '').toLowerCase()] = String(sub.id || '').toLowerCase();
+  });
+});
+
+const groupToJobSector: Record<string, string> = {
+  // Noms actuels des onglets
+  'transport & camions': 'Transport',
+  'terrassement & excavation': 'Terrassement',
+  'voirie & compactage': 'Voirie',
+  'levage & manutention': 'Maintenance & Levage',
+  'concassage & criblage': 'Mines',
+  forage: 'Forage',
+  // Compat anciens noms (données/hash historiques)
+  'camions & transport': 'Transport',
+  'terrassement et excavation': 'Terrassement',
+  'matériel de voirie': 'Voirie',
+  'maintenance & levage': 'Maintenance & Levage',
+  'concasseurs & cribles': 'Mines',
+  'outils & accessoires': 'Outils & Accessoires',
+};
+
+function mapSupabaseRowToMachine(m: any): Machine {
+  const specs = m.specifications || {};
+  const fallbackLocation = [m.city, m.region, m.country].filter(Boolean).join(', ') || 'Localisation inconnue';
+  const rawCategoryId = String(m.category || '').toLowerCase();
+  const rawType = String(m.type || '').toLowerCase();
+  const rawCategoryName = String(specs?.category_name || '').toLowerCase();
+
+  const compactCategory = rawCategoryId.replace(/[\s_-]/g, '');
+  const compactCategoryName = rawCategoryName.replace(/[\s_-]/g, '');
+
+  let normalizedCategory =
+    mascusCategoryAliases[compactCategory] ||
+    mascusCategoryAliases[compactCategoryName] ||
+    rawCategoryId;
+
+  if (!subtypeToGroupName.has(normalizedCategory)) {
+    const fromTypeLabel = labelToSubtypeId[rawType];
+    const fromCategoryLabel = labelToSubtypeId[rawCategoryId];
+    normalizedCategory = fromTypeLabel || fromCategoryLabel || normalizedCategory;
+  }
+
+  const machineGroup = subtypeToGroupName.get(normalizedCategory) || '';
+  const machineType = subtypeToLabel.get(normalizedCategory) || m.type || m.category || '';
+  const jobSector = groupToJobSector[machineGroup] || 'Construction';
+  const normalizedPower =
+    specs?.power && typeof specs.power === 'object'
+      ? specs.power
+      : { value: specs?.engine_power || specs?.power || '', unit: 'kW' };
+  return {
+    ...m,
+    seller: m.seller || { id: m.sellerid || m.seller_id || '', name: '', rating: 0, location: fallbackLocation },
+    specifications: {
+      dimensions: specs?.dimensions || '',
+      weight: Number(specs?.weight || 0),
+      workingWeight: Number(specs?.workingWeight || specs?.weight || 0),
+      operatingCapacity: Number(specs?.operatingCapacity || 0),
+      power: normalizedPower,
+      ...specs,
+    },
+    type: machineType,
+    __subcategoryId: normalizedCategory,
+    __machineGroup: machineGroup,
+    __jobSector: jobSector.toLowerCase(),
+    price: typeof m.price === 'string' ? Number(m.price) || 0 : (m.price || 0),
+  } as Machine;
+}
 
 interface MachinesProps {
   category?: string | null;
 }
 
 export default function Machines({ category }: MachinesProps) {
+  const [isHashInitialized, setIsHashInitialized] = useState(false);
   const [hashKey, setHashKey] = useState(0);
 useEffect(() => {
   const handleHashChange = () => {
@@ -28,9 +138,13 @@ useEffect(() => {
   const [searchTerm, setSearchTerm] = useState('');
   const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [catalogOffset, setCatalogOffset] = useState(0);
+  const [hasMoreCatalog, setHasMoreCatalog] = useState(true);
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
+  const [loadError, setLoadError] = useState<string | null>(null);
 
 
   
@@ -52,13 +166,18 @@ useEffect(() => {
     }
   
     if (machineCat) setSelectedMachineCategory(machineCat);
-    if (type) setSelectedType(type);
+    if (type) {
+      const rawType = type.toLowerCase();
+      setSelectedType(labelToSubtypeId[rawType] || rawType);
+    }
     if (search) setSearchTerm(search);
     if (condition) setFilterCondition(condition as 'all' | 'new' | 'used');
+    setIsHashInitialized(true);
   }, [hashKey]); // ✅ bonne dépendance
   
   
   useEffect(() => {
+    if (!isHashInitialized) return;
     const params = new URLSearchParams();
     if (selectedJobCategory) params.set('categorie', selectedJobCategory);
     if (selectedMachineCategory) params.set('machine', selectedMachineCategory);
@@ -66,78 +185,182 @@ useEffect(() => {
     if (searchTerm) params.set('search', searchTerm);
     if (filterCondition !== 'all') params.set('etat', filterCondition);
     window.location.hash = `#machines?${params.toString()}`;
-  }, [selectedJobCategory, selectedMachineCategory, selectedType, searchTerm, filterCondition]);
+  }, [selectedJobCategory, selectedMachineCategory, selectedType, searchTerm, filterCondition, isHashInitialized]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchMachines = async () => {
-      const { data, error } = await supabase
+      const firstBatch = Math.min(
+        MACHINES_CATALOG_INITIAL_LIMIT,
+        MACHINES_CATALOG_MEMORY_CAP
+      );
+
+      // 1er essai : colonnes explicites (rapide, léger).
+      let { data, error } = await supabase
         .from('machines')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select(MACHINE_LIST_COLUMNS)
+        .order('created_at', { ascending: false })
+        .range(0, firstBatch - 1);
+
+      // Fallback de sécurité : si une colonne de la liste n'existe pas en prod
+      // (PostgREST renvoie une erreur 400), on retente avec select('*').
+      if (error) {
+        console.warn('[Machines] SELECT explicite a échoué, fallback select(*) :', error);
+        const fb = await supabase
+          .from('machines')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(0, firstBatch - 1);
+        data = fb.data;
+        error = fb.error;
+      }
+
+      if (cancelled) return;
 
       if (!error && data) {
-        setMachines(data);
+        const mapped = data.map((m: any) => mapSupabaseRowToMachine(m));
+        setMachines(mapped as Machine[]);
+        setCatalogOffset(data.length);
+        setHasMoreCatalog(
+          data.length === firstBatch && data.length < MACHINES_CATALOG_MEMORY_CAP
+        );
+        setLoadError(null);
+        if (data.length === 0) {
+          console.info('[Machines] Aucun résultat — table vide OU RLS bloque le SELECT anonyme.');
+        }
       } else {
-        console.error('Erreur chargement machines :', error);
+        console.error('[Machines] Erreur chargement machines :', error);
+        setMachines([]);
+        setHasMoreCatalog(false);
+        setLoadError((error as any)?.message || 'Erreur inconnue lors du chargement des annonces.');
       }
       setLoading(false);
     };
 
-    fetchMachines();
+    void fetchMachines();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const filteredMachines = machines.filter((machine) => {
-    const matchBrand = selectedBrand
-      ? machine.brand?.toLowerCase() === selectedBrand.toLowerCase()
-      : true;
-  
+  const loadMoreCatalog = async () => {
+    if (!hasMoreCatalog || loadingMore || loading) return;
+    const remaining = MACHINES_CATALOG_MEMORY_CAP - catalogOffset;
+    if (remaining <= 0) {
+      setHasMoreCatalog(false);
+      return;
+    }
+    setLoadingMore(true);
+    try {
+      const take = Math.min(MACHINES_CATALOG_STEP, remaining);
+      const end = catalogOffset + take - 1;
+      const { data, error } = await supabase
+        .from('machines')
+        .select(MACHINE_LIST_COLUMNS)
+        .order('created_at', { ascending: false })
+        .range(catalogOffset, end);
+
+      if (!error && data?.length) {
+        const mapped = data.map((m: any) => mapSupabaseRowToMachine(m));
+        setMachines((prev) => [...prev, ...mapped]);
+        const next = catalogOffset + data.length;
+        setCatalogOffset(next);
+        setHasMoreCatalog(
+          data.length === take && next < MACHINES_CATALOG_MEMORY_CAP
+        );
+      } else if (error) {
+        console.error('Erreur chargement machines (suite) :', error);
+      } else {
+        setHasMoreCatalog(false);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const deferredSearch = useDeferredValue(searchTerm);
+
+  const filteredMachines = useMemo(() => {
+    return machines.filter((machine) => {
+      const matchBrand = selectedBrand
+        ? machine.brand?.toLowerCase() === selectedBrand.toLowerCase()
+        : true;
+
+      // Filtrage secteur métier : tolérant (match sur __jobSector OU category brute).
       const matchCategory =
-      selectedJobCategory && selectedJobCategory !== 'Tous secteurs'
-        ? machine.category?.toLowerCase().includes(selectedJobCategory.toLowerCase())
-        : true;    
-  
-    const matchMachineCategory = selectedMachineCategory
-      ? machine.type?.toLowerCase().includes(selectedMachineCategory.toLowerCase())
-      : true;
-  
-    const matchType = selectedType
-      ? machine.name?.toLowerCase().includes(selectedType.toLowerCase())
-      : true;
-  
-    const matchCondition =
-      filterCondition === 'all' ? true : machine.condition === filterCondition;
-  
-    const matchSearch = searchTerm
-      ? machine.name?.toLowerCase().includes(searchTerm.toLowerCase())
-      : true;
-  
-    const matchPrice =
-      (!priceMin || machine.price >= parseFloat(priceMin)) &&
-      (!priceMax || machine.price <= parseFloat(priceMax));
-  
-    const noFilters =
-      !selectedJobCategory &&
-      !selectedMachineCategory &&
-      !selectedType &&
-      !selectedBrand &&
-      !searchTerm &&
-      filterCondition === 'all';
-  
-    return (
-      noFilters || (
-        matchCategory &&
-        matchMachineCategory &&
-        matchType &&
-        matchCondition &&
-        matchSearch &&
-        matchPrice &&
-        matchBrand
-      )
-    );
-  });
-  
-  
-    const sortedMachines = [...filteredMachines]; // par exemple
+        selectedJobCategory && selectedJobCategory !== 'Tous secteurs'
+          ? ((machine as any).__jobSector || '').includes(selectedJobCategory.toLowerCase()) ||
+            (machine.category || '').toLowerCase().includes(selectedJobCategory.toLowerCase())
+          : true;
+
+      // Filtrage groupe machine : tolérant (match sur __machineGroup OU type/category).
+      const matchMachineCategory = selectedMachineCategory
+        ? ((machine as any).__machineGroup || '').includes(selectedMachineCategory.toLowerCase()) ||
+          (machine.type || '').toLowerCase().includes(selectedMachineCategory.toLowerCase()) ||
+          (machine.category || '').toLowerCase().includes(selectedMachineCategory.toLowerCase())
+        : true;
+
+      // Filtrage sous-type : tolérant — id exact OU label OU name/description.
+      const matchType = selectedType
+        ? String((machine as any).__subcategoryId || '').toLowerCase() === selectedType.toLowerCase() ||
+          String(machine.type || '').toLowerCase().includes(selectedType.toLowerCase()) ||
+          String(machine.category || '').toLowerCase().includes(selectedType.toLowerCase()) ||
+          String(machine.name || '').toLowerCase().includes(selectedType.toLowerCase())
+        : true;
+
+      const matchCondition =
+        filterCondition === 'all' ? true : machine.condition === filterCondition;
+
+      const matchSearch = deferredSearch
+        ? machine.name?.toLowerCase().includes(deferredSearch.toLowerCase())
+        : true;
+
+      const matchPrice =
+        (!priceMin || machine.price >= parseFloat(priceMin)) &&
+        (!priceMax || machine.price <= parseFloat(priceMax));
+
+      const noFilters =
+        !selectedJobCategory &&
+        !selectedMachineCategory &&
+        !selectedType &&
+        !selectedBrand &&
+        !searchTerm &&
+        filterCondition === 'all';
+
+      return (
+        noFilters ||
+        (matchCategory &&
+          matchMachineCategory &&
+          matchType &&
+          matchCondition &&
+          matchSearch &&
+          matchPrice &&
+          matchBrand)
+      );
+    });
+  }, [
+    machines,
+    selectedBrand,
+    selectedJobCategory,
+    selectedMachineCategory,
+    selectedType,
+    filterCondition,
+    deferredSearch,
+    searchTerm,
+    priceMin,
+    priceMax,
+  ]);
+
+  const sortedMachines = useMemo(() => {
+    return [...filteredMachines].sort((a, b) => {
+      if (sortBy === 'price') return (a.price || 0) - (b.price || 0);
+      if (sortBy === 'name') return String(a.name || '').localeCompare(String(b.name || ''));
+      const ta = new Date((a as any).created_at || 0).getTime();
+      const tb = new Date((b as any).created_at || 0).getTime();
+      return tb - ta;
+    });
+  }, [filteredMachines, sortBy]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -197,7 +420,7 @@ useEffect(() => {
   {categories
     .find(cat => cat.name === selectedMachineCategory)
     ?.subcategories?.map(sub => (
-      <option key={sub.id} value={sub.name}>{sub.name}</option>
+      <option key={sub.id} value={sub.id}>{sub.name}</option>
     ))}
 </select>
 
@@ -298,13 +521,66 @@ useEffect(() => {
                 {loading ? (
                   <p className="text-center col-span-full text-gray-500">Chargement...</p>
                 ) : filteredMachines.length === 0 ? (
-                  <p className="text-center col-span-full text-gray-500">Aucune machine trouvée.</p>
+                  <div className="text-center col-span-full space-y-3 text-gray-500">
+                    <p>
+                      {machines.length === 0
+                        ? 'Aucune annonce chargée pour le moment.'
+                        : 'Aucun résultat pour ces filtres.'}
+                    </p>
+                    {loadError && (
+                      <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2 inline-block">
+                        Détail technique : {loadError}
+                      </p>
+                    )}
+                    {machines.length === 0 && !loadError && (
+                      <p className="text-xs text-gray-400 max-w-md mx-auto">
+                        La table `machines` est vide ou la politique RLS Supabase bloque le SELECT
+                        pour les visiteurs non connectés. Vérifie qu&apos;une policy publique
+                        `FOR SELECT USING (true)` existe.
+                      </p>
+                    )}
+                    {machines.length > 0 && hasMoreCatalog && (
+                      <p className="text-sm text-gray-400">
+                        Élargissez les filtres ou chargez plus d&apos;annonces depuis le catalogue.
+                      </p>
+                    )}
+                    {hasMoreCatalog && !loading && (
+                      <button
+                        type="button"
+                        onClick={() => void loadMoreCatalog()}
+                        disabled={loadingMore}
+                        className="px-5 py-2 rounded-lg bg-orange-600 text-white text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
+                      >
+                        {loadingMore ? 'Chargement…' : 'Charger plus d’annonces'}
+                      </button>
+                    )}
+                  </div>
                 ) : (
-                  filteredMachines.map((machine: Machine) => (
+                  sortedMachines.map((machine: Machine) => (
                     <MachineCard key={machine.id} machine={machine} />
                   ))
                 )}
               </div>
+
+              {hasMoreCatalog && !loading && sortedMachines.length > 0 && (
+                <div className="mt-8 flex flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void loadMoreCatalog()}
+                    disabled={loadingMore}
+                    className="px-5 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    {loadingMore
+                      ? 'Chargement…'
+                      : `Charger plus (${machines.length} / ${MACHINES_CATALOG_MEMORY_CAP} max.)`}
+                  </button>
+                  <p className="text-xs text-gray-400 text-center max-w-md">
+                    Le catalogue se charge par blocs pour garder le site fluide avec de nombreux
+                    utilisateurs.
+                  </p>
+                </div>
+              )}
+
             </div>
           </div>
         </div>

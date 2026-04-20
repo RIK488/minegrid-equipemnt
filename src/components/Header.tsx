@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -47,59 +47,63 @@ const Header = () => {
   const [isServicesMenuOpen, setIsServicesMenuOpen] = useState(false);
   const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [machinesMenuTimeout, setMachinesMenuTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [servicesMenuTimeout, setServicesMenuTimeout] = useState<NodeJS.Timeout | null>(null);
+  const machinesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const servicesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const handleMachinesMenuEnter = () => {
-    if (machinesMenuTimeout) {
-      clearTimeout(machinesMenuTimeout);
-      setMachinesMenuTimeout(null);
+    if (machinesTimeoutRef.current) {
+      clearTimeout(machinesTimeoutRef.current);
+      machinesTimeoutRef.current = null;
     }
     setIsMachinesMenuOpen(true);
   };
 
   const handleMachinesMenuLeave = () => {
-    const timeout = setTimeout(() => {
+    machinesTimeoutRef.current = setTimeout(() => {
       setIsMachinesMenuOpen(false);
       setHoveredCategoryId(null);
-    }, 300); // 300ms de délai
-    setMachinesMenuTimeout(timeout);
+    }, 300);
   };
 
   const handleServicesMenuEnter = () => {
-    if (servicesMenuTimeout) {
-      clearTimeout(servicesMenuTimeout);
-      setServicesMenuTimeout(null);
+    if (servicesTimeoutRef.current) {
+      clearTimeout(servicesTimeoutRef.current);
+      servicesTimeoutRef.current = null;
     }
     setIsServicesMenuOpen(true);
   };
 
   const handleServicesMenuLeave = () => {
-    const timeout = setTimeout(() => {
+    servicesTimeoutRef.current = setTimeout(() => {
       setIsServicesMenuOpen(false);
-    }, 300); // 300ms de délai
-    setServicesMenuTimeout(timeout);
+    }, 300);
   };
 
   useEffect(() => {
-    supabaseClient.auth.getSession().then(({ data }: { data: any }) => {
-      setUser(data.session?.user ?? null);
-      setIsLoading(false);
-    });
+    let mounted = true;
+    supabaseClient.auth.getSession()
+      .then(({ data }: { data: any }) => {
+        if (mounted) {
+          setUser(data.session?.user ?? null);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => { if (mounted) setIsLoading(false); });
 
     const { data: listener } = supabaseClient.auth.onAuthStateChange((_event: any, session: any) => {
-      setUser(session?.user ?? null);
+      if (mounted) setUser(session?.user ?? null);
     });
 
     return () => {
+      mounted = false;
       listener.subscription.unsubscribe();
-      if (machinesMenuTimeout) clearTimeout(machinesMenuTimeout);
-      if (servicesMenuTimeout) clearTimeout(servicesMenuTimeout);
+      if (machinesTimeoutRef.current) clearTimeout(machinesTimeoutRef.current);
+      if (servicesTimeoutRef.current) clearTimeout(servicesTimeoutRef.current);
     };
-  }, [machinesMenuTimeout, servicesMenuTimeout]);
+  }, []);
 
   // Masquer complètement le header si on est sur la page Pro
   if (window.location.hash.startsWith('#pro')) {
@@ -182,7 +186,7 @@ const Header = () => {
                           cat.subcategories?.map((sub) => (
                             <a
                               key={sub.id}
-                              href={`#machines?machine=${encodeURIComponent(cat.name)}&type=${encodeURIComponent(sub.name)}`}
+                              href={`#machines?machine=${encodeURIComponent(cat.name)}&type=${encodeURIComponent(sub.id)}`}
                               className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition"
                             >
                               {sub.name}
@@ -233,6 +237,14 @@ const Header = () => {
               className="text-gray-700 hover:text-primary-600 font-semibold"
             >
               Espace Pro
+            </a>
+
+            <a
+              href="#global-monitor"
+              className="flex items-center gap-1.5 text-gray-700 hover:text-primary-600 font-semibold"
+            >
+              <Globe className="h-4 w-4" />
+              Global Monitor
             </a>
 
             <a href="#blog" className="text-gray-700 hover:text-primary-600">Blog</a>
@@ -311,15 +323,15 @@ const Header = () => {
             <a href="#machines" className="text-gray-700 hover:text-primary-600">Machines</a>
             <a href="#services" className="text-gray-700 hover:text-primary-600">Services</a>
             <a href="#pro" className="text-gray-700 hover:text-primary-600 font-semibold">Espace Pro</a>
+            <a href="#global-monitor" className="text-gray-700 hover:text-primary-600 font-semibold flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Global Monitor
+            </a>
             <a href="#blog" className="text-gray-700 hover:text-primary-600">Blog</a>
             <a href="#contact" className="text-gray-700 hover:text-primary-600">Contact</a>
             {user ? (
               <>
                 <a href="#dashboard" className="text-gray-700 hover:text-primary-600">Mon espace</a>
-                <a href="#global-monitor" className="text-gray-700 hover:text-primary-600 flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Global Monitor
-                </a>
                 <button
                   onClick={async () => {
                     await supabaseClient.auth.signOut();

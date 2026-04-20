@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import type { MouseEvent } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { getSalesPerformanceData } from '../../../utils/api';
 import { apiCall, showNotification } from '../../../services/apiService';
+import { supabaseClient } from '../../../utils/supabaseClient';
+import { aiWidgetService } from '../../../services/aiWidgetService';
+import type { AIRecommendation } from '../../../services/aiWidgetService';
 
 interface SalesPerformanceScoreData {
   score: number;
@@ -32,6 +36,37 @@ interface SalesPerformanceScoreData {
   };
 }
 
+type PerformanceRecommendationRow = {
+  type?: string;
+  action: string;
+  impact: string;
+  priority: 'high' | 'medium' | 'low';
+  id?: string;
+  /** Présent uniquement pour les lignes issues de aiWidgetService (monitor ou fallback local). */
+  aiSource?: 'monitor' | 'local';
+  suggestedActions?: string[];
+};
+
+function mapImpactToWidgetPriority(impact: AIRecommendation['impact']): 'high' | 'medium' | 'low' {
+  if (impact === 'high') return 'high';
+  if (impact === 'low') return 'low';
+  return 'medium';
+}
+
+function mapAIRecommendationsToRows(
+  items: AIRecommendation[],
+  source: 'monitor' | 'local'
+): PerformanceRecommendationRow[] {
+  return items.map((r) => ({
+    id: r.id,
+    action: r.title,
+    impact: r.description,
+    priority: mapImpactToWidgetPriority(r.impact),
+    aiSource: source,
+    suggestedActions: r.actions,
+  }));
+}
+
 // Composant Score de Performance Commerciale avec toutes les fonctionnalités (copié depuis EnterpriseDashboard)
 const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
   console.log("✅ Composant SalesPerformanceScoreWidget monté");
@@ -39,6 +74,31 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
 
   const [realData, setRealData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [aiRecommendationRows, setAiRecommendationRows] = useState<PerformanceRecommendationRow[]>([]);
+  const [aiRecsLoading, setAiRecsLoading] = useState(false);
+
+  // Recommandations IA : même service que les autres widgets (GET /ai/widgets/recommendations ou fallback local).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: auth } = await supabaseClient.auth.getSession();
+        const userId = auth.session?.user?.id;
+        if (!userId) return;
+        setAiRecsLoading(true);
+        const { items, source } = await aiWidgetService.getAIRecommendationsWithSource(userId);
+        if (cancelled) return;
+        setAiRecommendationRows(mapAIRecommendationsToRows(items, source));
+      } catch (e) {
+        console.error('SalesPerformanceScoreWidget: chargement recommandations IA', e);
+      } finally {
+        if (!cancelled) setAiRecsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Fonction pour charger les vraies données depuis Supabase
   const loadRealData = async () => {
@@ -164,42 +224,51 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
     }
   };
 
-  // Fonction pour gérer l'action du bouton Agir avec réactivité maximale
-  const handleRecommendationAction = (recommendation: any) => {
-    // Feedback visuel immédiat
-    const button = event?.target as HTMLButtonElement;
-    if (button) {
-      button.disabled = true;
-      button.style.opacity = '0.6';
-      button.style.cursor = 'not-allowed';
-    }
+  const handleRecommendationAction = (
+    e: MouseEvent<HTMLButtonElement>,
+    recommendation: PerformanceRecommendationRow
+  ) => {
+    if (!recommendation.aiSource) return;
 
-    console.log(`🔄 Action recommandation: ${recommendation.action}`);
-    
-    // Action immédiate
-    showNotification('success', `Action recommandée : ${recommendation.action}`);
-    
-    // Appel API en arrière-plan (sans await)
+    const button = e.currentTarget;
+    button.disabled = true;
+    button.style.opacity = '0.6';
+    button.style.cursor = 'not-allowed';
+
+    const sourceLabel = recommendation.aiSource === 'monitor' ? 'IA (serveur)' : 'IA (analyse locale)';
+    showNotification('success', `${sourceLabel} — ${recommendation.action}`);
+
     setTimeout(() => {
       apiCall('POST', '/api/recommendations/execute', {
         recommendationId: recommendation.id,
-        action: recommendation.action
-      }).catch(error => {
+        action: recommendation.action,
+        aiSource: recommendation.aiSource,
+        suggestedActions: recommendation.suggestedActions,
+      }).catch((error) => {
         console.error('Erreur API recommandation:', error);
       });
     }, 50);
 
-    // Restaurer le bouton immédiatement après l'action
     setTimeout(() => {
-      if (button) {
-        button.disabled = false;
-        button.style.opacity = '1';
-        button.style.cursor = 'pointer';
-      }
-    }, 100);
+      button.disabled = false;
+      button.style.opacity = '1';
+      button.style.cursor = 'pointer';
+    }, 400);
   };
 
   const [showQuickActions, setShowQuickActions] = useState(true);
+
+  const staticRecommendationRows: PerformanceRecommendationRow[] = (displayData.recommendations || []).map(
+    (rec: { type?: string; action: string; impact: string; priority: 'high' | 'medium' | 'low' }) => ({
+      type: rec.type,
+      action: rec.action,
+      impact: rec.impact,
+      priority: rec.priority,
+    })
+  );
+
+  const recommendationRows: PerformanceRecommendationRow[] =
+    aiRecommendationRows.length > 0 ? aiRecommendationRows : staticRecommendationRows;
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -313,9 +382,17 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
       {/* Recommandations IA */}
       <div className="border-t pt-4">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-semibold text-gray-900 flex items-center">
-            <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-            Recommandations IA pour améliorer votre score
+          <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
+            <span className="w-2 h-2 bg-orange-500 rounded-full shrink-0"></span>
+            <span>Recommandations IA pour améliorer votre score</span>
+            {aiRecsLoading && (
+              <span className="text-xs font-normal text-gray-500">Chargement IA…</span>
+            )}
+            {!aiRecsLoading && aiRecommendationRows.length > 0 && (
+              <span className="text-xs font-normal text-orange-700 bg-orange-50 border border-orange-200 rounded-full px-2 py-0.5">
+                {aiRecommendationRows[0]?.aiSource === 'monitor' ? 'Source : serveur' : 'Source : analyse locale'}
+              </span>
+            )}
           </h4>
           <button
             className="p-1 text-orange-500 hover:text-orange-700 transition-colors"
@@ -327,24 +404,46 @@ const SalesPerformanceScoreWidget = ({ data }: { data: any }) => {
         </div>
         {showQuickActions && (
           <div className="space-y-2">
-            {displayData.recommendations.map((rec: any, index: number) => (
-              <div key={index} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className={`w-2 h-2 rounded-full mt-2 ${
-                  rec.priority === 'high' ? 'bg-red-500' :
-                  rec.priority === 'medium' ? 'bg-orange-500' : 'bg-blue-500'
-                }`}></div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">{rec.action}</div>
-                  <div className="text-xs text-gray-500">Impact: {rec.impact}</div>
-                </div>
-                <button
-                  className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-2 py-1 rounded hover:bg-orange-200 transition-colors"
-                  onClick={() => handleRecommendationAction(rec)}
+            {recommendationRows.map((rec, index: number) => {
+              const agirEnabled = Boolean(rec.aiSource);
+              return (
+                <div
+                  key={rec.id ?? `${rec.action}-${index}`}
+                  className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  Agir
-                </button>
-              </div>
-            ))}
+                  <div
+                    className={`w-2 h-2 rounded-full mt-2 ${
+                      rec.priority === 'high'
+                        ? 'bg-red-500'
+                        : rec.priority === 'medium'
+                          ? 'bg-orange-500'
+                          : 'bg-blue-500'
+                    }`}
+                  ></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900">{rec.action}</div>
+                    <div className="text-xs text-gray-500">Impact: {rec.impact}</div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!agirEnabled}
+                    title={
+                      agirEnabled
+                        ? 'Exécuter une action liée à cette recommandation IA'
+                        : 'Connectez-vous et attendez les recommandations IA (serveur ou analyse locale)'
+                    }
+                    className={`text-xs shrink-0 px-2 py-1 rounded border transition-colors ${
+                      agirEnabled
+                        ? 'bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200 cursor-pointer'
+                        : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-80'
+                    }`}
+                    onClick={(ev) => agirEnabled && handleRecommendationAction(ev, rec)}
+                  >
+                    Agir
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

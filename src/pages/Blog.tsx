@@ -1,5 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Calendar, User, ArrowRight, ArrowLeft } from 'lucide-react';
+
+const ALLOWED_TAGS = new Set(['p','br','b','strong','em','i','ul','ol','li','h1','h2','h3','h4','a','span','div','blockquote']);
+function sanitizeHtml(html: string): string {
+  return html.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (match, tag) => {
+    return ALLOWED_TAGS.has(tag.toLowerCase()) ? match : '';
+  }).replace(/on\w+\s*=/gi, '');
+}
 
 interface BlogProps {
   postId?: string;
@@ -139,7 +146,7 @@ export default function Blog({ postId }: BlogProps) {
           </div>
           
           <h1 className="text-4xl font-bold text-gray-900 mb-6">{post.title}</h1>
-          <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
+          <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }} />
 
         </article>
       </div>

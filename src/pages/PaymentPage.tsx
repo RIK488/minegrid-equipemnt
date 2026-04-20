@@ -34,7 +34,7 @@ export default function PaymentPage({ subscription, userData, onSuccess, onBack 
   });
 
   // Code promo valide
-  const VALID_PROMO_CODE = '082025';
+  const VALID_PROMO_CODE = 'minegrid2026';
 
   const handlePromoCodeValidation = async () => {
     if (!promoCode.trim()) {
@@ -82,7 +82,13 @@ export default function PaymentPage({ subscription, userData, onSuccess, onBack 
       // Obtenir l'utilisateur actuel
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        throw new Error('Utilisateur non connecté');
+        // Flux inscription: l'utilisateur n'est pas encore connecté.
+        // On conserve l'activation localement; Register finalisera l'inscription.
+        localStorage.setItem('selectedSubscription', subscription.id);
+        localStorage.setItem('subscriptionActivated', 'true');
+        localStorage.setItem('promoCodeUsed', VALID_PROMO_CODE);
+        onSuccess();
+        return;
       }
 
       // Créer l'abonnement avec accès temporaire
@@ -125,7 +131,12 @@ export default function PaymentPage({ subscription, userData, onSuccess, onBack 
       // Obtenir l'utilisateur actuel
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
-        throw new Error('Utilisateur non connecté');
+        // Flux inscription: l'utilisateur n'est pas encore connecté.
+        // On conserve l'activation localement; Register finalisera l'inscription.
+        localStorage.setItem('selectedSubscription', subscription.id);
+        localStorage.setItem('subscriptionActivated', 'true');
+        onSuccess();
+        return;
       }
 
       // Créer l'abonnement avec paiement
@@ -374,7 +385,7 @@ export default function PaymentPage({ subscription, userData, onSuccess, onBack 
                 <div className="border-t pt-2">
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span>{paymentMethod === 'promo' && promoValid ? '0€' : subscription.price}</span>
+                    <span>{paymentMethod === 'promo' && promoValid ? '0 USD' : subscription.price}</span>
                   </div>
                 </div>
               </div>

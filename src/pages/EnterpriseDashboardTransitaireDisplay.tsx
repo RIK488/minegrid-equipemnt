@@ -163,7 +163,14 @@ const EnterpriseDashboardTransitaireDisplay: React.FC = () => {
   // 1. Chargement initial
   useEffect(() => {
     const saved = localStorage.getItem('enterpriseDashboardConfig_transitaire');
-    let parsed = saved ? JSON.parse(saved) : null;
+    let parsed: any = null;
+    if (saved) {
+      try {
+        parsed = JSON.parse(saved);
+      } catch {
+        localStorage.removeItem('enterpriseDashboardConfig_transitaire');
+      }
+    }
     let shouldUpdate = false;
 
     // Si pas de config ou config invalide, créer une nouvelle config complète
@@ -284,7 +291,14 @@ const EnterpriseDashboardTransitaireDisplay: React.FC = () => {
     if (currentLayoutItem) {
       // Créer ou mettre à jour le backup avec la position du widget supprimé
       const existingBackup = localStorage.getItem('enterpriseDashboardConfig_transitaire_backup');
-      let backupConfig = existingBackup ? JSON.parse(existingBackup) : { layout: { lg: [] } };
+      let backupConfig = { layout: { lg: [] } };
+      if (existingBackup) {
+        try {
+          backupConfig = JSON.parse(existingBackup);
+        } catch {
+          localStorage.removeItem('enterpriseDashboardConfig_transitaire_backup');
+        }
+      }
       
       // Ajouter ou mettre à jour la position du widget dans le backup
       const existingIndex = backupConfig.layout.lg.findIndex((l: any) => l.i === widgetId);
@@ -330,8 +344,8 @@ const EnterpriseDashboardTransitaireDisplay: React.FC = () => {
           originalPosition = originalLayoutItem;
           console.log('Position originale trouvée:', originalPosition);
         }
-      } catch (error) {
-        console.log('Erreur lors de la lecture du backup:', error);
+      } catch {
+        localStorage.removeItem('enterpriseDashboardConfig_transitaire_backup');
       }
     }
     
@@ -377,8 +391,8 @@ const EnterpriseDashboardTransitaireDisplay: React.FC = () => {
           backupConfig.layout.lg = backupConfig.layout.lg.filter((l: any) => l.i !== widgetId);
           localStorage.setItem('enterpriseDashboardConfig_transitaire_backup', JSON.stringify(backupConfig));
           console.log('Backup nettoyé pour', widgetId);
-        } catch (error) {
-          console.log('Erreur lors du nettoyage du backup:', error);
+        } catch {
+          localStorage.removeItem('enterpriseDashboardConfig_transitaire_backup');
         }
       }
     }, 1500);
@@ -570,6 +584,7 @@ const EnterpriseDashboardTransitaireDisplay: React.FC = () => {
         rowHeight={90}
         isDraggable={true}
         isResizable={true}
+        draggableHandle=".widget-drag-handle"
         margin={[16, 16]}
         useCSSTransforms={true}
         compactType="vertical"
@@ -583,9 +598,9 @@ const EnterpriseDashboardTransitaireDisplay: React.FC = () => {
             <div key={widget.id} data-grid={l} className="bg-orange-50 border border-orange-200 rounded-lg flex flex-col h-full group relative">
               <div className="h-full flex flex-col">
                 {/* Header du widget */}
-                <div className="flex justify-between items-center p-4 pb-2 border-b">
-                  <h3 className="text-lg font-bold text-gray-900">{widget.title}</h3>
-                  <div className="flex space-x-1">
+                <div className="widget-drag-handle flex justify-between items-center p-4 pb-2 border-b cursor-grab active:cursor-grabbing">
+                  <h3 className="text-lg font-bold text-gray-900 select-none">{widget.title}</h3>
+                  <div className="flex space-x-1" onMouseDown={(e) => e.stopPropagation()}>
                     <button
                       className="p-1 bg-white rounded-full shadow hover:bg-orange-100 transition-colors"
                       title="Agrandir/Réduire la hauteur"

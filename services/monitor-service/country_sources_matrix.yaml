@@ -1,0 +1,71 @@
+countries:
+  MA:
+    name: Morocco
+    priority_sources:
+      - source_id: ma_public_portal
+        connector: public_portals
+        mode: rss_or_json
+        auth: none
+        frequency: "4h"
+      - source_id: mdb_world_bank
+        connector: mdb_procurement
+        mode: rss_or_json
+        auth: none_or_api
+        frequency: "6h"
+  SN:
+    name: Senegal
+    priority_sources:
+      - source_id: sn_public_portal
+        connector: public_portals
+        mode: rss_or_json
+        auth: none
+        frequency: "4h"
+      - source_id: mdb_world_bank
+        connector: mdb_procurement
+        mode: rss_or_json
+        auth: none_or_api
+        frequency: "6h"
+  CI:
+    name: Cote d'Ivoire
+    priority_sources:
+      - source_id: ci_public_portal
+        connector: public_portals
+        mode: rss_or_json
+        auth: none
+        frequency: "4h"
+      - source_id: mdb_afdb
+        connector: mdb_procurement
+        mode: rss_or_json
+        auth: none_or_api
+        frequency: "6h"
+  CM:
+    name: Cameroon
+    priority_sources:
+      - source_id: cm_public_portal
+        connector: public_portals
+        mode: rss_or_json
+        auth: none
+        frequency: "4h"
+      - source_id: mdb_afdb
+        connector: mdb_procurement
+        mode: rss_or_json
+        auth: none_or_api
+        frequency: "6h"
+  NG:
+    name: Nigeria
+    priority_sources:
+      - source_id: ng_public_portal
+        connector: public_portals
+        mode: rss_or_json
+        auth: none
+        frequency: "4h"
+      - source_id: mdb_world_bank
+        connector: mdb_procurement
+        mode: rss_or_json
+        auth: none_or_api
+        frequency: "6h"
+
+notes:
+  - Les URLs exactes des portails publics evoluent; elles sont configurees dans sources.yaml.
+  - Les connecteurs supportent RSS/Atom/XML et JSON.
+  - Pour les sources sans flux officiel stable, utiliser un endpoint intermediaire n8n.

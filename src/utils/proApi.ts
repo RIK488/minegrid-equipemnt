@@ -1,4 +1,24 @@
 import supabase from './supabaseClient';
+import {
+  CLIENT_EQUIPMENT_TABLE_COLUMNS,
+  CLIENT_NOTIFICATION_COLUMNS,
+  CLIENT_ORDER_COLUMNS,
+  CLIENT_USER_COLUMNS,
+  EQUIPMENT_DIAGNOSTICS_COLUMNS,
+  MAINTENANCE_INTERVENTION_FLAT_COLUMNS,
+  MAINTENANCE_INTERVENTION_SELECT,
+  PRO_CLIENT_COLUMNS,
+  PRO_EQUIPMENT_DETAILS_COLUMNS,
+  TECHNICAL_DOCUMENT_COLUMNS,
+  USER_INVITATION_COLUMNS,
+  USER_PROFILE_COLUMNS,
+  USER_SETTINGS_COLUMNS,
+} from '../constants/proClientQueryFields';
+import {
+  MACHINE_LIST_COLUMNS,
+  MACHINES_CATALOG_MAX_ROWS,
+  SELLER_MACHINES_MAX_ROWS,
+} from '../constants/machineQueryFields';
 
 // =====================================================
 // TYPES POUR LE SERVICE PRO
@@ -149,14 +169,14 @@ export async function getProClientProfile(): Promise<ProClient | null> {
     // Récupérer le profil utilisateur de base
     const { data: userProfile } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select(USER_PROFILE_COLUMNS)
       .eq('id', user.id)
       .single();
 
     // Récupérer le profil Pro spécifique
     const { data: proProfile, error } = await supabase
       .from('pro_clients')
-      .select('*')
+      .select(PRO_CLIENT_COLUMNS)
       .eq('user_id', user.id)
       .single();
 
@@ -235,9 +255,10 @@ export async function getClientEquipment(): Promise<ClientEquipment[]> {
     // Récupérer les machines de l'utilisateur depuis la table machines
     const { data: machines, error: machinesError } = await supabase
       .from('machines')
-      .select('*')
+      .select(MACHINE_LIST_COLUMNS)
       .eq('sellerid', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(SELLER_MACHINES_MAX_ROWS);
 
     if (machinesError) {
       console.error('❌ Erreur lors de la récupération des machines:', machinesError);
@@ -246,11 +267,14 @@ export async function getClientEquipment(): Promise<ClientEquipment[]> {
 
     // Récupérer les détails Pro pour ces machines
     const machineIds = machines?.map(m => m.id) || [];
-    const { data: proDetails, error: proError } = await supabase
-      .from('pro_equipment_details')
-      .select('*')
-      .in('machine_id', machineIds)
-      .eq('user_id', user.id);
+    const { data: proDetails, error: proError } =
+      machineIds.length > 0
+        ? await supabase
+            .from('pro_equipment_details')
+            .select(PRO_EQUIPMENT_DETAILS_COLUMNS)
+            .in('machine_id', machineIds)
+            .eq('user_id', user.id)
+        : { data: [], error: null };
 
     if (proError) {
       console.error('❌ Erreur lors de la récupération des détails Pro:', proError);
@@ -355,7 +379,7 @@ export async function getEquipmentBySerialOrQR(identifier: string): Promise<Clie
   try {
     const { data, error } = await supabase
       .from('client_equipment')
-      .select('*')
+      .select(CLIENT_EQUIPMENT_TABLE_COLUMNS)
       .or(`serial_number.eq.${identifier},qr_code.eq.${identifier}`)
       .single();
 
@@ -424,7 +448,7 @@ export async function getClientOrders(): Promise<ClientOrder[]> {
     // Récupérer les commandes du client
     const { data, error } = await supabase
       .from('client_orders')
-      .select('*')
+      .select(CLIENT_ORDER_COLUMNS)
       .eq('client_id', proProfile.id)
       .order('created_at', { ascending: false });
 
@@ -464,7 +488,7 @@ export async function getTechnicalDocuments(): Promise<TechnicalDocument[]> {
   try {
     const { data, error } = await supabase
       .from('technical_documents')
-      .select('*')
+      .select(TECHNICAL_DOCUMENT_COLUMNS)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -572,15 +596,7 @@ export async function getMaintenanceInterventions(): Promise<MaintenanceInterven
     // Récupérer les interventions du client
     const { data, error } = await supabase
       .from('maintenance_interventions')
-      .select(`
-        *,
-        client_equipment (
-          serial_number,
-          equipment_type,
-          brand,
-          model
-        )
-      `)
+      .select(MAINTENANCE_INTERVENTION_SELECT)
       .eq('client_id', proProfile.id)
       .order('scheduled_date', { ascending: true });
 
@@ -622,7 +638,7 @@ export async function getEquipmentDiagnostics(equipmentId: string): Promise<Equi
   try {
     const { data, error } = await supabase
       .from('equipment_diagnostics')
-      .select('*')
+      .select(EQUIPMENT_DIAGNOSTICS_COLUMNS)
       .eq('equipment_id', equipmentId)
       .order('diagnostic_date', { ascending: false });
 
@@ -710,7 +726,7 @@ export async function getClientNotifications(): Promise<ClientNotification[]> {
     // Récupérer les notifications du client
     const { data, error } = await supabase
       .from('client_notifications')
-      .select('*')
+      .select(CLIENT_NOTIFICATION_COLUMNS)
       .eq('client_id', proProfile.id)
       .order('created_at', { ascending: false });
 
@@ -749,7 +765,7 @@ export async function getClientUsers(): Promise<ClientUser[]> {
   try {
     const { data, error } = await supabase
       .from('client_users')
-      .select('*')
+      .select(CLIENT_USER_COLUMNS)
       .eq('is_active', true);
 
     if (error) throw error;
@@ -835,7 +851,7 @@ export async function getUserInvitations(): Promise<UserInvitation[]> {
 
     const { data: invitations, error } = await supabase
       .from('user_invitations')
-      .select('*')
+      .select(USER_INVITATION_COLUMNS)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -891,9 +907,10 @@ export async function getUserMachines(): Promise<any[]> {
     // Récupérer les machines
     const { data: machines, error: machinesError } = await supabase
       .from('machines')
-      .select('*')
+      .select(MACHINE_LIST_COLUMNS)
       .eq('sellerid', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(SELLER_MACHINES_MAX_ROWS);
 
     if (machinesError) {
       console.error('❌ Erreur lors de la récupération des machines:', machinesError);
@@ -902,10 +919,13 @@ export async function getUserMachines(): Promise<any[]> {
 
     // Récupérer les détails Pro pour ces machines (pour tous les utilisateurs)
     const machineIds = machines?.map(m => m.id) || [];
-    const { data: proDetails, error: proError } = await supabase
-      .from('pro_equipment_details')
-      .select('*')
-      .in('machine_id', machineIds);
+    const { data: proDetails, error: proError } =
+      machineIds.length > 0
+        ? await supabase
+            .from('pro_equipment_details')
+            .select(PRO_EQUIPMENT_DETAILS_COLUMNS)
+            .in('machine_id', machineIds)
+        : { data: [], error: null };
 
     if (proError) {
       console.error('❌ Erreur lors de la récupération des détails Pro:', proError);
@@ -954,8 +974,9 @@ export async function getAllMachinesWithDetails(): Promise<any[]> {
     // Récupérer toutes les machines
     const { data: machines, error: machinesError } = await supabase
       .from('machines')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select(MACHINE_LIST_COLUMNS)
+      .order('created_at', { ascending: false })
+      .limit(MACHINES_CATALOG_MAX_ROWS);
 
     if (machinesError) {
       console.error('❌ Erreur lors de la récupération des machines:', machinesError);
@@ -965,7 +986,8 @@ export async function getAllMachinesWithDetails(): Promise<any[]> {
     // Récupérer tous les détails Pro
     const { data: proDetails, error: proError } = await supabase
       .from('pro_equipment_details')
-      .select('*');
+      .select(PRO_EQUIPMENT_DETAILS_COLUMNS)
+      .limit(MACHINES_CATALOG_MAX_ROWS);
 
     if (proError) {
       console.error('❌ Erreur lors de la récupération des détails Pro:', proError);
@@ -1146,7 +1168,7 @@ export async function getUserSettings(): Promise<UserSettings | null> {
 
     const { data, error } = await supabase
       .from('user_settings')
-      .select('*')
+      .select(USER_SETTINGS_COLUMNS)
       .eq('user_id', user.id)
       .single();
 
@@ -1234,24 +1256,24 @@ export async function exportUserData(): Promise<string | null> {
     ] = await Promise.all([
       supabase
         .from('pro_clients')
-        .select('*')
+        .select(PRO_CLIENT_COLUMNS)
         .eq('user_id', user.id)
         .single(),
       supabase
         .from('client_equipment')
-        .select('*')
+        .select(CLIENT_EQUIPMENT_TABLE_COLUMNS)
         .eq('client_id', user.id),
       supabase
         .from('client_orders')
-        .select('*')
+        .select(CLIENT_ORDER_COLUMNS)
         .eq('client_id', user.id),
       supabase
         .from('maintenance_interventions')
-        .select('*')
+        .select(MAINTENANCE_INTERVENTION_FLAT_COLUMNS)
         .eq('client_id', user.id),
       supabase
         .from('technical_documents')
-        .select('*')
+        .select(TECHNICAL_DOCUMENT_COLUMNS)
         .eq('client_id', user.id)
     ]);
 

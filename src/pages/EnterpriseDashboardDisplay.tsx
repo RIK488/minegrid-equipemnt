@@ -14,7 +14,11 @@ const EnterpriseDashboardDisplay: React.FC = () => {
     // On lit la config du localStorage (ici pour le métier vendeur)
     const saved = localStorage.getItem('enterpriseDashboardConfig_vendeur');
     if (saved) {
-      setConfig(JSON.parse(saved));
+      try {
+        setConfig(JSON.parse(saved));
+      } catch {
+        localStorage.removeItem('enterpriseDashboardConfig_vendeur');
+      }
     }
   }, []);
 

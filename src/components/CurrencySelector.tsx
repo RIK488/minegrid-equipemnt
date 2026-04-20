@@ -16,19 +16,24 @@ const currencies: { value: Currency; label: string; symbol: string }[] = [
 ];
 
 export default function CurrencySelector() {
-  const { currentCurrency, setCurrency } = useCurrencyStore();
+  const { currentCurrency, setCurrency, hasUserSelectedCurrency } = useCurrencyStore();
 
   return (
-    <select
-      value={currentCurrency}
-      onChange={(e) => setCurrency(e.target.value as Currency)}
-      className="ml-2 px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-    >
-      {currencies.map((currency) => (
-        <option key={currency.value} value={currency.value}>
-          {currency.symbol}
-        </option>
-      ))}
-    </select>
+    <div className="ml-2 flex flex-col items-end">
+      <select
+        value={currentCurrency}
+        onChange={(e) => setCurrency(e.target.value as Currency)}
+        className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+      >
+        {currencies.map((currency) => (
+          <option key={currency.value} value={currency.value}>
+            {currency.symbol}
+          </option>
+        ))}
+      </select>
+      <span className="text-[10px] text-gray-500 mt-0.5">
+        {hasUserSelectedCurrency ? 'Devise personnalisée' : 'Devise détectée automatiquement'}
+      </span>
+    </div>
   );
 }

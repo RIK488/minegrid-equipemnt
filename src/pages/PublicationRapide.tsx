@@ -354,43 +354,55 @@ export default function PublicationRapide() {
     ];
     
     // Créer une modal simple avec les paramètres
-    const settingsHtml = settings.map(setting => 
-      `<div class="flex justify-between py-2 border-b border-gray-200">
-        <span class="font-medium text-gray-700">${setting.label}:</span>
-        <span class="text-gray-600">${setting.value}</span>
-      </div>`
-    ).join('');
-    
-    const modalHtml = `
-      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Paramètres - ${machine.name}</h3>
-            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          </div>
-          <div class="space-y-2">
-            ${settingsHtml}
-          </div>
-          <div class="mt-6 flex space-x-3">
-            <button onclick="this.closest('.fixed').remove()" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">
-              Fermer
-            </button>
-            <button onclick="window.location.href='#machines/${machine.id}'" class="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors">
-              Voir l'annonce
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    // Insérer la modal dans le DOM
-    const modalContainer = document.createElement('div');
-    modalContainer.innerHTML = modalHtml;
-    document.body.appendChild(modalContainer.firstElementChild!);
+    const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-lg p-6 max-w-md w-full mx-4';
+
+    const header = document.createElement('div');
+    header.className = 'flex justify-between items-center mb-4';
+    const title = document.createElement('h3');
+    title.className = 'text-lg font-semibold text-gray-900';
+    title.textContent = `Paramètres - ${machine.name}`;
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'text-gray-400 hover:text-gray-600';
+    closeBtn.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+    closeBtn.addEventListener('click', () => overlay.remove());
+    header.append(title, closeBtn);
+
+    const body = document.createElement('div');
+    body.className = 'space-y-2';
+    settings.forEach((s) => {
+      const row = document.createElement('div');
+      row.className = 'flex justify-between py-2 border-b border-gray-200';
+      const label = document.createElement('span');
+      label.className = 'font-medium text-gray-700';
+      label.textContent = `${s.label}:`;
+      const val = document.createElement('span');
+      val.className = 'text-gray-600';
+      val.textContent = String(s.value);
+      row.append(label, val);
+      body.appendChild(row);
+    });
+
+    const footer = document.createElement('div');
+    footer.className = 'mt-6 flex space-x-3';
+    const closeBtn2 = document.createElement('button');
+    closeBtn2.className = 'flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors';
+    closeBtn2.textContent = 'Fermer';
+    closeBtn2.addEventListener('click', () => overlay.remove());
+    const viewBtn = document.createElement('button');
+    viewBtn.className = 'flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors';
+    viewBtn.textContent = "Voir l'annonce";
+    viewBtn.addEventListener('click', () => { window.location.hash = `#machines/${machine.id}`; });
+    footer.append(closeBtn2, viewBtn);
+
+    card.append(header, body, footer);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
   };
 
   // Fonction pour supprimer une machine

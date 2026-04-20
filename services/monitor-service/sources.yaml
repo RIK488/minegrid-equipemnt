@@ -1,0 +1,408 @@
+# Configuration des sources d'ingestion — Minegrid Global Monitor
+# Chaque entrée est un connecteur avec sa config spécifique.
+
+sources:
+
+  - name: "World Bank Data360 - Afrique"
+    connector: wb_data360
+    enabled: true
+    config:
+      dataset_ids:
+        - "africa-infrastructure-development-index"
+        - "programme-for-infrastructure-development-in-africa"
+      country_filter: ["SN", "CI", "GH", "CM", "BF", "GN", "NE", "ML", "MA", "NG", "DZ", "TN", "LY", "MR", "EG", "BJ", "TG", "SA", "AE", "QA", "KW", "OM", "BH", "JO", "LB", "IQ", "FR", "DE", "ES", "IT", "GB", "PT", "NL", "BE", "CH", "AT", "GR", "PL", "RO"]
+
+  - name: "PPI Database - Afrique"
+    connector: ppi
+    enabled: true
+    config:
+      file_path: "data/ppi_projects.csv"
+      delimiter: ","
+      encoding: "utf-8"
+      country_filter: ["Senegal", "Ghana", "Cameroon", "Nigeria", "Morocco", "Algeria", "Tunisia", "Libya", "Mauritania", "Egypt", "Saudi Arabia", "United Arab Emirates", "Qatar", "Kuwait", "Oman", "Bahrain", "Jordan", "Lebanon", "Iraq", "France", "Germany", "Spain", "Italy", "United Kingdom", "Portugal", "Netherlands", "Belgium", "Switzerland", "Austria", "Greece", "Poland", "Romania", "Benin", "Togo"]
+
+  - name: "Mining Seed Africa - multi pays"
+    connector: ppi
+    enabled: true
+    config:
+      file_path: "data/mining_projects_seed.csv"
+      delimiter: ","
+      encoding: "utf-8"
+      country_filter: ["Morocco", "Algeria", "Mauritania", "Egypt", "Tunisia", "Libya", "Guinea", "Senegal", "Côte d'Ivoire", "Nigeria", "Ghana", "Burkina Faso", "Mali", "Niger", "Benin", "Togo", "Cameroon"]
+
+  - name: "OCDS - Marchés Publics Sénégal"
+    connector: ocds_feed
+    enabled: false
+    config:
+      feed_url: "https://example.com/ocds/releases.json"
+      max_pages: 3
+      country_default: "Senegal"
+
+  - name: "Portails publics - Afrique Ouest + Cible"
+    connector: public_portals
+    enabled: true
+    config:
+      timeout_seconds: 25
+      max_items_per_source: 300
+      default_phase: "tender"
+      country_filter: ["MA", "DZ", "TN", "LY", "MR", "EG", "SA", "AE", "QA", "KW", "OM", "BH", "JO", "LB", "IQ", "FR", "DE", "ES", "IT", "GB", "PT", "NL", "BE", "CH", "AT", "GR", "PL", "RO", "SN", "CI", "CM", "NG", "GH", "BF", "GN", "NE", "ML", "BJ", "TG"]
+      sources:
+        - name: "Morocco Public Procurement"
+          country: "Morocco"
+          country_code: "MA"
+          format: "html"
+          url: "https://www.marchespublics.gov.ma/pmmp"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "appel d’offres", "marché", "marche", "consultation", "avis", "btp", "batiment", "bâtiment", "construction", "travaux publics", "génie civil"]
+          crawl_pages: 10
+        - name: "Morocco Public Procurement Home"
+          country: "Morocco"
+          country_code: "MA"
+          format: "html"
+          url: "https://www.marchespublics.gov.ma/index.php?page=entreprise.EntrepriseHome"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "appel d’offres", "marché", "marche", "consultation", "avis", "btp", "batiment", "bâtiment", "construction", "travaux publics", "génie civil"]
+          crawl_pages: 10
+          # Optionnel: activer si le portail exige authentification pour voir plus d'annonces.
+          #auth:
+          #  type: "form_post"
+          #  login_url: "https://www.marchespublics.gov.ma/index.php?page=entreprise.ConnexionEntreprise"
+          #  fields:
+          #    login: "${MG_MA_LOGIN}"
+          #    password: "${MG_MA_PASSWORD}"
+          #  success_contains: "Vous êtes authentifié"
+        - name: "Morocco AO Aggregator"
+          country: "Morocco"
+          country_code: "MA"
+          format: "html"
+          url: "https://marocao.com/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "appel d’offres", "marché", "marche", "travaux", "fournitures", "services", "btp", "batiment", "bâtiment", "construction", "travaux publics", "génie civil"]
+          crawl_pages: 12
+        - name: "Senegal Public Procurement"
+          country: "Senegal"
+          country_code: "SN"
+          format: "html"
+          url: "https://marches.senegalpme.sn/appels-doffres/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "appel d’offres", "marche", "marché", "consultation", "avis", "btp", "batiment", "bâtiment", "construction", "travaux publics", "génie civil"]
+          crawl_pages: 10
+        - name: "Senegal ARCOP News"
+          country: "Senegal"
+          country_code: "SN"
+          format: "html"
+          url: "https://arcop.sn/category/actualites/"
+          phase: "tender"
+          type_hint: "btp"
+          headers:
+            Accept: "text/html,application/xhtml+xml"
+          include_patterns: ["appel", "marche", "marché", "commande publique", "avis", "offres", "btp", "batiment", "bâtiment", "construction", "travaux publics", "génie civil"]
+          crawl_pages: 8
+        - name: "Cote d'Ivoire Public Procurement"
+          country: "Côte d'Ivoire"
+          country_code: "CI"
+          format: "html"
+          url: "https://www.marchespublics.ci/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "appel d’offres", "marche", "marché", "bulletin", "avis", "btp", "batiment", "bâtiment", "construction", "travaux publics", "génie civil"]
+          crawl_pages: 8
+        - name: "Cote d'Ivoire e-Marches"
+          country: "Côte d'Ivoire"
+          country_code: "CI"
+          format: "html"
+          url: "https://www.marchespublics.ci/service_enligne/emarchepublic"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["marche", "marché", "offres", "avis", "passation", "btp", "batiment", "bâtiment", "construction", "travaux publics", "génie civil"]
+          crawl_pages: 10
+        - name: "Cameroon Public Procurement"
+          country: "Cameroon"
+          country_code: "CM"
+          format: "html"
+          url: "https://cpdm-npa.com/tenders/"
+          phase: "tender"
+          type_hint: "btp"
+          verify_ssl: false
+          include_patterns: ["tender", "procurement", "notice", "bid", "contract", "construction", "civil works", "building", "works"]
+          crawl_pages: 10
+        - name: "Nigeria Public Procurement"
+          country: "Nigeria"
+          country_code: "NG"
+          format: "html"
+          url: "https://www.bpp.gov.ng/"
+          phase: "tender"
+          type_hint: "btp"
+          verify_ssl: false
+          include_patterns: ["tender", "procurement", "notice", "bid", "contract", "opportunity", "construction", "civil works", "building", "works"]
+          crawl_pages: 12
+        - name: "Nigeria NOCOPO"
+          country: "Nigeria"
+          country_code: "NG"
+          format: "html"
+          url: "https://nocopo.bpp.gov.ng/"
+          phase: "tender"
+          type_hint: "btp"
+          verify_ssl: false
+          include_patterns: ["tender", "procurement", "contract", "notice", "opportunity", "construction", "civil works", "building", "works"]
+          crawl_pages: 12
+        - name: "Ghana Public Procurement Authority"
+          country: "Ghana"
+          country_code: "GH"
+          format: "html"
+          url: "https://ppa.gov.gh/tender-notices/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["tender", "procurement", "works", "construction", "civil works", "bid", "notice"]
+          crawl_pages: 10
+        - name: "Burkina Faso ARCOP"
+          country: "Burkina Faso"
+          country_code: "BF"
+          format: "html"
+          url: "https://www.arcop.bf/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "marché", "marche", "travaux", "btp", "construction", "génie civil"]
+          crawl_pages: 8
+        - name: "Mali DGMP"
+          country: "Mali"
+          country_code: "ML"
+          format: "html"
+          url: "https://www.dgmp.gov.ml/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "marché", "marche", "travaux", "btp", "construction", "génie civil"]
+          crawl_pages: 8
+        - name: "Niger ARMP"
+          country: "Niger"
+          country_code: "NE"
+          format: "html"
+          url: "https://armp-niger.org/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "marche", "marché", "travaux", "btp", "construction", "génie civil"]
+          crawl_pages: 8
+        - name: "Guinee ARMP"
+          country: "Guinea"
+          country_code: "GN"
+          format: "html"
+          url: "https://armpguinee.org/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "marche", "marché", "travaux", "btp", "construction", "génie civil"]
+          crawl_pages: 8
+        - name: "Benin ARMP"
+          country: "Benin"
+          country_code: "BJ"
+          format: "html"
+          url: "https://armp.bj/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "marche", "marché", "travaux", "btp", "construction", "génie civil"]
+          crawl_pages: 8
+        - name: "Togo ARMP"
+          country: "Togo"
+          country_code: "TG"
+          format: "html"
+          url: "https://armp.tg/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "marche", "marché", "travaux", "btp", "construction", "génie civil"]
+          crawl_pages: 8
+        - name: "Algeria Public Procurement"
+          country: "Algeria"
+          country_code: "DZ"
+          format: "html"
+          url: "https://www.marches-publics.gov.dz/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "appel d’offres", "marché", "marche", "travaux", "btp", "construction", "génie civil"]
+          crawl_pages: 8
+        - name: "Tunisia Public Procurement (TUNEPS)"
+          country: "Tunisia"
+          country_code: "TN"
+          format: "html"
+          url: "https://www.tuneps.tn/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "appel d’offres", "marché", "marche", "travaux", "btp", "construction", "génie civil"]
+          crawl_pages: 8
+        - name: "Libya Procurement Portal"
+          country: "Libya"
+          country_code: "LY"
+          format: "html"
+          url: "https://tenders.ly/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["tender", "procurement", "construction", "civil works", "building", "works", "bid"]
+          crawl_pages: 8
+        - name: "Mauritania Public Procurement"
+          country: "Mauritania"
+          country_code: "MR"
+          format: "html"
+          url: "https://www.armp.mr/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "appel d’offres", "marché", "marche", "travaux", "btp", "construction", "génie civil"]
+          crawl_pages: 8
+        - name: "Egypt Public Procurement"
+          country: "Egypt"
+          country_code: "EG"
+          format: "html"
+          url: "https://etenders.gov.eg/"
+          phase: "tender"
+          type_hint: "energy"
+          include_patterns: ["tender", "procurement", "energy", "solar", "wind", "power", "electric", "construction", "works"]
+          crawl_pages: 8
+        - name: "Saudi Arabia Etimad"
+          country: "Saudi Arabia"
+          country_code: "SA"
+          format: "html"
+          url: "https://portal.etimad.sa/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["tender", "procurement", "project", "works", "construction", "civil works", "building", "energy", "infrastructure"]
+          crawl_pages: 8
+        - name: "UAE eTendering"
+          country: "United Arab Emirates"
+          country_code: "AE"
+          format: "html"
+          url: "https://www.mof.gov.ae/en/StrategicPartnerships/Pages/Etendering.aspx"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["tender", "procurement", "project", "works", "construction", "civil works", "building", "infrastructure"]
+          crawl_pages: 8
+        - name: "Qatar Monaqasat"
+          country: "Qatar"
+          country_code: "QA"
+          format: "html"
+          url: "https://monaqasat.mof.gov.qa/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["tender", "procurement", "project", "works", "construction", "civil works", "building", "energy"]
+          crawl_pages: 8
+        - name: "Oman Tender Board"
+          country: "Oman"
+          country_code: "OM"
+          format: "html"
+          url: "https://etendering.tenderboard.gov.om/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["tender", "procurement", "project", "works", "construction", "civil works", "building", "energy"]
+          crawl_pages: 8
+        - name: "Jordan JONEPS"
+          country: "Jordan"
+          country_code: "JO"
+          format: "html"
+          url: "https://www.joneps.gov.jo/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["tender", "procurement", "project", "works", "construction", "civil works", "building", "infrastructure"]
+          crawl_pages: 8
+        - name: "EU TED Tenders"
+          country: "France"
+          country_code: "FR"
+          format: "html"
+          url: "https://ted.europa.eu/"
+          phase: "tender"
+          type_hint: "infrastructure"
+          include_patterns: ["tender", "procurement", "works", "construction", "infrastructure", "energy", "transport"]
+          crawl_pages: 10
+        - name: "France BOAMP"
+          country: "France"
+          country_code: "FR"
+          format: "html"
+          url: "https://www.boamp.fr/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["appel d'offres", "marché", "travaux", "btp", "construction", "génie civil", "infrastructure"]
+          crawl_pages: 8
+        - name: "Spain Plataforma de Contratacion"
+          country: "Spain"
+          country_code: "ES"
+          format: "html"
+          url: "https://contrataciondelestado.es/"
+          phase: "tender"
+          type_hint: "btp"
+          include_patterns: ["licitación", "contratación", "obras", "infraestructura", "energía", "construcción", "tender"]
+          crawl_pages: 8
+        - name: "Italy ANAC Procurement"
+          country: "Italy"
+          country_code: "IT"
+          format: "html"
+          url: "https://www.anticorruzione.it/"
+          phase: "tender"
+          type_hint: "infrastructure"
+          include_patterns: ["gara", "appalto", "lavori", "infrastrutture", "energia", "construction", "tender"]
+          crawl_pages: 8
+
+  - name: "MDB Procurement - WB/AfDB/IsDB"
+    connector: mdb_procurement
+    enabled: true
+    config:
+      timeout_seconds: 25
+      max_items_per_source: 300
+      country_filter: ["MA", "DZ", "TN", "LY", "MR", "EG", "SA", "AE", "QA", "KW", "OM", "BH", "JO", "LB", "IQ", "FR", "DE", "ES", "IT", "GB", "PT", "NL", "BE", "CH", "AT", "GR", "PL", "RO", "SN", "CI", "CM", "NG", "GH", "BF", "GN", "NE", "ML", "BJ", "TG"]
+      sources:
+        - name: "World Bank Procurement Notices"
+          source_code: "WB"
+          format: "html"
+          url: "https://projects.worldbank.org/en/projects-operations/opportunities"
+          include_patterns: ["procurement", "notice", "bid", "opportunit", "tender", "construction", "civil works", "building", "works", "btp"]
+          type_hint: "infrastructure"
+          default_phase: "tender"
+        - name: "AfDB Procurement Notices"
+          source_code: "AFDB"
+          format: "html"
+          url: "https://www.afdb.org/en/projects-and-operations/procurement"
+          include_patterns: ["procurement", "notice", "tender", "bid", "opportunit", "construction", "civil works", "building", "works", "btp"]
+          type_hint: "infrastructure"
+          headers:
+            Accept: "text/html,application/xhtml+xml"
+          default_phase: "tender"
+        - name: "IsDB Procurement Notices"
+          source_code: "ISDB"
+          format: "html"
+          url: "https://www.isdb.org/project-procurement/fr/appels-doffres"
+          include_patterns: ["appel", "offres", "procurement", "tender", "bid", "btp", "batiment", "bâtiment", "construction", "travaux publics", "génie civil", "civil works"]
+          type_hint: "infrastructure"
+          default_phase: "tender"
+        - name: "World Bank Energy Opportunities"
+          source_code: "WB"
+          format: "html"
+          url: "https://projects.worldbank.org/en/projects-operations/opportunities"
+          include_patterns: ["energy", "power", "electric", "solar", "wind", "hydro", "grid", "substation"]
+          type_hint: "energy"
+          default_phase: "tender"
+        - name: "AfDB Energy Opportunities"
+          source_code: "AFDB"
+          format: "html"
+          url: "https://www.afdb.org/en/projects-and-operations/procurement"
+          include_patterns: ["energy", "power", "electric", "solar", "wind", "hydro", "grid", "substation"]
+          type_hint: "energy"
+          default_phase: "tender"
+        - name: "IsDB Energy Opportunities"
+          source_code: "ISDB"
+          format: "html"
+          url: "https://www.isdb.org/project-procurement/fr/appels-doffres"
+          include_patterns: ["énergie", "energy", "power", "electric", "solar", "wind", "hydro", "grid"]
+          type_hint: "energy"
+          default_phase: "tender"
+        - name: "World Bank Mining Opportunities"
+          source_code: "WB"
+          format: "html"
+          url: "https://projects.worldbank.org/en/projects-operations/opportunities"
+          include_patterns: ["mine", "mining", "ore", "quarry", "extraction", "bauxite", "gold", "copper"]
+          type_hint: "mine"
+          default_phase: "tender"
+        - name: "AfDB Mining Opportunities"
+          source_code: "AFDB"
+          format: "html"
+          url: "https://www.afdb.org/en/projects-and-operations/procurement"
+          include_patterns: ["mine", "mining", "ore", "quarry", "extraction", "bauxite", "gold", "copper"]
+          type_hint: "mine"
+          default_phase: "tender"

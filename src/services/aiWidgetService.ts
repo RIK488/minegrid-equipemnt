@@ -1,4 +1,5 @@
 import { supabaseClient } from '../utils/supabaseClient';
+import { MACHINE_LIST_COLUMNS, SELLER_MACHINES_MAX_ROWS } from '../constants/machineQueryFields';
 
 export interface AIInsight {
   id: string;
@@ -22,6 +23,16 @@ export interface AIPrediction {
   factors: string[];
 }
 
+/** Réponse JSON de GET /ai/widgets/benchmark */
+export interface AISalesBenchmark {
+  sector: string;
+  average: number;
+  top25: number;
+  yourPerformance: number;
+  currency?: string;
+  note?: string;
+}
+
 export interface AIRecommendation {
   id: string;
   category: 'sales' | 'inventory' | 'performance' | 'marketing';
@@ -34,144 +45,386 @@ export interface AIRecommendation {
   priority: number;
 }
 
+/** Cache court côté client pour réduire les appels dupliqués (plusieurs widgets au montage). */
+const MONITOR_GET_CACHE_MS = 30_000;
+const MONITOR_GET_CACHE_MAX_KEYS = 200;
+const _monitorGetCache = new Map<string, { at: number; value: unknown }>();
+
+function monitorCacheKey(userId: string, path: string) {
+  return `${userId}|${path}`;
+}
+
+function monitorCacheGet<T>(key: string): T | undefined {
+  const hit = _monitorGetCache.get(key);
+  if (!hit) return undefined;
+  if (Date.now() - hit.at > MONITOR_GET_CACHE_MS) {
+    _monitorGetCache.delete(key);
+    return undefined;
+  }
+  return hit.value as T;
+}
+
+function monitorCacheSet(key: string, value: unknown) {
+  if (_monitorGetCache.size >= MONITOR_GET_CACHE_MAX_KEYS) {
+    const first = _monitorGetCache.keys().next().value;
+    if (first !== undefined) _monitorGetCache.delete(first);
+  }
+  _monitorGetCache.set(key, { at: Date.now(), value });
+}
+
 class AIWidgetService {
   private sessionId: string;
+  private monitorBaseUrl: string;
 
   constructor() {
     this.sessionId = `ai_session_${Date.now()}`;
+    this.monitorBaseUrl = (import.meta as any).env?.VITE_MONITOR_API_URL || 'http://localhost:8000';
+  }
+
+  private async callAiEndpoint(path: string): Promise<any[] | null> {
+    try {
+      const { data } = await supabaseClient.auth.getSession();
+      const token = data.session?.access_token;
+      const uid = data.session?.user?.id;
+      if (!token || !uid) return null;
+
+      const ck = monitorCacheKey(uid, path);
+      const cached = monitorCacheGet<any[] | null>(ck);
+      if (cached !== undefined) return cached;
+
+      const res = await fetch(`${this.monitorBaseUrl}${path}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        // 401/403 = pas d'acces live payant, on laisse le fallback local.
+        return null;
+      }
+
+      const payload = await res.json();
+      const out = Array.isArray(payload) ? payload : null;
+      monitorCacheSet(ck, out);
+      return out;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Appels monitor renvoyant un objet JSON (pas un tableau). */
+  private async callAiJsonEndpoint(path: string): Promise<Record<string, unknown> | null> {
+    try {
+      const { data } = await supabaseClient.auth.getSession();
+      const token = data.session?.access_token;
+      const uid = data.session?.user?.id;
+      if (!token || !uid) return null;
+
+      const ck = monitorCacheKey(uid, path);
+      const cached = monitorCacheGet<Record<string, unknown> | null>(ck);
+      if (cached !== undefined) return cached;
+
+      const res = await fetch(`${this.monitorBaseUrl}${path}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) return null;
+
+      const payload = await res.json();
+      const out =
+        payload && typeof payload === 'object' && !Array.isArray(payload)
+          ? (payload as Record<string, unknown>)
+          : null;
+      monitorCacheSet(ck, out);
+      return out;
+    } catch {
+      return null;
+    }
+  }
+
+  private async getSellerMachines(userId: string): Promise<any[]> {
+    const columnsToTry = ['sellerid', 'sellerId', 'seller_id', 'owner_id'];
+
+    let lastError: any = null;
+
+    for (const column of columnsToTry) {
+      const { data, error } = await supabaseClient
+        .from('machines')
+        .select(MACHINE_LIST_COLUMNS)
+        .eq(column, userId)
+        .limit(SELLER_MACHINES_MAX_ROWS);
+
+      // Si l'erreur vient d'une colonne inexistante, on tente la suivante.
+      if (error) {
+        lastError = error;
+        // On continue toujours : dans ce projet la casse du champ (sellerid vs sellerId)
+        // a déjà été changée plusieurs fois.
+        continue;
+      }
+
+      // Colonne trouvée (pas d'erreur) : même si data est vide, c'est un résultat valide.
+      return data || [];
+    }
+
+    // Toutes les colonnes ont échoué : on remonte une erreur pour être visible dans la console.
+    if (lastError) throw lastError;
+    return [];
+  }
+
+  private async buildLocalSalesPredictions(userId: string): Promise<AIPrediction[]> {
+    const salesData = await this.getSellerMachines(userId);
+    return [
+      {
+        metric: 'Ventes mensuelles',
+        currentValue: this.calculateCurrentSales(salesData),
+        predictedValue: this.predictNextMonthSales(salesData),
+        confidence: 0.85,
+        timeframe: '30d',
+        trend: 'up',
+        factors: ['Saisonnalité positive', 'Nouveaux prospects', 'Optimisation SEO'],
+      },
+      {
+        metric: 'Taux de conversion',
+        currentValue: this.calculateConversionRate(salesData),
+        predictedValue: this.predictConversionRate(salesData),
+        confidence: 0.78,
+        timeframe: '30d',
+        trend: 'stable',
+        factors: ['Qualité des leads', 'Prix compétitifs', 'Support client'],
+      },
+    ];
   }
 
   // 🧠 ANALYSE PRÉDICTIVE DES VENTES
   async getSalesPredictions(userId: string): Promise<AIPrediction[]> {
     try {
-      // Récupération des données historiques
-      const { data: salesData, error } = await supabaseClient
-        .from('machines')
-        .select('*')
-        .eq('sellerId', userId);
-
-      if (error) throw error;
-
-      // Analyse des tendances (simulation IA)
-      const predictions: AIPrediction[] = [
-        {
-          metric: 'Ventes mensuelles',
-          currentValue: this.calculateCurrentSales(salesData),
-          predictedValue: this.predictNextMonthSales(salesData),
-          confidence: 0.85,
-          timeframe: '30d',
-          trend: 'up',
-          factors: ['Saisonnalité positive', 'Nouveaux prospects', 'Optimisation SEO']
-        },
-        {
-          metric: 'Taux de conversion',
-          currentValue: this.calculateConversionRate(salesData),
-          predictedValue: this.predictConversionRate(salesData),
-          confidence: 0.78,
-          timeframe: '30d',
-          trend: 'stable',
-          factors: ['Qualité des leads', 'Prix compétitifs', 'Support client']
-        }
-      ];
-
-      return predictions;
+      const remote = await this.callAiEndpoint('/ai/widgets/predictions');
+      if (remote) return remote as AIPrediction[];
+      return await this.buildLocalSalesPredictions(userId);
     } catch (error) {
       console.error('Erreur prédictions ventes:', error);
       return [];
     }
   }
 
+  async getSalesPredictionsWithSource(userId: string): Promise<{
+    items: AIPrediction[];
+    source: 'monitor' | 'local';
+  }> {
+    try {
+      const remote = await this.callAiEndpoint('/ai/widgets/predictions');
+      if (remote != null) {
+        return { items: remote as AIPrediction[], source: 'monitor' };
+      }
+      return {
+        items: await this.buildLocalSalesPredictions(userId),
+        source: 'local',
+      };
+    } catch (error) {
+      console.error('Erreur prédictions ventes (avec source):', error);
+      return { items: [], source: 'local' };
+    }
+  }
+
+  private async buildLocalSalesBenchmark(userId: string): Promise<AISalesBenchmark> {
+    const machines = await this.getSellerMachines(userId);
+    const count = machines.length;
+    const yourPerformance = count * 15000;
+    return {
+      sector: 'Équipements BTP',
+      average: 65000,
+      top25: 85000,
+      yourPerformance,
+      currency: 'MAD',
+      note:
+        'Estimation alignée sur le référentiel interne (annonces actives × base mensuelle indicative).',
+    };
+  }
+
+  async getSalesBenchmarkWithSource(userId: string): Promise<{
+    data: AISalesBenchmark;
+    source: 'monitor' | 'local';
+  }> {
+    try {
+      const remote = await this.callAiJsonEndpoint('/ai/widgets/benchmark');
+      if (
+        remote &&
+        typeof remote.yourPerformance === 'number' &&
+        typeof remote.average === 'number' &&
+        typeof remote.top25 === 'number'
+      ) {
+        return {
+          data: {
+            sector: String(remote.sector ?? 'Équipements BTP'),
+            average: Number(remote.average),
+            top25: Number(remote.top25),
+            yourPerformance: Number(remote.yourPerformance),
+            currency: remote.currency != null ? String(remote.currency) : 'MAD',
+            note: remote.note != null ? String(remote.note) : undefined,
+          },
+          source: 'monitor',
+        };
+      }
+      return {
+        data: await this.buildLocalSalesBenchmark(userId),
+        source: 'local',
+      };
+    } catch (error) {
+      console.error('Erreur benchmark ventes:', error);
+      return {
+        data: await this.buildLocalSalesBenchmark(userId),
+        source: 'local',
+      };
+    }
+  }
+
+  private async buildLocalAIRecommendations(userId: string): Promise<AIRecommendation[]> {
+    const userData = await this.getSellerMachines(userId);
+
+    const recommendations: AIRecommendation[] = [];
+
+    const stockAnalysis = this.analyzeStock(userData);
+    if (stockAnalysis.hasDormantStock) {
+      recommendations.push({
+        id: 'stock_optimization',
+        category: 'inventory',
+        title: 'Optimisation du stock dormant',
+        description: `${stockAnalysis.dormantCount} équipements en stock depuis plus de 60 jours`,
+        impact: 'high',
+        effort: 'medium',
+        roi: 0.25,
+        actions: [
+          'Réduire les prix de 15%',
+          'Booster la visibilité Premium',
+          'Créer des offres flash',
+          'Contacter les prospects qualifiés',
+        ],
+        priority: 1,
+      });
+    }
+
+    const performanceAnalysis = this.analyzePerformance(userData);
+    if (performanceAnalysis.lowVisibility) {
+      recommendations.push({
+        id: 'visibility_boost',
+        category: 'marketing',
+        title: 'Amélioration de la visibilité',
+        description: 'Vos annonces ont une visibilité inférieure à la moyenne',
+        impact: 'high',
+        effort: 'low',
+        roi: 0.4,
+        actions: [
+          'Optimiser les titres SEO',
+          'Ajouter plus de photos',
+          'Compléter les descriptions',
+          'Activer la promotion Premium',
+        ],
+        priority: 2,
+      });
+    }
+
+    const salesAnalysis = this.analyzeSales(userData);
+    if (salesAnalysis.needsFollowUp) {
+      recommendations.push({
+        id: 'follow_up_system',
+        category: 'sales',
+        title: 'Système de suivi client',
+        description: `${salesAnalysis.pendingLeads} prospects nécessitent un suivi`,
+        impact: 'medium',
+        effort: 'low',
+        roi: 0.3,
+        actions: [
+          'Envoyer des emails de relance',
+          'Planifier des appels de suivi',
+          'Créer des devis personnalisés',
+          'Offrir des démonstrations',
+        ],
+        priority: 3,
+      });
+    }
+
+    if (recommendations.length === 0) {
+      recommendations.push(
+        {
+          id: 'starter_profile_quality',
+          category: 'marketing',
+          title: 'Renforcer la qualité du profil vendeur',
+          description: 'Compléter le profil et les informations de confiance pour améliorer la conversion.',
+          impact: 'medium',
+          effort: 'low',
+          roi: 0.2,
+          actions: [
+            'Completer la description entreprise',
+            'Ajouter logo et contacts verifiés',
+            'Activer les notifications de messages',
+          ],
+          priority: 1,
+        },
+        {
+          id: 'starter_listing_structure',
+          category: 'sales',
+          title: 'Structurer un plan de relance commercial',
+          description: 'Mettre en place un pipeline de suivi pour transformer plus de prospects.',
+          impact: 'medium',
+          effort: 'low',
+          roi: 0.22,
+          actions: [
+            'Repondre aux demandes en moins de 2h',
+            'Relancer les prospects a J+1 et J+3',
+            'Utiliser un modele de devis standard',
+          ],
+          priority: 2,
+        },
+      );
+    }
+
+    return recommendations.sort((a, b) => a.priority - b.priority);
+  }
+
   // 🎯 RECOMMANDATIONS INTELLIGENTES
   async getAIRecommendations(userId: string): Promise<AIRecommendation[]> {
     try {
-      const { data: userData, error } = await supabaseClient
-        .from('machines')
-        .select('*')
-        .eq('sellerId', userId);
+      const remote = await this.callAiEndpoint('/ai/widgets/recommendations');
+      if (remote) return remote as AIRecommendation[];
 
-      if (error) throw error;
-
-      const recommendations: AIRecommendation[] = [];
-
-      // Analyse du stock
-      const stockAnalysis = this.analyzeStock(userData);
-      if (stockAnalysis.hasDormantStock) {
-        recommendations.push({
-          id: 'stock_optimization',
-          category: 'inventory',
-          title: 'Optimisation du stock dormant',
-          description: `${stockAnalysis.dormantCount} équipements en stock depuis plus de 60 jours`,
-          impact: 'high',
-          effort: 'medium',
-          roi: 0.25,
-          actions: [
-            'Réduire les prix de 15%',
-            'Booster la visibilité Premium',
-            'Créer des offres flash',
-            'Contacter les prospects qualifiés'
-          ],
-          priority: 1
-        });
-      }
-
-      // Analyse des performances
-      const performanceAnalysis = this.analyzePerformance(userData);
-      if (performanceAnalysis.lowVisibility) {
-        recommendations.push({
-          id: 'visibility_boost',
-          category: 'marketing',
-          title: 'Amélioration de la visibilité',
-          description: 'Vos annonces ont une visibilité inférieure à la moyenne',
-          impact: 'high',
-          effort: 'low',
-          roi: 0.40,
-          actions: [
-            'Optimiser les titres SEO',
-            'Ajouter plus de photos',
-            'Compléter les descriptions',
-            'Activer la promotion Premium'
-          ],
-          priority: 2
-        });
-      }
-
-      // Analyse des ventes
-      const salesAnalysis = this.analyzeSales(userData);
-      if (salesAnalysis.needsFollowUp) {
-        recommendations.push({
-          id: 'follow_up_system',
-          category: 'sales',
-          title: 'Système de suivi client',
-          description: `${salesAnalysis.pendingLeads} prospects nécessitent un suivi`,
-          impact: 'medium',
-          effort: 'low',
-          roi: 0.30,
-          actions: [
-            'Envoyer des emails de relance',
-            'Planifier des appels de suivi',
-            'Créer des devis personnalisés',
-            'Offrir des démonstrations'
-          ],
-          priority: 3
-        });
-      }
-
-      return recommendations.sort((a, b) => a.priority - b.priority);
+      return await this.buildLocalAIRecommendations(userId);
     } catch (error) {
       console.error('Erreur recommandations IA:', error);
       return [];
     }
   }
 
+  /** Même flux que getAIRecommendations, avec distinction monitor (LLM / règles serveur) vs analyse locale. */
+  async getAIRecommendationsWithSource(userId: string): Promise<{
+    items: AIRecommendation[];
+    source: 'monitor' | 'local';
+  }> {
+    try {
+      const remote = await this.callAiEndpoint('/ai/widgets/recommendations');
+      if (remote != null) {
+        return { items: remote as AIRecommendation[], source: 'monitor' };
+      }
+      return {
+        items: await this.buildLocalAIRecommendations(userId),
+        source: 'local',
+      };
+    } catch (error) {
+      console.error('Erreur recommandations IA (avec source):', error);
+      return { items: [], source: 'local' };
+    }
+  }
+
   // 🔍 INSIGHTS INTELLIGENTS
   async getAIInsights(userId: string): Promise<AIInsight[]> {
     try {
-      const { data: userData, error } = await supabaseClient
-        .from('machines')
-        .select('*')
-        .eq('sellerId', userId);
+      const remote = await this.callAiEndpoint('/ai/widgets/insights');
+      if (remote) return remote as AIInsight[];
 
-      if (error) throw error;
+      const userData = await this.getSellerMachines(userId);
 
       const insights: AIInsight[] = [];
 
@@ -233,12 +486,10 @@ class AIWidgetService {
   // 📊 OPTIMISATION AUTOMATIQUE
   async getOptimizationSuggestions(userId: string): Promise<any[]> {
     try {
-      const { data: userData, error } = await supabaseClient
-        .from('machines')
-        .select('*')
-        .eq('sellerId', userId);
+      const remote = await this.callAiEndpoint('/ai/widgets/optimizations');
+      if (remote) return remote;
 
-      if (error) throw error;
+      const userData = await this.getSellerMachines(userId);
 
       const suggestions = [];
 
@@ -264,6 +515,34 @@ class AIWidgetService {
           actions: seoOptimization.actions,
           expectedImpact: seoOptimization.expectedImpact
         });
+      }
+
+      // Garantir un socle d'optimisations affichables pour éviter les widgets vides.
+      if (suggestions.length === 0) {
+        suggestions.push(
+          {
+            type: 'seo_optimization',
+            title: 'Optimiser les titres des annonces',
+            description: 'Des titres plus précis augmentent la visibilite dans les recherches.',
+            actions: [
+              'Inclure marque, modele et annee',
+              'Ajouter la localisation dans le titre',
+              'Eviter les titres generiques',
+            ],
+            expectedImpact: 'Amelioration de la visibilite de 15-25%',
+          },
+          {
+            type: 'content_optimization',
+            title: 'Completer les descriptions techniques',
+            description: 'Les annonces detaillees convertissent mieux les visiteurs en contacts.',
+            actions: [
+              'Ajouter specs principales (heures, etat, accessoires)',
+              'Preciser disponibilite et delai de livraison',
+              'Ajouter un appel a l action clair',
+            ],
+            expectedImpact: 'Hausse du taux de contact de 10-15%',
+          }
+        );
       }
 
       return suggestions;

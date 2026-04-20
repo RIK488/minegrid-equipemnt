@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrencyStore } from '../stores/currencyStore';
 import type { Currency } from '../types';
@@ -17,7 +18,55 @@ const FALLBACK_RATES: Record<Currency, number> = {
 };
 
 export function useExchangeRates() {
-  const { setRates } = useCurrencyStore();
+  const { setRates, hasUserSelectedCurrency, setAutoCurrency } = useCurrencyStore();
+  const hasTriedGeoRef = useRef(false);
+
+  useEffect(() => {
+    if (hasUserSelectedCurrency || hasTriedGeoRef.current) return;
+    hasTriedGeoRef.current = true;
+
+    const countryToCurrency: Record<string, Currency> = {
+      MA: 'MAD',
+      US: 'USD',
+      FR: 'EUR',
+      SN: 'XOF',
+      CI: 'XOF',
+      BF: 'XOF',
+      BJ: 'XOF',
+      TG: 'XOF',
+      ML: 'XOF',
+      NE: 'XOF',
+      GW: 'XOF',
+      CM: 'XAF',
+      GA: 'XAF',
+      TD: 'XAF',
+      CF: 'XAF',
+      CG: 'XAF',
+      GQ: 'XAF',
+      NG: 'NGN',
+      ZA: 'ZAR',
+      EG: 'EGP',
+      KE: 'KES',
+      GH: 'GHS',
+    };
+
+    const detectCurrency = async () => {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        if (!res.ok) return;
+        const geo = await res.json();
+        const countryCode = String(geo?.country_code || '').toUpperCase();
+        const mapped = countryToCurrency[countryCode];
+        if (mapped) {
+          setAutoCurrency(mapped);
+        }
+      } catch {
+        // Silent fallback: keep default/persisted currency.
+      }
+    };
+
+    void detectCurrency();
+  }, [hasUserSelectedCurrency, setAutoCurrency]);
 
   return useQuery({
     queryKey: ['exchangeRates'],

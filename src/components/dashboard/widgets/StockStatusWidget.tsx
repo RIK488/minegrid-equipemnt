@@ -6,6 +6,7 @@ import {
 import { apiCall, showNotification, sendMessage, exportData } from '../../../services/apiService';
 import { RealStockService, RealEquipment, RealPromotion, StockInsight } from '../../../services/realStockService';
 import { supabaseClient } from '../../../utils/supabaseClient';
+import { MACHINE_LIST_COLUMNS, SELLER_MACHINES_MAX_ROWS } from '../../../constants/machineQueryFields';
 
 // Interface pour les équipements
 interface Equipment {
@@ -37,7 +38,9 @@ interface Promotion {
 }
 
 const StockStatusWidget = () => {
-  const [equipments, setEquipments] = useState<Equipment[]>([]);
+  // Montrer des données de démo immédiatement pour éviter l'état "0/0"
+  // tant que les appels Supabase ne sont pas terminés (ou en cas d'erreur réseau).
+  const [equipments, setEquipments] = useState<Equipment[]>(() => getDemoEquipments());
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('Toutes');
   const [selectedAnciennete, setSelectedAnciennete] = useState('Toutes');
@@ -146,7 +149,7 @@ const StockStatusWidget = () => {
       console.log("🔍 Test 1: Récupération de toutes les machines...");
       const { data: allMachines, error: allMachinesError } = await supabaseClient
         .from('machines')
-        .select('*')
+        .select(MACHINE_LIST_COLUMNS)
         .limit(5);
       
       console.log("📊 Toutes les machines:", allMachines?.length || 0, allMachinesError);
@@ -187,8 +190,9 @@ const StockStatusWidget = () => {
       // Essayer d'abord avec sellerid
       let { data: userMachines, error: userMachinesError } = await supabaseClient
         .from('machines')
-        .select('*')
-        .eq('sellerid', user.id);
+        .select(MACHINE_LIST_COLUMNS)
+        .eq('sellerid', user.id)
+        .limit(SELLER_MACHINES_MAX_ROWS);
       
       console.log("📊 Machines avec sellerid:", userMachines?.length || 0, userMachinesError);
       
@@ -197,8 +201,9 @@ const StockStatusWidget = () => {
         console.log("🔄 Essai avec seller_id...");
         const { data: userMachines2, error: userMachinesError2 } = await supabaseClient
           .from('machines')
-          .select('*')
-          .eq('seller_id', user.id);
+          .select(MACHINE_LIST_COLUMNS)
+          .eq('seller_id', user.id)
+          .limit(SELLER_MACHINES_MAX_ROWS);
         
         userMachines = userMachines2;
         userMachinesError = userMachinesError2;
@@ -210,25 +215,20 @@ const StockStatusWidget = () => {
         console.log("🔄 Essai avec user_id...");
         const { data: userMachines3, error: userMachinesError3 } = await supabaseClient
           .from('machines')
-          .select('*')
-          .eq('user_id', user.id);
+          .select(MACHINE_LIST_COLUMNS)
+          .eq('user_id', user.id)
+          .limit(SELLER_MACHINES_MAX_ROWS);
         
         userMachines = userMachines3;
         userMachinesError = userMachinesError3;
         console.log("📊 Machines avec user_id:", userMachines?.length || 0, userMachinesError);
       }
       
-      // Si toujours pas de résultats, utiliser toutes les machines (pour le test)
+      // Important: ne jamais charger les machines d'autres comptes.
+      // Si aucune machine n'est trouvée pour l'utilisateur connecté, on reste sur un tableau vide.
       if (!userMachines || userMachines.length === 0) {
-        console.log("⚠️ Aucune machine trouvée pour l'utilisateur, utilisation de toutes les machines pour le test");
-        const { data: allMachinesForTest, error: allMachinesForTestError } = await supabaseClient
-          .from('machines')
-          .select('*')
-          .limit(10);
-        
-        userMachines = allMachinesForTest;
-        userMachinesError = allMachinesForTestError;
-        console.log("📊 Toutes les machines pour test:", userMachines?.length || 0);
+        console.log("ℹ️ Aucune machine trouvée pour l'utilisateur connecté.");
+        userMachines = [];
       }
       
       // Récupérer les promotions réelles
@@ -397,7 +397,8 @@ const StockStatusWidget = () => {
   };
 
   // Données de démonstration
-  const getDemoEquipments = (): Equipment[] => [
+  function getDemoEquipments(): Equipment[] {
+    return [
     {
       id: 1,
       name: 'Pelle hydraulique CAT 320',
@@ -443,12 +444,17 @@ const StockStatusWidget = () => {
       photos: [],
       description: 'Bouteur en bon état'
     }
-  ];
+    ];
+  }
 
   // Actions rapides avec réactivité maximale
-  const handleQuickAction = (action: string, equipment?: Equipment) => {
+  const handleQuickAction = (
+    action: string,
+    equipment?: Equipment,
+    e?: React.MouseEvent<HTMLButtonElement>
+  ) => {
     // Feedback visuel immédiat
-    const button = event?.target as HTMLButtonElement;
+    const button = e?.currentTarget;
     if (button) {
       button.disabled = true;
       button.style.opacity = '0.6';
@@ -862,7 +868,7 @@ const StockStatusWidget = () => {
         {showQuickActions && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <button
-              onClick={() => handleQuickAction('add-equipment')}
+              onClick={(e) => handleQuickAction('add-equipment', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Plus className="w-4 h-4 text-orange-600 mb-1" />
@@ -870,7 +876,7 @@ const StockStatusWidget = () => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('export-stock')}
+              onClick={(e) => handleQuickAction('export-stock', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Download className="w-4 h-4 text-orange-600 mb-1" />
@@ -878,7 +884,7 @@ const StockStatusWidget = () => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('boost-visibility')}
+              onClick={(e) => handleQuickAction('boost-visibility', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <TrendingUp className="w-4 h-4 text-orange-600 mb-1" />
@@ -886,7 +892,7 @@ const StockStatusWidget = () => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('create-flash-offer')}
+              onClick={(e) => handleQuickAction('create-flash-offer', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Star className="w-4 h-4 text-orange-600 mb-1" />
@@ -894,7 +900,7 @@ const StockStatusWidget = () => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('add-photo')}
+              onClick={(e) => handleQuickAction('add-photo', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Camera className="w-4 h-4 text-orange-600 mb-1" />
@@ -902,7 +908,7 @@ const StockStatusWidget = () => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('send-promotion')}
+              onClick={(e) => handleQuickAction('send-promotion', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <Send className="w-4 h-4 text-orange-600 mb-1" />
@@ -910,7 +916,7 @@ const StockStatusWidget = () => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('analyze-performance')}
+              onClick={(e) => handleQuickAction('analyze-performance', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <BarChart3 className="w-4 h-4 text-orange-600 mb-1" />
@@ -918,7 +924,7 @@ const StockStatusWidget = () => {
             </button>
             
             <button
-              onClick={() => handleQuickAction('optimize-pricing')}
+              onClick={(e) => handleQuickAction('optimize-pricing', undefined, e)}
               className="flex flex-col items-center p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors text-xs"
             >
               <DollarSign className="w-4 h-4 text-orange-600 mb-1" />
@@ -970,19 +976,19 @@ const StockStatusWidget = () => {
               <div className="flex flex-col gap-2 ml-4">
                 <button
                   className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors font-semibold"
-                  onClick={() => handleQuickAction('add-photo', equipment)}
+                  onClick={(e) => handleQuickAction('add-photo', equipment, e)}
                 >
                   Ajouter photo
                 </button>
                 <button
                   className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors font-semibold"
-                  onClick={() => handleQuickAction('boost-visibility', equipment)}
+                  onClick={(e) => handleQuickAction('boost-visibility', equipment, e)}
                 >
                   Booster
                 </button>
                 <button
                   className="text-xs bg-orange-100 text-orange-800 border border-orange-300 px-3 py-1 rounded-lg hover:bg-orange-200 transition-colors font-semibold"
-                  onClick={() => handleQuickAction('create-flash-offer', equipment)}
+                  onClick={(e) => handleQuickAction('create-flash-offer', equipment, e)}
                 >
                   Créer offre flash
                 </button>

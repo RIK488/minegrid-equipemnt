@@ -10,8 +10,8 @@ export const getMachineTypeIds = (): string[] => {
 
 export const categories = [
   {
-    id: 'Camions & Transport',
-    name: 'Camions',
+    id: 'Transport & Camions',
+    name: 'Transport & Camions',
     icon: 'Truck',
     count: 0,
     subcategories: [
@@ -24,8 +24,8 @@ export const categories = [
     ],
   },
   {
-    id: 'Terrassement et excavation',
-    name: 'Pelles & chargeuses',
+    id: 'Terrassement & Excavation',
+    name: 'Terrassement & Excavation',
     icon: 'Forklift',
     count: 0,
     subcategories: [
@@ -38,8 +38,8 @@ export const categories = [
     ],
   },
   {
-    id: 'Matériel de voirie',
-    name: 'Compacteurs & autres',
+    id: 'Voirie & Compactage',
+    name: 'Voirie & Compactage',
     icon: 'Tractor',
     count: 0,
     subcategories: [
@@ -55,7 +55,7 @@ export const categories = [
   },
   {
     id: 'Maintenance & Levage',
-    name: 'Grues & Elevateurs',
+    name: 'Levage & Manutention',
     icon: 'MoveUpRight',
     count: 0,
     subcategories: [
@@ -63,13 +63,13 @@ export const categories = [
       { id: 'grue-tour', name: 'Grue à tour', count: 0 },
       { id: 'grue-araignee', name: 'Grue araignée', count: 0 },
       { id: 'chariot-elevateur', name: 'Chariot élévateur', count: 0 },
-      { id: 'manitou', name: 'Chariot télescopique', count: 0 },
+      { id: 'telescopique', name: 'Chariot télescopique', count: 0 },
       { id: 'manuscopique', name: 'Manuscopique', count: 0 },
     ],
   },
   {
-    id: 'Concasseurs & Cribles',
-    name: 'Concasseurs & Cribles',
+    id: 'Concassage & Criblage',
+    name: 'Concassage & Criblage',
     icon: 'Hammer',
     count: 0,
     subcategories: [
@@ -82,8 +82,8 @@ export const categories = [
     ],
   },
   {
-    id: 'forage',
-    name: 'Foreuses & autres',
+    id: 'Forage',
+    name: 'Forage',
     icon: 'Ruler',
     count: 0,
     subcategories: [

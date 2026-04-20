@@ -17,6 +17,7 @@ import {
   X
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
+import { PLANNING_EVENTS_COLUMNS } from '../constants/apiQueryFields';
 
 interface PlanningEvent {
   id?: string;
@@ -57,7 +58,7 @@ export default function PlanningPro() {
 
       const { data, error } = await supabase
         .from('planning_events')
-        .select('*')
+        .select(PLANNING_EVENTS_COLUMNS)
         .eq('user_id', user.id)
         .order('startDate', { ascending: true });
 

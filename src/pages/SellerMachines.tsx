@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronRight, MapPin, Star, Calendar, Scale, PenTool as Tool } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
+import {
+  MACHINE_LIST_COLUMNS,
+  PROFILE_PUBLIC_LIST_COLUMNS,
+  SELLER_MACHINES_MAX_ROWS,
+} from '../constants/machineQueryFields';
 import type { Machine } from '../types';
 import Price from '../components/Price';
 import { useCurrencyStore } from '../stores/currencyStore';
@@ -23,7 +28,7 @@ export default function SellerMachines({ sellerId }: SellerMachinesProps) {
         // Récupérer les informations du vendeur
         const { data: sellerData, error: sellerError } = await supabase
           .from('profiles')
-          .select('*')
+          .select(PROFILE_PUBLIC_LIST_COLUMNS)
           .eq('id', sellerId)
           .single();
 
@@ -37,17 +42,18 @@ export default function SellerMachines({ sellerId }: SellerMachinesProps) {
         if (sellerData) {
           setSellerInfo({
             id: sellerData.id,
-            name: `${sellerData.firstName || ''} ${sellerData.lastName || ''}`.trim(),
+            name: `${sellerData.firstname || ''} ${sellerData.lastname || ''}`.trim(),
             rating: 4.5,
-            location: sellerData.location || 'Localisation non spécifiée'
+            location: (sellerData as { location?: string }).location || 'Localisation non spécifiée'
           });
 
           // Récupérer les machines du vendeur avec la même logique que getSellerMachines
           const { data: machinesData, error: machinesError } = await supabase
             .from('machines')
-            .select('*')
+            .select(MACHINE_LIST_COLUMNS)
             .eq('sellerId', sellerId)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(SELLER_MACHINES_MAX_ROWS);
 
           if (machinesError) {
             console.error('Erreur chargement machines:', machinesError);

@@ -302,7 +302,7 @@ export default function EnterpriseDashboardModular() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          console.log('✅ Session utilisateur trouvée:', session);
+          if (import.meta.env.DEV) console.log('Session utilisateur trouvée');
           setIsAuthenticated(true);
         } else {
           console.error('❌ AUCUNE SESSION UTILISATEUR TROUVÉE. Veuillez vous connecter pour voir les données.');

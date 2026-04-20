@@ -1,0 +1,118 @@
+{
+  "_doc": "Règles de calcul des besoins en équipements par type de projet, phase et budget.",
+
+  "phase_multipliers": {
+    "study":        0.0,
+    "financing":    0.1,
+    "tender":       0.3,
+    "construction": 1.0,
+    "ops":          0.5
+  },
+
+  "budget_buckets": {
+    "small":  { "max_usd": 50000000,   "multiplier": 0.5  },
+    "medium": { "max_usd": 200000000,  "multiplier": 1.0  },
+    "large":  { "max_usd": 500000000,  "multiplier": 1.8  },
+    "mega":   { "max_usd": null,        "multiplier": 3.0  }
+  },
+
+  "project_types": {
+    "mine": {
+      "excavator":    { "base_min": 4,  "base_max": 8  },
+      "loader":       { "base_min": 3,  "base_max": 6  },
+      "dozer":        { "base_min": 2,  "base_max": 4  },
+      "dump_truck":   { "base_min": 6,  "base_max": 15 },
+      "crusher":      { "base_min": 1,  "base_max": 3  },
+      "drill":        { "base_min": 2,  "base_max": 6  },
+      "generator":    { "base_min": 2,  "base_max": 4  },
+      "water_truck":  { "base_min": 1,  "base_max": 3  },
+      "grader":       { "base_min": 1,  "base_max": 2  },
+      "compactor":    { "base_min": 1,  "base_max": 2  }
+    },
+    "road": {
+      "excavator":    { "base_min": 3,  "base_max": 6  },
+      "loader":       { "base_min": 2,  "base_max": 4  },
+      "dozer":        { "base_min": 2,  "base_max": 5  },
+      "grader":       { "base_min": 3,  "base_max": 8  },
+      "compactor":    { "base_min": 3,  "base_max": 6  },
+      "dump_truck":   { "base_min": 4,  "base_max": 10 },
+      "generator":    { "base_min": 1,  "base_max": 2  },
+      "water_truck":  { "base_min": 2,  "base_max": 4  },
+      "crusher":      { "base_min": 1,  "base_max": 2  },
+      "drill":        { "base_min": 0,  "base_max": 1  }
+    },
+    "port": {
+      "excavator":    { "base_min": 3,  "base_max": 7  },
+      "loader":       { "base_min": 2,  "base_max": 5  },
+      "dozer":        { "base_min": 1,  "base_max": 3  },
+      "dump_truck":   { "base_min": 5,  "base_max": 12 },
+      "crusher":      { "base_min": 1,  "base_max": 2  },
+      "drill":        { "base_min": 1,  "base_max": 3  },
+      "generator":    { "base_min": 3,  "base_max": 6  },
+      "water_truck":  { "base_min": 1,  "base_max": 2  },
+      "grader":       { "base_min": 1,  "base_max": 2  },
+      "compactor":    { "base_min": 2,  "base_max": 4  }
+    },
+    "rail": {
+      "excavator":    { "base_min": 4,  "base_max": 8  },
+      "loader":       { "base_min": 2,  "base_max": 5  },
+      "dozer":        { "base_min": 2,  "base_max": 4  },
+      "grader":       { "base_min": 2,  "base_max": 5  },
+      "compactor":    { "base_min": 2,  "base_max": 5  },
+      "dump_truck":   { "base_min": 5,  "base_max": 12 },
+      "generator":    { "base_min": 2,  "base_max": 4  },
+      "water_truck":  { "base_min": 1,  "base_max": 3  },
+      "crusher":      { "base_min": 1,  "base_max": 3  },
+      "drill":        { "base_min": 1,  "base_max": 2  }
+    },
+    "dam": {
+      "excavator":    { "base_min": 5,  "base_max": 10 },
+      "loader":       { "base_min": 3,  "base_max": 6  },
+      "dozer":        { "base_min": 3,  "base_max": 6  },
+      "dump_truck":   { "base_min": 8,  "base_max": 20 },
+      "crusher":      { "base_min": 2,  "base_max": 4  },
+      "drill":        { "base_min": 2,  "base_max": 5  },
+      "generator":    { "base_min": 3,  "base_max": 6  },
+      "water_truck":  { "base_min": 2,  "base_max": 4  },
+      "grader":       { "base_min": 1,  "base_max": 3  },
+      "compactor":    { "base_min": 3,  "base_max": 6  }
+    },
+    "industrial_zone": {
+      "excavator":    { "base_min": 3,  "base_max": 6  },
+      "loader":       { "base_min": 2,  "base_max": 4  },
+      "dozer":        { "base_min": 1,  "base_max": 3  },
+      "dump_truck":   { "base_min": 3,  "base_max": 8  },
+      "crusher":      { "base_min": 0,  "base_max": 1  },
+      "drill":        { "base_min": 0,  "base_max": 1  },
+      "generator":    { "base_min": 2,  "base_max": 5  },
+      "water_truck":  { "base_min": 1,  "base_max": 2  },
+      "grader":       { "base_min": 2,  "base_max": 4  },
+      "compactor":    { "base_min": 2,  "base_max": 4  }
+    },
+    "energy": {
+      "excavator":    { "base_min": 2,  "base_max": 5  },
+      "loader":       { "base_min": 1,  "base_max": 3  },
+      "dozer":        { "base_min": 1,  "base_max": 2  },
+      "dump_truck":   { "base_min": 2,  "base_max": 6  },
+      "crusher":      { "base_min": 0,  "base_max": 1  },
+      "drill":        { "base_min": 1,  "base_max": 3  },
+      "generator":    { "base_min": 4,  "base_max": 10 },
+      "water_truck":  { "base_min": 1,  "base_max": 2  },
+      "grader":       { "base_min": 1,  "base_max": 2  },
+      "compactor":    { "base_min": 1,  "base_max": 2  }
+    }
+  },
+
+  "default_type": {
+    "excavator":    { "base_min": 2,  "base_max": 5  },
+    "loader":       { "base_min": 1,  "base_max": 3  },
+    "dozer":        { "base_min": 1,  "base_max": 3  },
+    "dump_truck":   { "base_min": 2,  "base_max": 6  },
+    "crusher":      { "base_min": 0,  "base_max": 1  },
+    "drill":        { "base_min": 0,  "base_max": 1  },
+    "generator":    { "base_min": 1,  "base_max": 3  },
+    "water_truck":  { "base_min": 1,  "base_max": 2  },
+    "grader":       { "base_min": 1,  "base_max": 2  },
+    "compactor":    { "base_min": 1,  "base_max": 2  }
+  }
+}

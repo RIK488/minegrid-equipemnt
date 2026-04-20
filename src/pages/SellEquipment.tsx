@@ -4,7 +4,7 @@ import { publishMachine, getCurrentUser } from '../utils/api';
 import supabase from '../utils/supabaseClient';
 import { brands } from '../data/brands';
 import { categories } from '../data/categories';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { fetchModelSpecs, fetchModelSpecsFull, toSellEquipmentForm, summarizeSpecs, missingForSell } from '../services/autoSpecsService';
 
 function cleanImagePath(img: string): string {
@@ -60,7 +60,7 @@ export default function SellEquipment() {
   const [showImportSection, setShowImportSection] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
-  const handleExcelFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleExcelFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -70,55 +70,61 @@ export default function SellEquipment() {
     }
 
     setExcelFile(file);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-        setExcelData(jsonData);
-        
-        // Détecter automatiquement les liens d'images
-        const imageLinks: string[] = [];
-        if (jsonData && jsonData.length > 0) {
-          const firstRow = jsonData[0] as Record<string, any>;
-          const imageColumns = Object.keys(firstRow).filter(key => 
-            key.toLowerCase().includes('image') || 
-            key.toLowerCase().includes('photo') || 
-            key.toLowerCase().includes('img') ||
-            key.toLowerCase().includes('url')
-          );
-          
-          console.log("🖼️ Colonnes d'images détectées:", imageColumns);
-          
-          jsonData.forEach((row, index) => {
-            const typedRow = row as Record<string, any>;
-            imageColumns.forEach(col => {
-              const value = typedRow[col];
-              if (value && typeof value === 'string') {
-                // Vérifier si c'est un lien d'image valide
-                if (value.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) || 
-                    value.startsWith('http') ||
-                    value.startsWith('https')) {
-                  imageLinks.push(value);
-                  console.log(`🖼️ Lien d'image trouvé dans ligne ${index + 1}, colonne ${col}:`, value);
-                }
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) { alert('Aucune feuille trouvée'); return; }
+
+      const headers: string[] = [];
+      worksheet.getRow(1).eachCell((cell, colNum) => {
+        headers[colNum - 1] = String(cell.value ?? `col_${colNum}`);
+      });
+
+      const jsonData: Record<string, any>[] = [];
+      worksheet.eachRow((row, rowNum) => {
+        if (rowNum === 1) return;
+        const obj: Record<string, any> = {};
+        row.eachCell((cell, colNum) => {
+          const key = headers[colNum - 1] ?? `col_${colNum}`;
+          obj[key] = cell.value;
+        });
+        if (Object.keys(obj).length) jsonData.push(obj);
+      });
+
+      setExcelData(jsonData);
+
+      const imageLinks: string[] = [];
+      if (jsonData.length > 0) {
+        const firstRow = jsonData[0];
+        const imageColumns = Object.keys(firstRow).filter(key =>
+          key.toLowerCase().includes('image') ||
+          key.toLowerCase().includes('photo') ||
+          key.toLowerCase().includes('img') ||
+          key.toLowerCase().includes('url')
+        );
+
+        jsonData.forEach((typedRow) => {
+          imageColumns.forEach(col => {
+            const value = typedRow[col];
+            if (value && typeof value === 'string') {
+              if (value.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) ||
+                  value.startsWith('http') ||
+                  value.startsWith('https')) {
+                imageLinks.push(value);
               }
-            });
+            }
           });
-        }
-        
-        setDetectedImageLinks(imageLinks);
-        console.log(`🔗 ${imageLinks.length} lien(s) d'image(s) détecté(s) dans le fichier Excel`);
-        
-      } catch (error) {
-        console.error('Erreur lors de la lecture du fichier Excel:', error);
-        alert('Erreur lors de la lecture du fichier Excel');
+        });
       }
-    };
-    reader.readAsArrayBuffer(file);
+
+      setDetectedImageLinks(imageLinks);
+
+    } catch (error) {
+      if (import.meta.env.DEV) console.error('Erreur lecture Excel:', error);
+      alert('Erreur lors de la lecture du fichier Excel');
+    }
   };
 
   const handleExcelImagesUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -222,8 +228,9 @@ export default function SellEquipment() {
         return;
       }
 
+      const importParcUrl = import.meta.env.VITE_N8N_IMPORT_PARC_URL || '';
       console.log("🚀 Envoi vers n8n en JSON...");
-      console.log("🚀 URL:", 'https://n8n.srv786179.hstgr.cloud/webhook/import_parc_excel');
+      console.log("🚀 URL:", importParcUrl);
       console.log("🚀 Headers:", { 
         'Content-Type': 'application/json',
         'x-auth-token': 'minegrid-secret-token-2025'
@@ -236,7 +243,7 @@ export default function SellEquipment() {
       console.log("🚀 Body contient l'ID:", requestBody.includes(user.id));
       console.log("🚀 Nombre d'occurrences de sellerId:", (requestBody.match(/"sellerId"/g) || []).length);
       
-      const response = await fetch('https://n8n.srv786179.hstgr.cloud/webhook/import_parc_excel', {
+      const response = await fetch(importParcUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

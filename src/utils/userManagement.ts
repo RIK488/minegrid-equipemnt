@@ -1,4 +1,5 @@
 import supabase from './supabaseClient';
+import { USER_INVITATION_COLUMNS } from '../constants/proClientQueryFields';
 
 export interface UserInvitation {
   id: string;
@@ -150,7 +151,7 @@ export async function getUserInvitations(): Promise<UserInvitation[]> {
   try {
     const { data: invitations, error } = await supabase
       .from('user_invitations')
-      .select('*')
+      .select(USER_INVITATION_COLUMNS)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -191,7 +192,7 @@ export async function acceptInvitation(invitationId: string, password: string): 
     // Récupérer l'invitation
     const { data: invitation, error: fetchError } = await supabase
       .from('user_invitations')
-      .select('*')
+      .select(USER_INVITATION_COLUMNS)
       .eq('id', invitationId)
       .single();
 
@@ -273,7 +274,7 @@ async function sendWelcomeEmail(email: string, name: string, password: string): 
     // Pour l'instant, on log les informations
     console.log('📧 Email de bienvenue envoyé à:', email);
     console.log('Nom:', name);
-    console.log('Mot de passe temporaire:', password);
+    if (import.meta.env.DEV) console.log('Mot de passe temporaire généré (longueur:', password.length, ')');
     
     // TODO: Intégrer un service d'email réel (SendGrid, Mailgun, etc.)
   } catch (error) {

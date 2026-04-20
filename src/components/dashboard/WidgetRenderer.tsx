@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Widget } from '../../constants/dashboardTypes';
 import { getWidgetData } from '../../constants/mockData';
+import { supabaseClient } from '../../utils/supabaseClient';
 
 // Import des widgets avancés avec IA
 import SalesPerformanceScoreWidget from './widgets/SalesPerformanceScoreWidget';
@@ -20,6 +21,8 @@ import InventoryWidget from './widgets/InventoryWidget';
 import PerformanceWidget from './widgets/PerformanceWidget';
 import DailyActionsWidget from './widgets/DailyActionsWidget';
 import StockStatusWidget from './widgets/StockStatusWidget';
+import EquipmentAvailabilityWidget from './widgets/EquipmentAvailabilityWidget';
+import UpcomingRentalsWidget from './widgets/UpcomingRentalsWidget';
 
 // Import des widgets spécialisés pour vendeur
 // Les composants React ont été supprimés du fichier VendeurWidgets.tsx
@@ -57,17 +60,18 @@ const SalesPerformanceScoreWidgetAsync: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const loadData = async () => {
       try {
         setLoading(true);
         const { getSalesPerformanceData } = await import('../../utils/api');
         const realData = await getSalesPerformanceData();
-        setData(realData);
+        if (!cancelled) setData(realData);
       } catch (err) {
         console.error('Erreur lors du chargement des données de performance:', err);
-        setError(err instanceof Error ? err.message : 'Erreur inconnue');
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Erreur inconnue');
         // Utiliser des données par défaut en cas d'erreur
-        setData({
+        if (!cancelled) setData({
           score: 75,
           target: 85,
           rank: 3,
@@ -104,11 +108,14 @@ const SalesPerformanceScoreWidgetAsync: React.FC = () => {
           }
         });
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadData();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -137,6 +144,31 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
   widgetSize = 'medium',
   onAction 
 }) => {
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
+  const [resolvedUserIdLoading, setResolvedUserIdLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const resolveUser = async () => {
+      try {
+        const { data } = await supabaseClient.auth.getSession();
+        const id = data.session?.user?.id ?? null;
+        if (!cancelled) setResolvedUserId(id);
+      } catch (err) {
+        console.error('WidgetRenderer: failed to resolve user id', err);
+        if (!cancelled) setResolvedUserId(null);
+      } finally {
+        if (!cancelled) setResolvedUserIdLoading(false);
+      }
+    };
+
+    resolveUser();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Récupérer les données pour ce widget
   const rawData = getWidgetData(widget.id, widget.dataSource);
 
@@ -414,6 +446,20 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     ];
   };
 
+  const getEquipmentData = () => {
+    if (Array.isArray(rawData)) return rawData;
+    return [
+      { id: '1', name: 'CAT 320D - Pelle hydraulique', status: 'available', location: 'Casablanca', lastUpdate: '2026-03-13T10:30:00Z', nextMaintenance: '2026-04-05' },
+      { id: '2', name: 'JCB 3CX - Chargeuse', status: 'rented', location: 'Rabat', lastUpdate: '2026-03-12T14:15:00Z', returnDate: '2026-03-25' },
+      { id: '3', name: 'Komatsu PC200 - Pelle mécanique', status: 'maintenance', location: 'Casablanca', lastUpdate: '2026-03-11T16:45:00Z', nextMaintenance: '2026-03-18' },
+      { id: '4', name: 'CAT 950GC - Chargeur sur pneus', status: 'available', location: 'Marrakech', lastUpdate: '2026-03-13T08:00:00Z', nextMaintenance: '2026-04-20' },
+      { id: '5', name: 'JCB 4CX - Tractopelle', status: 'rented', location: 'Agadir', lastUpdate: '2026-03-10T13:30:00Z', returnDate: '2026-03-28' },
+      { id: '6', name: 'Volvo EC220 - Pelle sur chenilles', status: 'available', location: 'Tanger', lastUpdate: '2026-03-13T09:00:00Z', nextMaintenance: '2026-05-01' },
+      { id: '7', name: 'Liebherr LTM 1100 - Grue mobile', status: 'rented', location: 'Casablanca', lastUpdate: '2026-03-09T11:00:00Z', returnDate: '2026-03-20' },
+      { id: '8', name: 'Bomag BW 213 - Compacteur', status: 'available', location: 'Fès', lastUpdate: '2026-03-12T07:30:00Z', nextMaintenance: '2026-04-15' },
+    ];
+  };
+
   // Fonction pour gérer les actions des widgets
   const handleWidgetAction = (action: string, actionData: any) => {
     if (onAction) {
@@ -447,17 +493,47 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
   switch (widget.type) {
     // Widgets IA - Priorité haute
     case 'ai-insights':
+      if (resolvedUserIdLoading) {
+        return (
+          <div className="flex items-center justify-center p-6">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600" />
+            <span className="ml-2 text-gray-600 text-sm">Chargement...</span>
+          </div>
+        );
+      }
+      if (!resolvedUserId) {
+        return (
+          <div className="p-4 text-sm text-gray-600">
+            Connectez-vous pour afficher les insights IA.
+          </div>
+        );
+      }
       return (
         <AIInsightsWidget 
-          userId="current-user-id" // À remplacer par l'ID utilisateur réel
+          userId={resolvedUserId}
           widgetSize={widgetSize}
         />
       );
 
     case 'ai-optimization':
+      if (resolvedUserIdLoading) {
+        return (
+          <div className="flex items-center justify-center p-6">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600" />
+            <span className="ml-2 text-gray-600 text-sm">Chargement...</span>
+          </div>
+        );
+      }
+      if (!resolvedUserId) {
+        return (
+          <div className="p-4 text-sm text-gray-600">
+            Connectez-vous pour afficher les recommandations IA.
+          </div>
+        );
+      }
       return (
         <AIOptimizationWidget 
-          userId="current-user-id" // À remplacer par l'ID utilisateur réel
+          userId={resolvedUserId}
           widgetSize={widgetSize}
         />
       );
@@ -565,50 +641,31 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
       );
 
     case 'equipment':
-      // Widget pour la disponibilité des équipements
       return (
-        <div className="p-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600 mb-2">85%</div>
-            <div className="text-sm text-gray-600">Équipements disponibles</div>
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Disponibles</span>
-                <span className="font-semibold text-green-600">17/20</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>En location</span>
-                <span className="font-semibold text-orange-600">3/20</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>En maintenance</span>
-                <span className="font-semibold text-red-600">0/20</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <EquipmentAvailabilityWidget
+          data={Array.isArray(rawData) ? rawData as any : getEquipmentData()}
+          widgetSize={widgetSize}
+        />
       );
 
     case 'calendar':
-      // Widget pour les locations à venir
       return (
-        <div className="p-4">
+        <UpcomingRentalsWidget
+          data={Array.isArray(rawData) ? rawData as any : []}
+          widgetSize={widgetSize}
+          onAction={handleWidgetAction}
+        />
+      );
+
+    case 'map':
+      return (
+        <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4">
           <div className="text-center">
-            <div className="text-lg font-semibold mb-3">Locations à venir</div>
-            <div className="space-y-2">
-              <div className="bg-blue-50 p-2 rounded">
-                <div className="text-sm font-medium">Excavatrice CAT 320</div>
-                <div className="text-xs text-gray-600">15-20 Déc • Client: BTP Maroc</div>
-              </div>
-              <div className="bg-green-50 p-2 rounded">
-                <div className="text-sm font-medium">Chargeur frontal</div>
-                <div className="text-xs text-gray-600">18-25 Déc • Client: Construction Plus</div>
-              </div>
-              <div className="bg-yellow-50 p-2 rounded">
-                <div className="text-sm font-medium">Bouteur D6</div>
-                <div className="text-xs text-gray-600">22-30 Déc • Client: Mines Atlas</div>
-              </div>
-            </div>
+            <svg className="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            <p className="text-sm font-medium text-gray-600">{widget.title}</p>
+            <p className="text-xs text-gray-400 mt-1">Carte interactive — bientôt disponible</p>
           </div>
         </div>
       );

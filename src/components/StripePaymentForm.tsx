@@ -8,8 +8,8 @@ import {
 } from '@stripe/react-stripe-js';
 import { supabaseClient as supabase } from '../utils/supabaseClient';
 
-// Charger Stripe avec votre clé publique
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here');
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 interface StripePaymentFormProps {
   planType: 'premium' | 'pro' | 'enterprise';
@@ -129,19 +129,10 @@ const PaymentForm: React.FC<StripePaymentFormProps> = ({
         localStorage.setItem('enterpriseService', 'true');
         localStorage.setItem('userServices', 'enterprise');
         
-        console.log('✅ Abonnement entreprise activé dans StripePaymentForm');
-        console.log('📊 localStorage mis à jour:', {
-          userSubscription: 'enterprise',
-          enterpriseService: 'true',
-          userServices: 'enterprise'
-        });
-        
-        // Déclencher l'événement avec un délai pour s'assurer que localStorage est mis à jour
-        setTimeout(() => {
+          setTimeout(() => {
           window.dispatchEvent(new CustomEvent('enterpriseSubscriptionActivated', {
             detail: { planType: 'enterprise' }
           }));
-          console.log('🎉 Événement enterpriseSubscriptionActivated déclenché');
         }, 100);
       }
 
@@ -222,8 +213,21 @@ const PaymentForm: React.FC<StripePaymentFormProps> = ({
 };
 
 const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
+  if (!stripeKey) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
+        <p className="text-amber-800 font-medium">
+          Le paiement en ligne n'est pas configuré pour le moment.
+        </p>
+        <p className="text-amber-700 text-sm mt-2">
+          Veuillez contacter l'administrateur pour activer les paiements.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <Elements stripe={stripePromise}>
+    <Elements stripe={stripePromise!}>
       <PaymentForm {...props} />
     </Elements>
   );

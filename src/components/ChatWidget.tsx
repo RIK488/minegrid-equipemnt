@@ -128,8 +128,9 @@ const ChatWidget: React.FC = () => {
     setIsLoading(true);
 
     try {
+      const assistantUrl = import.meta.env.VITE_N8N_ASSISTANT_URL || '';
       console.log('📡 Tentative de connexion à l\'API...');
-      console.log('🔗 URL:', 'https://n8n.srv786179.hstgr.cloud/webhook/assistant_virtuel');
+      console.log('🔗 URL:', assistantUrl);
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 secondes de timeout
@@ -139,7 +140,7 @@ const ChatWidget: React.FC = () => {
       };
       console.log('📦 Body envoyé:', requestBody);
 
-      const response = await fetch('https://n8n.srv786179.hstgr.cloud/webhook/assistant_virtuel', {
+      const response = await fetch(assistantUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -319,9 +320,10 @@ const ChatWidget: React.FC = () => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={async () => {
+                  const assistantUrl = import.meta.env.VITE_N8N_ASSISTANT_URL || '';
                   console.log('🧪 Test de connexion à l\'API...');
                   try {
-                    const response = await fetch('https://n8n.srv786179.hstgr.cloud/webhook/assistant_virtuel', {
+                    const response = await fetch(assistantUrl, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ message: 'test' })

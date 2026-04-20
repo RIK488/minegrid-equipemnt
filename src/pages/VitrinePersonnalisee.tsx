@@ -23,6 +23,7 @@ import {
   Calendar
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
+import { VITRINE_COLUMNS } from '../constants/apiQueryFields';
 import { useCurrencyStore } from '../stores/currencyStore';
 import Price from '../components/Price';
 
@@ -263,7 +264,7 @@ export default function VitrinePersonnalisee() {
       // Récupérer la vitrine
       const { data, error } = await supabase
         .from('vitrines')
-        .select('*')
+        .select(VITRINE_COLUMNS)
         .eq('user_id', userIdToLoad)
         .single();
 

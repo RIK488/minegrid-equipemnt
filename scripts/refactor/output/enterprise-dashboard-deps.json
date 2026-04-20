@@ -1,0 +1,74 @@
+{
+  "ResponsiveGridLayout": [],
+  "iconMap": [],
+  "useAdaptiveWidget": [],
+  "mockData": [],
+  "DonutChart": [],
+  "MetricWidget": [
+    "DonutChart",
+    "iconMap",
+    "useAdaptiveWidget"
+  ],
+  "MapWidget": [
+    "iconMap"
+  ],
+  "WidgetComponent": [
+    "ChartWidget",
+    "ListWidget",
+    "MapWidget",
+    "MetricWidget",
+    "getCalendarData",
+    "getEquipmentAvailabilityData",
+    "getMaintenanceData",
+    "getMapData",
+    "getPerformanceScoreData",
+    "getSalesPerformanceScoreData",
+    "iconMap",
+    "mockData"
+  ],
+  "Modal": [],
+  "RentalForm": [],
+  "widgetConfigs": [],
+  "renderWidgetContent": [
+    "ChartWidget",
+    "ListWidget",
+    "MapWidget",
+    "MetricWidget",
+    "getCalendarData",
+    "getEquipmentAvailabilityData",
+    "getListData",
+    "getMaintenanceData",
+    "getMapData",
+    "getMetricData",
+    "getNotificationsData",
+    "getPerformanceScoreData",
+    "getSalesPerformanceScoreData"
+  ],
+  "getMetricData": [],
+  "getPerformanceScoreData": [],
+  "getSalesPerformanceScoreData": [
+    "getActivityRecommendation",
+    "getDefaultPerformanceData"
+  ],
+  "getDefaultPerformanceData": [],
+  "getActivityRecommendation": [],
+  "getListData": [],
+  "getEquipmentAvailabilityData": [],
+  "ListWidget": [
+    "iconMap"
+  ],
+  "ChartWidget": [
+    "iconMap"
+  ],
+  "getCalendarData": [],
+  "getMapData": [],
+  "getMaintenanceData": [],
+  "getNotificationsData": [],
+  "EnterpriseDashboard": [
+    "Modal",
+    "RentalForm",
+    "ResponsiveGridLayout",
+    "WidgetComponent",
+    "iconMap"
+  ]
+}

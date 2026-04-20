@@ -174,7 +174,14 @@ const EnterpriseDashboardLoueurDisplay: React.FC = () => {
   // 1. Chargement initial
   useEffect(() => {
     const saved = localStorage.getItem('enterpriseDashboardConfig_loueur');
-    let parsed = saved ? JSON.parse(saved) : null;
+    let parsed: any = null;
+    if (saved) {
+      try {
+        parsed = JSON.parse(saved);
+      } catch {
+        localStorage.removeItem('enterpriseDashboardConfig_loueur');
+      }
+    }
     let shouldUpdate = false;
 
     // Si pas de config ou config invalide, créer une nouvelle config complète
@@ -230,20 +237,24 @@ const EnterpriseDashboardLoueurDisplay: React.FC = () => {
   useEffect(() => {
     const saved = localStorage.getItem('enterpriseDashboardConfig_loueur');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      let updated = false;
-      if (parsed.widgets) {
-        parsed.widgets = parsed.widgets.map(w => {
-          if (w.id === 'rental-pipeline' && w.title !== 'Pipeline de location') {
-            updated = true;
-            return { ...w, title: 'Pipeline de location' };
-          }
-          return w;
-        });
-      }
-      if (updated) {
-        localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(parsed));
-        window.location.reload();
+      try {
+        const parsed = JSON.parse(saved);
+        let updated = false;
+        if (parsed.widgets) {
+          parsed.widgets = parsed.widgets.map(w => {
+            if (w.id === 'rental-pipeline' && w.title !== 'Pipeline de location') {
+              updated = true;
+              return { ...w, title: 'Pipeline de location' };
+            }
+            return w;
+          });
+        }
+        if (updated) {
+          localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(parsed));
+          window.location.reload();
+        }
+      } catch {
+        localStorage.removeItem('enterpriseDashboardConfig_loueur');
       }
     }
   }, []);
@@ -271,69 +282,73 @@ const EnterpriseDashboardLoueurDisplay: React.FC = () => {
     ];
     const saved = localStorage.getItem('enterpriseDashboardConfig_loueur');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      const widgetIds = (parsed.widgets || []).map((w: any) => w.id);
-      const isValid = validIds.every(id => widgetIds.includes(id)) && widgetIds.length === validIds.length;
-      if (!isValid) {
+      try {
+        const parsed = JSON.parse(saved);
+        const widgetIds = (parsed.widgets || []).map((w: any) => w.id);
+        const isValid = validIds.every(id => widgetIds.includes(id)) && widgetIds.length === validIds.length;
+        if (!isValid) {
+          localStorage.removeItem('enterpriseDashboardConfig_loueur');
+          // Récupère le mapping des tailles depuis la config précédente si présent
+          const previousWidgetSizes = parsed && parsed.widgetSizes ? parsed.widgetSizes : {};
+          // Crée les widgets par défaut en injectant la taille si connue
+          const defaultWidgets = [
+            {
+              id: 'rental-revenue',
+              type: 'metric',
+              title: 'Revenus de location',
+              enabled: true,
+              position: 0,
+              size: previousWidgetSizes['rental-revenue'] || '1/3'
+            },
+            {
+              id: 'equipment-availability',
+              type: 'equipment',
+              title: 'Disponibilité Équipements',
+              enabled: true,
+              position: 1,
+              size: previousWidgetSizes['equipment-availability'] || '1/3'
+            },
+            {
+              id: 'upcoming-rentals',
+              type: 'calendar',
+              title: 'Locations à venir',
+              enabled: true,
+              position: 2,
+              size: previousWidgetSizes['upcoming-rentals'] || '1/3'
+            },
+            {
+              id: 'rental-pipeline',
+              type: 'pipeline',
+              title: 'Pipeline de location',
+              enabled: true,
+              position: 3,
+              size: previousWidgetSizes['rental-pipeline'] || '1/3'
+            },
+            {
+              id: 'daily-actions',
+              type: 'daily-actions',
+              title: 'Actions prioritaires du jour',
+              enabled: true,
+              position: 4,
+              size: previousWidgetSizes['daily-actions'] || '1/3'
+            }
+          ];
+          const defaultLayout = generatePreviewLayout(defaultWidgets, previousWidgetSizes);
+          const newConfig = {
+            widgets: defaultWidgets,
+            layout: { lg: defaultLayout },
+            widgetSizes: previousWidgetSizes,
+            theme: 'light',
+            refreshInterval: 30,
+            notifications: true
+          };
+          localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
+          setConfig(newConfig);
+          setLayout({ lg: defaultLayout });
+          return;
+        }
+      } catch {
         localStorage.removeItem('enterpriseDashboardConfig_loueur');
-        // Récupère le mapping des tailles depuis la config précédente si présent
-        const previousWidgetSizes = parsed && parsed.widgetSizes ? parsed.widgetSizes : {};
-        // Crée les widgets par défaut en injectant la taille si connue
-        const defaultWidgets = [
-          {
-            id: 'rental-revenue',
-            type: 'metric',
-            title: 'Revenus de location',
-            enabled: true,
-            position: 0,
-            size: previousWidgetSizes['rental-revenue'] || '1/3'
-          },
-          {
-            id: 'equipment-availability',
-            type: 'equipment',
-            title: 'Disponibilité Équipements',
-            enabled: true,
-            position: 1,
-            size: previousWidgetSizes['equipment-availability'] || '1/3'
-          },
-          {
-            id: 'upcoming-rentals',
-            type: 'calendar',
-            title: 'Locations à venir',
-            enabled: true,
-            position: 2,
-            size: previousWidgetSizes['upcoming-rentals'] || '1/3'
-          },
-          {
-            id: 'rental-pipeline',
-            type: 'pipeline',
-            title: 'Pipeline de location',
-            enabled: true,
-            position: 3,
-            size: previousWidgetSizes['rental-pipeline'] || '1/3'
-          },
-          {
-            id: 'daily-actions',
-            type: 'daily-actions',
-            title: 'Actions prioritaires du jour',
-            enabled: true,
-            position: 4,
-            size: previousWidgetSizes['daily-actions'] || '1/3'
-          }
-        ];
-        const defaultLayout = generatePreviewLayout(defaultWidgets, previousWidgetSizes);
-        const newConfig = {
-          widgets: defaultWidgets,
-          layout: { lg: defaultLayout },
-          widgetSizes: previousWidgetSizes,
-          theme: 'light',
-          refreshInterval: 30,
-          notifications: true
-        };
-        localStorage.setItem('enterpriseDashboardConfig_loueur', JSON.stringify(newConfig));
-        setConfig(newConfig);
-        setLayout({ lg: defaultLayout });
-        return;
       }
     }
   }, []);
@@ -388,7 +403,14 @@ const EnterpriseDashboardLoueurDisplay: React.FC = () => {
     if (currentLayoutItem) {
       // Créer ou mettre à jour le backup avec la position du widget supprimé
       const existingBackup = localStorage.getItem('enterpriseDashboardConfig_loueur_backup');
-      let backupConfig = existingBackup ? JSON.parse(existingBackup) : { layout: { lg: [] } };
+      let backupConfig = { layout: { lg: [] } };
+      if (existingBackup) {
+        try {
+          backupConfig = JSON.parse(existingBackup);
+        } catch {
+          localStorage.removeItem('enterpriseDashboardConfig_loueur_backup');
+        }
+      }
       
       // Ajouter ou mettre à jour la position du widget dans le backup
       const existingIndex = backupConfig.layout.lg.findIndex((l: any) => l.i === widgetId);
@@ -433,8 +455,8 @@ const EnterpriseDashboardLoueurDisplay: React.FC = () => {
           originalPosition = originalLayoutItem;
           console.log('Position originale trouvée:', originalPosition);
         }
-      } catch (error) {
-        console.log('Erreur lors de la lecture du backup:', error);
+      } catch {
+        localStorage.removeItem('enterpriseDashboardConfig_loueur_backup');
       }
     }
     
@@ -480,8 +502,8 @@ const EnterpriseDashboardLoueurDisplay: React.FC = () => {
           backupConfig.layout.lg = backupConfig.layout.lg.filter((l: any) => l.i !== widgetId);
           localStorage.setItem('enterpriseDashboardConfig_loueur_backup', JSON.stringify(backupConfig));
           console.log('Backup nettoyé pour', widgetId);
-        } catch (error) {
-          console.log('Erreur lors du nettoyage du backup:', error);
+        } catch {
+          localStorage.removeItem('enterpriseDashboardConfig_loueur_backup');
         }
       }
     }, 1500);
@@ -694,22 +716,22 @@ const EnterpriseDashboardLoueurDisplay: React.FC = () => {
         rowHeight={90}
         isDraggable={true}
         isResizable={true}
+        draggableHandle=".widget-drag-handle"
         margin={[16, 16]}
         useCSSTransforms={true}
         compactType="vertical"
         onLayoutChange={onLayoutChange}
       >
-        {/* Affiche uniquement les widgets présents dans la config utilisateur, dans l'ordre voulu et avec les dimensions sauvegardées */}
         {orderedLayouts.map((l: any) => {
           const widget = widgetsById[l.i];
           if (!widget) return null;
           return (
             <div key={widget.id} data-grid={l} className="bg-orange-50 border border-orange-200 rounded-lg flex flex-col h-full group relative">
               <div className="h-full flex flex-col">
-                {/* Header du widget */}
-                <div className="flex justify-between items-center p-4 pb-2 border-b">
-                  <h3 className="text-lg font-bold text-gray-900">{widget.id === 'rental-pipeline' ? "Pipeline de location" : widget.title}</h3>
-                  <div className="flex space-x-1">
+                {/* Header — zone de drag */}
+                <div className="widget-drag-handle flex justify-between items-center p-4 pb-2 border-b cursor-grab active:cursor-grabbing">
+                  <h3 className="text-lg font-bold text-gray-900 select-none">{widget.id === 'rental-pipeline' ? "Pipeline de location" : widget.title}</h3>
+                  <div className="flex space-x-1" onMouseDown={(e) => e.stopPropagation()}>
                     <button
                       className="p-1 bg-white rounded-full shadow hover:bg-orange-100 transition-colors"
                       title="Agrandir/Réduire la hauteur"
@@ -733,7 +755,7 @@ const EnterpriseDashboardLoueurDisplay: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                {/* Contenu scrollable */}
+                {/* Contenu — PAS draggable, clics libres */}
                 <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-6" style={{ maxHeight: '100%' }}>
                   <WidgetRenderer
                     widget={widget}

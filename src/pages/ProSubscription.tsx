@@ -18,7 +18,7 @@ const plans: Plan[] = [
   {
     id: 'pro',
     name: 'Pro',
-    price: 99,
+    price: 70,
     period: 'mois',
     maxUsers: 5,
     maxEquipment: 50,
@@ -35,7 +35,7 @@ const plans: Plan[] = [
   {
     id: 'premium',
     name: 'Premium',
-    price: 199,
+    price: 30,
     period: 'mois',
     maxUsers: 15,
     maxEquipment: 200,
@@ -53,7 +53,7 @@ const plans: Plan[] = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: 499,
+    price: 200,
     period: 'mois',
     maxUsers: 50,
     maxEquipment: 1000,
@@ -103,7 +103,7 @@ export default function ProSubscription() {
           cardForm!.style.display = 'none';
           promoForm!.style.display = 'block';
           promoDiscount!.style.display = 'flex';
-          totalPrice!.textContent = '0€';
+          totalPrice!.textContent = '0 USD';
         } else {
           cardForm!.style.display = 'block';
           promoForm!.style.display = 'none';
@@ -178,7 +178,7 @@ export default function ProSubscription() {
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
                 <div className="text-4xl font-bold text-primary-600 mb-2">
-                  {plan.price}€
+                  {plan.id === 'enterprise' ? 'À partir de 200 USD' : `${plan.price} USD`}
                   <span className="text-lg text-gray-500 font-normal">/{plan.period}</span>
                 </div>
                 <p className="text-gray-600">
@@ -293,7 +293,7 @@ export default function ProSubscription() {
                   Plan {plans.find(p => p.id === selectedPlan)?.name}
                 </span>
                 <span className="font-semibold text-gray-900">
-                  {plans.find(p => p.id === selectedPlan)?.price}€/mois
+                  {plans.find(p => p.id === selectedPlan)?.price} USD/mois
                 </span>
               </div>
             </div>
@@ -303,7 +303,7 @@ export default function ProSubscription() {
               disabled={isLoading}
               className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Traitement...' : `Continuer vers le paiement (${plans.find(p => p.id === selectedPlan)?.price}€/mois)`}
+              {isLoading ? 'Traitement...' : `Continuer vers le paiement (${plans.find(p => p.id === selectedPlan)?.price} USD/mois)`}
             </button>
 
             <p className="text-sm text-gray-500 text-center">
@@ -364,7 +364,7 @@ export default function ProSubscription() {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Finaliser votre abonnement</h2>
                   <p className="text-gray-600 mt-1">
-                    {plans.find(p => p.id === selectedPlan)?.name} - {plans.find(p => p.id === selectedPlan)?.price}€/mois
+                    {plans.find(p => p.id === selectedPlan)?.name} - {plans.find(p => p.id === selectedPlan)?.price} USD/mois
                   </p>
                 </div>
                 <button
@@ -479,7 +479,7 @@ export default function ProSubscription() {
                       <button
                         onClick={() => {
                           const code = (document.getElementById('promoCode') as HTMLInputElement).value;
-                          if (code === '082025') {
+                          if (code === 'minegrid2026') {
                             alert('✅ Code promo valide ! Accès temporaire de 30 jours.');
                             // Activer l'abonnement avec code promo
                             activateSubscriptionWithPromo();
@@ -512,16 +512,16 @@ export default function ProSubscription() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Abonnement {plans.find(p => p.id === selectedPlan)?.name}</span>
-                    <span className="font-medium">{plans.find(p => p.id === selectedPlan)?.price}€/mois</span>
+                    <span className="font-medium">{plans.find(p => p.id === selectedPlan)?.price} USD/mois</span>
                   </div>
                   <div className="flex justify-between text-green-600" id="promoDiscount" style={{ display: 'none' }}>
                     <span>Code promo appliqué</span>
-                    <span>-{plans.find(p => p.id === selectedPlan)?.price}€</span>
+                    <span>-{plans.find(p => p.id === selectedPlan)?.price} USD</span>
                   </div>
                   <div className="border-t pt-2">
                     <div className="flex justify-between font-semibold">
                       <span>Total</span>
-                      <span id="totalPrice">{plans.find(p => p.id === selectedPlan)?.price}€</span>
+                      <span id="totalPrice">{plans.find(p => p.id === selectedPlan)?.price} USD</span>
                     </div>
                   </div>
                 </div>
@@ -533,7 +533,7 @@ export default function ProSubscription() {
                   const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked') as HTMLInputElement;
                   if (paymentMethod?.value === 'promo') {
                     const code = (document.getElementById('promoCode') as HTMLInputElement).value;
-                    if (code === '082025') {
+                    if (code === 'minegrid2026') {
                       activateSubscriptionWithPromo();
                     } else {
                       alert('Veuillez entrer un code promo valide');
@@ -547,7 +547,7 @@ export default function ProSubscription() {
                 className="w-full mt-6 bg-orange-600 text-white py-3 px-4 rounded-lg hover:bg-orange-700 font-semibold flex items-center justify-center"
               >
                 <Lock className="h-5 w-5 mr-2" />
-                Payer {plans.find(p => p.id === selectedPlan)?.price}€
+                Payer {plans.find(p => p.id === selectedPlan)?.price} USD
               </button>
 
               <p className="text-xs text-gray-500 text-center mt-4">
@@ -580,7 +580,7 @@ export default function ProSubscription() {
           subscription_start: new Date().toISOString().split('T')[0],
           subscription_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 jours
           max_users: plans.find(p => p.id === selectedPlan)?.maxUsers || 5,
-          promo_code_used: '082025',
+          promo_code_used: 'minegrid2026',
           payment_method: 'promo_code'
         });
 

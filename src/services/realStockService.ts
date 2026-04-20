@@ -1,4 +1,5 @@
 import { supabaseClient } from '../utils/supabaseClient';
+import { PROMOTIONS_COLUMNS, STOCK_INSIGHTS_COLUMNS } from '../constants/pipelineQueryFields';
 
 // Types pour les équipements réels
 export interface RealEquipment {
@@ -125,7 +126,7 @@ export class RealStockService {
       // Compter les vues
       const { count: viewsCount } = await supabaseClient
         .from('machine_views')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('machine_id', machineId);
 
       // Compter les clics (simulé pour l'instant)
@@ -134,12 +135,12 @@ export class RealStockService {
       // Compter les contacts (messages + offres)
       const { count: messagesCount } = await supabaseClient
         .from('messages')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('machine_id', machineId);
 
       const { count: offersCount } = await supabaseClient
         .from('offers')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('machine_id', machineId);
 
       const contactsCount = (messagesCount || 0) + (offersCount || 0);
@@ -202,7 +203,7 @@ export class RealStockService {
 
       const { data, error } = await supabaseClient
         .from('promotions')
-        .select('*')
+        .select(PROMOTIONS_COLUMNS)
         .eq('seller_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -248,7 +249,7 @@ export class RealStockService {
 
       const { data, error } = await supabaseClient
         .from('stock_insights')
-        .select('*')
+        .select(STOCK_INSIGHTS_COLUMNS)
         .eq('seller_id', user.id)
         .order('created_at', { ascending: false });
 
