@@ -7,55 +7,14 @@ import {
   TECHNICIAN_FULL_COLUMNS,
 } from '../constants/enterpriseApiQueryFields';
 
-// Types pour les données
-interface Intervention {
-  id: string;
-  name: string;
-  equipment_name: string;
-  technician_name: string;
-  status: string;
-  priority: string;
-  description: string;
-  estimated_duration: number;
-  scheduled_date: string;
-  completed_date?: string;
-}
-
-interface Repair {
-  id: string;
-  equipment_name: string;
-  technician_name: string;
-  status: string;
-  problem_description: string;
-  estimated_duration: number;
-  estimated_cost: number;
-}
-
-interface InventoryItem {
-  id: string;
-  category: string;
-  current_stock: number;
-  minimum_stock: number;
-  unit_price: number;
-  supplier: string;
-}
-
-interface Technician {
-  id: string;
-  name: string;
-  specialization: string;
-  max_workload_hours: number;
-  current_workload_hours: number;
-  efficiency_rating: number;
-  availability_status: string;
-}
-
-interface Task {
-  id: string;
-  technician_id: string;
-  estimated_hours: number;
-  status: string;
-}
+// Types centralises dans ./enterpriseApi/types.
+import type {
+  Intervention,
+  Repair,
+  InventoryItem,
+  Technician,
+  Task,
+} from './enterpriseApi/types';
 
 // =====================================================
 // APIs POUR LES WIDGETS MÉCANICIEN
