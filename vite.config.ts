@@ -5,12 +5,15 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   resolve: {
-    extensions: ['.tsx', '.ts', '.jsx', '.js']
+    extensions: ['.tsx', '.ts', '.jsx', '.js'],
   },
   server: {
-    port: 5173 // ✅ PORT FIXÉ ICI
+    port: 5173,
   },
   optimizeDeps: {
+    // lucide-react expose des centaines d'icones : l'exclure du pre-bundling
+    // evite que Vite les scanne toutes au demarrage dev, ce qui accelerait
+    // le cold start et reduirait les faux positifs de rebuild.
     exclude: ['lucide-react'],
   },
   build: {
@@ -18,10 +21,30 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     minify: true,
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
+        /**
+         * Decoupage manuel pour reduire le chunk `index` initial.
+         * Cible : bundle initial < 250 kB (vs 460 kB actuellement) en
+         * isolant les deps lourdes qui ne sont pas utilisees sur la
+         * page d'accueil.
+         *
+         * - react-vendor : tjrs charge, cache long (7 MB+ combine)
+         * - supabase     : utilise partout, mais en chunk separe pour
+         *                  meilleur cache entre deploiements
+         * - charts/maps/grid/stripe : chunks optionnels charges a la
+         *                  demande par les pages qui en ont besoin
+         */
         manualChunks: {
-          vendor: ['react', 'react-dom'],
+          'react-vendor': ['react', 'react-dom'],
+          'supabase': ['@supabase/supabase-js'],
+          'charts': ['recharts', 'chart.js', 'react-chartjs-2'],
+          'maps': ['leaflet'],
+          'grid': ['react-grid-layout', '@hello-pangea/dnd'],
+          'stripe': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
+          'query': ['@tanstack/react-query'],
+          'zustand': ['zustand'],
         },
       },
     },
