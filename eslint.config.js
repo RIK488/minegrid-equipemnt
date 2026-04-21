@@ -1,4 +1,4 @@
-// Flat config ESLint 9 — minimale, non bloquante.
+// Flat config ESLint 9 — source unique de vérité.
 //
 // Objectif : documenter les règles d'hygiène sans faire rougir tout le dépôt.
 // Les règles sensibles (no-console, no-explicit-any) sont en "warn" le temps
@@ -7,10 +7,10 @@
 //   - remplacer les `any` par des types Supabase générés
 //
 // Exclusions :
-//   - `dist/`, `build/`, `node_modules/` : artefacts
+//   - `dist/`, `build/`, `node_modules/`, `coverage/` : artefacts
 //   - `supabase/functions/` : Deno runtime, règles différentes
-//   - Scripts Node.js à la racine (`*.cjs`, `setup-*.js`, `execute-*.js`,
-//     `fix-*.js`, `test-*.js`) : outils d'admin, pas du code produit
+//   - `archive/**` : scripts legacy archivés (sprint hygiène), pas du code produit
+//   - `services/**` : backend Python, hors scope TypeScript
 
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
@@ -24,18 +24,13 @@ export default tseslint.config(
       'dist/**',
       'build/**',
       'node_modules/**',
-      'supabase/functions/**',
       'coverage/**',
-      '*.cjs',
-      'setup-*.js',
-      'execute-*.js',
-      'fix-*.js',
-      'test-*.js',
-      'deploy-*.js',
-      'migrate-*.js',
-      'migrations/**',
-      'docs/**',
+      'supabase/functions/**',
+      'archive/**',
       'services/**',
+      'docs/**',
+      'migrations/**',
+      'scripts/**',
     ],
   },
 
