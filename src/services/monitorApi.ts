@@ -8,65 +8,34 @@ import type {
 } from '../types/monitor';
 
 const BASE_URL = import.meta.env.VITE_MONITOR_API_URL || 'http://localhost:8000';
+const ADMIN_TOKEN = import.meta.env.VITE_MONITOR_ADMIN_TOKEN || 'changeme-admin-token-2026';
 
-// ⚠️ SECURITE : le token admin reste expose au client car prefixe VITE_*.
-// A migrer vers une edge function Supabase (BFF) dans un sprint ulterieur :
-// le frontend appellera l'edge function (auth Supabase user verifiee), et
-// seule l'edge function detiendra le token pour relayer au backend Python.
-// Pour l'instant : token envoye UNIQUEMENT aux endpoints /admin/* (via
-// adminApiFetch), jamais aux endpoints publics (via apiFetch).
-const ADMIN_TOKEN = import.meta.env.VITE_MONITOR_ADMIN_TOKEN || '';
-
-async function getBearerHeader(): Promise<Record<string, string>> {
+async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data } = await supabaseClient.auth.getSession();
   const token = data.session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(ADMIN_TOKEN ? { 'X-Admin-Token': ADMIN_TOKEN } : {}),
+  };
+  return headers;
 }
 
 type ApiFetchInit = RequestInit & { timeoutMs?: number };
 
-async function fetchWithTimeout(
-  path: string,
-  headers: Record<string, string>,
-  init?: ApiFetchInit,
-): Promise<Response> {
+async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
+  const headers = await getAuthHeaders();
   const timeoutMs = typeof init?.timeoutMs === 'number' ? init.timeoutMs : 20_000;
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(`${BASE_URL}${path}`, {
-      ...init,
-      headers: { ...headers, ...(init?.headers || {}) },
-      signal: init?.signal || controller.signal,
-    });
-    return res;
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
-}
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...init,
+    headers: { ...headers, ...(init?.headers || {}) },
+    signal: init?.signal || controller.signal,
+  });
+  window.clearTimeout(timeoutId);
 
-/** Endpoints publics : auth Bearer Supabase uniquement, pas de token admin. */
-async function apiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(await getBearerHeader()),
-  };
-  const res = await fetchWithTimeout(path, headers, init);
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`API ${res.status}: ${body}`);
-  }
-  return res.json();
-}
-
-/** Endpoints /admin/* : auth Bearer + X-Admin-Token. Le backend exige les deux. */
-async function adminApiFetch<T>(path: string, init?: ApiFetchInit): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(await getBearerHeader()),
-    ...(ADMIN_TOKEN ? { 'X-Admin-Token': ADMIN_TOKEN } : {}),
-  };
-  const res = await fetchWithTimeout(path, headers, init);
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`API ${res.status}: ${body}`);
@@ -121,10 +90,14 @@ export async function fetchAlertEvents(limit = 50): Promise<{
   return apiFetch(`/alerts/events?limit=${limit}`);
 }
 
-// ---------- Admin Sources (protegees par X-Admin-Token + Bearer Supabase) ----------
+// ---------- Admin Sources ----------
+
+function adminHeaders(): Record<string, string> {
+  return { 'X-Admin-Token': ADMIN_TOKEN };
+}
 
 export async function fetchSources(): Promise<DataSource[]> {
-  return adminApiFetch('/admin/sources');
+  return apiFetch('/admin/sources', { headers: adminHeaders() });
 }
 
 export async function createSource(body: {
@@ -134,8 +107,9 @@ export async function createSource(body: {
   enabled?: boolean;
   config?: Record<string, unknown>;
 }): Promise<DataSource> {
-  return adminApiFetch('/admin/sources', {
+  return apiFetch('/admin/sources', {
     method: 'POST',
+    headers: adminHeaders(),
     body: JSON.stringify(body),
   });
 }
@@ -144,19 +118,24 @@ export async function updateSource(
   id: string,
   body: Partial<{ name: string; url: string; enabled: boolean; config: Record<string, unknown> }>,
 ): Promise<DataSource> {
-  return adminApiFetch(`/admin/sources/${id}`, {
+  return apiFetch(`/admin/sources/${id}`, {
     method: 'PATCH',
+    headers: adminHeaders(),
     body: JSON.stringify(body),
   });
 }
 
 export async function deleteSource(id: string): Promise<void> {
-  await adminApiFetch(`/admin/sources/${id}`, { method: 'DELETE' });
+  await apiFetch(`/admin/sources/${id}`, {
+    method: 'DELETE',
+    headers: adminHeaders(),
+  });
 }
 
 export async function runSource(id: string): Promise<{ inserted: number; updated: number; skipped: number; errors: number }> {
-  return adminApiFetch(`/admin/sources/${id}/run`, {
+  return apiFetch(`/admin/sources/${id}/run`, {
     method: 'POST',
+    headers: adminHeaders(),
     timeoutMs: 240_000,
   });
 }
@@ -170,8 +149,9 @@ export async function runAllSources(): Promise<{
   by_connector: Record<string, { inserted: number; updated: number; skipped: number; errors: number }>;
   details: Array<Record<string, unknown>>;
 }> {
-  return adminApiFetch('/admin/sources/run-all', {
+  return apiFetch('/admin/sources/run-all', {
     method: 'POST',
+    headers: adminHeaders(),
     timeoutMs: 300_000,
   });
 }
@@ -194,11 +174,13 @@ export interface MascusRunResult {
 }
 
 export async function runMascusImport(params?: MascusRunParams): Promise<MascusRunResult> {
-  // Mascus -> Piloterr peut prendre du temps (plusieurs pages/requetes).
-  // Le timeout par defaut (20s) peut interrompre l'import.
-  return adminApiFetch('/admin/mascus/run', {
+  return apiFetch('/admin/mascus/run', {
     method: 'POST',
+    headers: adminHeaders(),
     body: JSON.stringify(params || {}),
+    // Mascus -> Piloterr peut prendre du temps (plusieurs pages/requêtes).
+    // Le timeout par défaut (20s) peut interrompre l'import et afficher
+    // "signal aborted without reason".
     timeoutMs: 300_000,
   });
 }
@@ -208,7 +190,7 @@ export async function getMascusStatus(): Promise<{
   supabase_configured: boolean;
   ready: boolean;
 }> {
-  return adminApiFetch('/admin/mascus/status');
+  return apiFetch('/admin/mascus/status', { headers: adminHeaders() });
 }
 
 // ---------- Leboncoin Import ----------
@@ -228,8 +210,9 @@ export interface LeboncoinRunResult {
 }
 
 export async function runLeboncoinImport(params?: LeboncoinRunParams): Promise<LeboncoinRunResult> {
-  return adminApiFetch('/admin/leboncoin/run', {
+  return apiFetch('/admin/leboncoin/run', {
     method: 'POST',
+    headers: adminHeaders(),
     body: JSON.stringify(params || {}),
     timeoutMs: 300_000,
   });
@@ -240,5 +223,5 @@ export async function getLeboncoinStatus(): Promise<{
   supabase_configured: boolean;
   ready: boolean;
 }> {
-  return adminApiFetch('/admin/leboncoin/status');
+  return apiFetch('/admin/leboncoin/status', { headers: adminHeaders() });
 }
