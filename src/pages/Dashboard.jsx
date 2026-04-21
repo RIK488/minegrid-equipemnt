@@ -103,29 +103,32 @@ export default function Dashboard({ section = 'overview' }) {
         return hasRealConfiguration;
     });
     
+    // Normalise la valeur d'abonnement pour l'UI : 'enterprise' (anglais, stocke
+    // historiquement en localStorage) <=> 'entreprise' (francais, utilise dans
+    // les conditions d'affichage). Sans cette normalisation, le bouton
+    // "Acceder a mon service" n'apparait pas pour les comptes Enterprise.
+    const normalizeSubscriptionType = (value) => {
+        if (value === 'enterprise') return 'entreprise';
+        return value;
+    };
+
     const [subscriptionType, setSubscriptionType] = useState(() => {
-        // Vérifier si l'abonnement a été explicitement résilié
         const subscriptionCancelled = localStorage.getItem('subscriptionCancelled');
         if (subscriptionCancelled === 'true') {
             return 'aucun';
         }
-        
-        // Vérifier s'il y a un abonnement temporaire dans localStorage
+
         const tempSubscription = localStorage.getItem('tempSubscription');
         if (tempSubscription) {
-            return tempSubscription;
+            return normalizeSubscriptionType(tempSubscription);
         }
-        
-        // Vérifier si l'utilisateur a déjà un abonnement enregistré
+
         const userSubscription = localStorage.getItem('userSubscription');
         if (userSubscription) {
-            return userSubscription;
+            return normalizeSubscriptionType(userSubscription);
         }
-        
-        // Utiliser la fonction utilitaire pour vérifier la configuration
+
         const hasRealConfiguration = hasValidConfiguration();
-        
-        // Si l'utilisateur a une configuration réelle, il a un abonnement entreprise
         return hasRealConfiguration ? 'entreprise' : 'aucun';
     });
 
@@ -637,7 +640,7 @@ export default function Dashboard({ section = 'overview' }) {
 
             // Activer l'abonnement temporaire
             setHasActiveSubscription(true);
-            setSubscriptionType(selectedPlanForPayment);
+            setSubscriptionType(normalizeSubscriptionType(selectedPlanForPayment));
             localStorage.setItem('userSubscription', selectedPlanForPayment);
             localStorage.setItem('tempHasActiveSubscription', 'true');
             localStorage.setItem('tempSubscription', selectedPlanForPayment);
@@ -653,7 +656,7 @@ export default function Dashboard({ section = 'overview' }) {
 
     const handleStripePaymentSuccess = () => {
         setHasActiveSubscription(true);
-        setSubscriptionType(selectedPlanForPayment);
+        setSubscriptionType(normalizeSubscriptionType(selectedPlanForPayment));
         
         // Mettre à jour l'état de l'abonnement entreprise
         if (selectedPlanForPayment === 'enterprise') {
