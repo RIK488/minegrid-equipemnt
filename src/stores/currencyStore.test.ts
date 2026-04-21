@@ -4,10 +4,11 @@ import { useCurrencyStore } from './currencyStore';
 /**
  * Tests du store de devise. Points importants :
  *  - valeur par defaut EUR
- *  - setCurrency(...) marque le choix comme explicite
- *  - setAutoCurrency(...) n'ecrase PAS un choix explicite (regle metier :
- *    si un utilisateur a choisi MAD, on ne doit pas lui revenir a USD
- *    parce qu'il voyage a NY avec une IP americaine)
+ *  - setCurrency(...) marque le choix comme explicite (utilisateur dropdown)
+ *  - setAutoCurrency(...) applique TOUJOURS la devise detectee par IP
+ *    (source de verite cross-session). Le choix manuel de l'utilisateur
+ *    ne survit que le temps de la session courante : au reload suivant,
+ *    la detection IP reprend la main pour refleter le pays reel.
  */
 
 // Reset complet du store entre chaque test (persist + zustand).
@@ -33,15 +34,20 @@ describe('currencyStore', () => {
     expect(s.hasUserSelectedCurrency).toBe(true);
   });
 
-  it('setAutoCurrency() applique la devise si aucun choix utilisateur', () => {
+  it('setAutoCurrency() applique la devise detectee', () => {
     useCurrencyStore.getState().setAutoCurrency('USD');
-    expect(useCurrencyStore.getState().currentCurrency).toBe('USD');
+    const s = useCurrencyStore.getState();
+    expect(s.currentCurrency).toBe('USD');
+    expect(s.hasUserSelectedCurrency).toBe(false);
   });
 
-  it("setAutoCurrency() n'ecrase PAS un choix utilisateur explicite", () => {
+  it("setAutoCurrency() ecrase un choix manuel precedent (IP = verite au reload)", () => {
     useCurrencyStore.getState().setCurrency('MAD');
+    expect(useCurrencyStore.getState().hasUserSelectedCurrency).toBe(true);
     useCurrencyStore.getState().setAutoCurrency('USD');
-    expect(useCurrencyStore.getState().currentCurrency).toBe('MAD');
+    const s = useCurrencyStore.getState();
+    expect(s.currentCurrency).toBe('USD');
+    expect(s.hasUserSelectedCurrency).toBe(false);
   });
 
   it('setRates() met a jour la table de change', () => {

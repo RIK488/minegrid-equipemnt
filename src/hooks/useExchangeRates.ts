@@ -77,11 +77,15 @@ const FALLBACK_RATES: Record<Currency, number> = {
 };
 
 export function useExchangeRates() {
-  const { setRates, hasUserSelectedCurrency, setAutoCurrency } = useCurrencyStore();
+  const { setRates, setAutoCurrency } = useCurrencyStore();
   const hasTriedGeoRef = useRef(false);
 
   useEffect(() => {
-    if (hasUserSelectedCurrency || hasTriedGeoRef.current) return;
+    // La detection IP s'execute une seule fois par chargement de page (pas
+    // une fois par re-render). Elle applique systematiquement la devise
+    // detectee, ecrasant toute selection manuelle faite lors d'une session
+    // precedente : l'IP est la source de verite.
+    if (hasTriedGeoRef.current) return;
     hasTriedGeoRef.current = true;
 
     void (async () => {
@@ -90,7 +94,7 @@ export function useExchangeRates() {
         setAutoCurrency(detected);
       }
     })();
-  }, [hasUserSelectedCurrency, setAutoCurrency]);
+  }, [setAutoCurrency]);
 
   return useQuery({
     queryKey: ['exchangeRates'],

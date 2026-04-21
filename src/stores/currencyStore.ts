@@ -29,8 +29,11 @@ export const useCurrencyStore = create<CurrencyState>()(
         GHS: 13.89
       },
       setCurrency: (currency) => set({ currentCurrency: currency, hasUserSelectedCurrency: true }),
+      // IP geolocation = source of truth : on applique toujours la devise detectee.
+      // Le choix manuel de l'utilisateur (setCurrency) ne survit que jusqu'au
+      // prochain chargement de page, ou la detection IP re-applique le pays reel.
       setAutoCurrency: (currency) =>
-        set((state) => (state.hasUserSelectedCurrency ? state : { ...state, currentCurrency: currency })),
+        set({ currentCurrency: currency, hasUserSelectedCurrency: false }),
       setRates: (rates) => set({ rates })
     }),
     {
