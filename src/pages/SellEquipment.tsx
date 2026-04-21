@@ -4,8 +4,12 @@ import { publishMachine, getCurrentUser } from '../utils/api';
 import supabase from '../utils/supabaseClient';
 import { brands } from '../data/brands';
 import { categories } from '../data/categories';
-import ExcelJS from 'exceljs';
 import { fetchModelSpecs, fetchModelSpecsFull, toSellEquipmentForm, summarizeSpecs, missingForSell } from '../services/autoSpecsService';
+import { logger } from '../utils/logger';
+
+// NOTE: 'exceljs' (~600 kB minifie) est importe dynamiquement dans
+// handleExcelFileUpload ci-dessous. Cela evite d'alourdir le chunk de la
+// page SellEquipment pour les utilisateurs qui ne font pas d'import Excel.
 
 function cleanImagePath(img: string): string {
   const match = img.match(/(?:.*\/)?([^\/]+\.png|jpg|jpeg|webp)/i);
@@ -72,6 +76,7 @@ export default function SellEquipment() {
     setExcelFile(file);
     try {
       const buffer = await file.arrayBuffer();
+      const { default: ExcelJS } = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
       const worksheet = workbook.worksheets[0];
@@ -122,7 +127,7 @@ export default function SellEquipment() {
       setDetectedImageLinks(imageLinks);
 
     } catch (error) {
-      if (import.meta.env.DEV) console.error('Erreur lecture Excel:', error);
+      if (import.meta.env.DEV) logger.error('Erreur lecture Excel:', error);
       alert('Erreur lors de la lecture du fichier Excel');
     }
   };
@@ -154,12 +159,12 @@ export default function SellEquipment() {
     setIsImporting(true);
     try {
       // Récupérer l'utilisateur connecté
-      console.log("🔍 Tentative de récupération de l'utilisateur...");
+      logger.info("🔍 Tentative de récupération de l'utilisateur...");
       const user = await getCurrentUser();
-      console.log("👤 Utilisateur récupéré:", user);
-      console.log("🆔 ID de l'utilisateur:", user?.id);
-      console.log("🆔 Type de l'ID:", typeof user?.id);
-      console.log("🆔 ID est truthy:", !!user?.id);
+      logger.info("👤 Utilisateur récupéré:", user);
+      logger.info("🆔 ID de l'utilisateur:", user?.id);
+      logger.info("🆔 Type de l'ID:", typeof user?.id);
+      logger.info("🆔 ID est truthy:", !!user?.id);
       
       if (!user) {
         alert("Vous devez être connecté pour importer des machines.");
@@ -168,22 +173,22 @@ export default function SellEquipment() {
       }
 
       if (!user.id) {
-        console.error("❌ L'utilisateur n'a pas d'ID !");
-        console.error("❌ Détails de l'utilisateur:", JSON.stringify(user, null, 2));
+        logger.error("❌ L'utilisateur n'a pas d'ID !");
+        logger.error("❌ Détails de l'utilisateur:", JSON.stringify(user, null, 2));
         alert("Erreur : Impossible de récupérer votre identifiant. Veuillez vous reconnecter.");
         setIsImporting(false);
         return;
       }
 
       // Analyser les données Excel pour détecter les liens d'images
-      console.log("📊 Analyse des données Excel...");
-      console.log("🖼️ Liens d'images déjà détectés:", detectedImageLinks);
+      logger.info("📊 Analyse des données Excel...");
+      logger.info("🖼️ Liens d'images déjà détectés:", detectedImageLinks);
       
       // 🔄 CONVERTIR LE FICHIER EXCEL EN BASE64
-      console.log("🔄 Conversion du fichier Excel en base64...");
+      logger.info("🔄 Conversion du fichier Excel en base64...");
       const arrayBuffer = await excelFile.arrayBuffer();
       const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      console.log("✅ Fichier converti en base64, taille:", base64.length);
+      logger.info("✅ Fichier converti en base64, taille:", base64.length);
       
       // Préparer les données JSON
       const jsonData = {
@@ -205,43 +210,43 @@ export default function SellEquipment() {
         }
       };
       
-      console.log("📦 Données JSON préparées:");
-      console.log("  - Nom du fichier:", jsonData.excelFile.name);
-      console.log("  - Taille:", jsonData.excelFile.size);
-      console.log("  - SellerId:", jsonData.sellerId);
-      console.log("  - SellerId dans metadata:", jsonData.metadata.sellerId);
-      console.log("  - Liens d'images:", jsonData.imageLinks.length);
-      console.log("  - Nombre de machines:", jsonData.metadata.totalMachines);
+      logger.info("📦 Données JSON préparées:");
+      logger.info("  - Nom du fichier:", jsonData.excelFile.name);
+      logger.info("  - Taille:", jsonData.excelFile.size);
+      logger.info("  - SellerId:", jsonData.sellerId);
+      logger.info("  - SellerId dans metadata:", jsonData.metadata.sellerId);
+      logger.info("  - Liens d'images:", jsonData.imageLinks.length);
+      logger.info("  - Nombre de machines:", jsonData.metadata.totalMachines);
       
       // 🔍 DEBUG : Vérifier que le sellerId est bien dans les données JSON
-      console.log("🔍 DEBUG - Vérification des données JSON:");
-      console.log("🆔 SellerId dans JSON:", jsonData.sellerId);
-      console.log("🆔 Type du sellerId:", typeof jsonData.sellerId);
-      console.log("🆔 Égalité avec user.id:", jsonData.sellerId === user.id);
-      console.log("🆔 JSON.stringify complet:", JSON.stringify(jsonData, null, 2));
+      logger.info("🔍 DEBUG - Vérification des données JSON:");
+      logger.info("🆔 SellerId dans JSON:", jsonData.sellerId);
+      logger.info("🆔 Type du sellerId:", typeof jsonData.sellerId);
+      logger.info("🆔 Égalité avec user.id:", jsonData.sellerId === user.id);
+      logger.info("🆔 JSON.stringify complet:", JSON.stringify(jsonData, null, 2));
       
       if (!jsonData.sellerId) {
-        console.error("❌ CRITIQUE : Le sellerId n'est pas dans les données JSON !");
-        console.error("❌ user.id original:", user.id);
-        console.error("❌ Type user.id:", typeof user.id);
+        logger.error("❌ CRITIQUE : Le sellerId n'est pas dans les données JSON !");
+        logger.error("❌ user.id original:", user.id);
+        logger.error("❌ Type user.id:", typeof user.id);
         alert("Erreur : Le sellerId n'a pas été ajouté aux données. Veuillez réessayer.");
         return;
       }
 
       const importParcUrl = import.meta.env.VITE_N8N_IMPORT_PARC_URL || '';
-      console.log("🚀 Envoi vers n8n en JSON...");
-      console.log("🚀 URL:", importParcUrl);
-      console.log("🚀 Headers:", { 
+      logger.info("🚀 Envoi vers n8n en JSON...");
+      logger.info("🚀 URL:", importParcUrl);
+      logger.info("🚀 Headers:", { 
         'Content-Type': 'application/json',
         'x-auth-token': 'minegrid-secret-token-2025'
       });
       
       // 🔍 DEBUG : Vérifier le body avant envoi
       const requestBody = JSON.stringify(jsonData);
-      console.log("🚀 Body à envoyer (premiers 500 caractères):", requestBody.substring(0, 500));
-      console.log("🚀 Body contient sellerId:", requestBody.includes('"sellerId"'));
-      console.log("🚀 Body contient l'ID:", requestBody.includes(user.id));
-      console.log("🚀 Nombre d'occurrences de sellerId:", (requestBody.match(/"sellerId"/g) || []).length);
+      logger.info("🚀 Body à envoyer (premiers 500 caractères):", requestBody.substring(0, 500));
+      logger.info("🚀 Body contient sellerId:", requestBody.includes('"sellerId"'));
+      logger.info("🚀 Body contient l'ID:", requestBody.includes(user.id));
+      logger.info("🚀 Nombre d'occurrences de sellerId:", (requestBody.match(/"sellerId"/g) || []).length);
       
       const response = await fetch(importParcUrl, {
         method: 'POST',
@@ -260,9 +265,9 @@ export default function SellEquipment() {
       } catch {
         data = rawText;
       }
-      console.log("📨 Réponse n8n :", data);
-      console.log("📊 Status HTTP:", response.status);
-      console.log("📊 Headers de réponse:", Object.fromEntries(response.headers.entries()));
+      logger.info("📨 Réponse n8n :", data);
+      logger.info("📊 Status HTTP:", response.status);
+      logger.info("📊 Headers de réponse:", Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         let errorMsg = `Erreur lors de l'envoi des données (code HTTP ${response.status})`;
@@ -277,8 +282,8 @@ export default function SellEquipment() {
       setExcelFile(null);
       setShowImportSection(false);
     } catch (error) {
-      console.error('❌ Erreur:', error);
-      console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A');
+      logger.error('❌ Erreur:', error);
+      logger.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A');
       alert('Erreur lors de l\'envoi des données : ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsImporting(false);
@@ -439,7 +444,7 @@ export default function SellEquipment() {
       alert('Équipement publié avec succès !');
       window.location.hash = '#dashboard/annonces';
     } catch (err: any) {
-      console.error(err);
+      logger.error(err);
       alert('Erreur lors de la publication : ' + err.message);
     }
   };
@@ -741,7 +746,7 @@ export default function SellEquipment() {
                         alert(msg);
                       } catch (e) {
                         alert('Erreur lors de la récupération des spécifications');
-                        console.error(e);
+                        logger.error(e);
                       }
                     }}
                     className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
