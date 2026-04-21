@@ -1,6 +1,8 @@
 import { CLIENT_ORDER_COLUMNS } from '../../constants/proClientQueryFields';
 import type { ClientOrder } from './types';
 import supabase from '../supabaseClient';
+import { supabaseCall } from '../supabaseCall';
+import { logger } from '../logger';
 import { getProClientProfile } from './profile';
 
 // =====================================================
@@ -77,16 +79,12 @@ export async function getClientOrders(): Promise<ClientOrder[]> {
 // Créer une nouvelle commande
 export async function createClientOrder(order: Partial<ClientOrder>): Promise<ClientOrder | null> {
   try {
-    const { data, error } = await supabase
-      .from('client_orders')
-      .insert(order)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return await supabaseCall<ClientOrder>(
+      () => supabase.from('client_orders').insert(order).select().single(),
+      { label: 'createClientOrder' },
+    );
   } catch (error) {
-    console.error('Erreur lors de la création de la commande:', error);
+    logger.error('[createClientOrder]', error);
     return null;
   }
 }

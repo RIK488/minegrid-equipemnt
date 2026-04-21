@@ -1,6 +1,8 @@
 import { EQUIPMENT_DIAGNOSTICS_COLUMNS, MAINTENANCE_INTERVENTION_SELECT } from '../../constants/proClientQueryFields';
 import type { EquipmentDiagnostic, MaintenanceIntervention } from './types';
 import supabase from '../supabaseClient';
+import { supabaseCall } from '../supabaseCall';
+import { logger } from '../logger';
 import { getProClientProfile } from './profile';
 
 // =====================================================
@@ -82,16 +84,12 @@ export async function createMaintenanceIntervention(
   intervention: Partial<MaintenanceIntervention>
 ): Promise<MaintenanceIntervention | null> {
   try {
-    const { data, error } = await supabase
-      .from('maintenance_interventions')
-      .insert(intervention)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return await supabaseCall<MaintenanceIntervention>(
+      () => supabase.from('maintenance_interventions').insert(intervention).select().single(),
+      { label: 'createMaintenanceIntervention' },
+    );
   } catch (error) {
-    console.error('Erreur lors de la création de l\'intervention:', error);
+    logger.error('[createMaintenanceIntervention]', error);
     return null;
   }
 }
@@ -102,19 +100,15 @@ export async function createMaintenanceIntervention(
 
 // Récupérer les diagnostics d'un équipement
 export async function getEquipmentDiagnostics(equipmentId: string): Promise<EquipmentDiagnostic[]> {
-  try {
-    const { data, error } = await supabase
-      .from('equipment_diagnostics')
-      .select(EQUIPMENT_DIAGNOSTICS_COLUMNS)
-      .eq('equipment_id', equipmentId)
-      .order('diagnostic_date', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Erreur lors de la récupération des diagnostics:', error);
-    return [];
-  }
+  return supabaseCall<EquipmentDiagnostic[]>(
+    () =>
+      supabase
+        .from('equipment_diagnostics')
+        .select(EQUIPMENT_DIAGNOSTICS_COLUMNS)
+        .eq('equipment_id', equipmentId)
+        .order('diagnostic_date', { ascending: false }),
+    { label: 'getEquipmentDiagnostics', fallback: [] },
+  );
 }
 
 // Ajouter un nouveau diagnostic
@@ -122,16 +116,12 @@ export async function addEquipmentDiagnostic(
   diagnostic: Partial<EquipmentDiagnostic>
 ): Promise<EquipmentDiagnostic | null> {
   try {
-    const { data, error } = await supabase
-      .from('equipment_diagnostics')
-      .insert(diagnostic)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    return await supabaseCall<EquipmentDiagnostic>(
+      () => supabase.from('equipment_diagnostics').insert(diagnostic).select().single(),
+      { label: 'addEquipmentDiagnostic' },
+    );
   } catch (error) {
-    console.error('Erreur lors de l\'ajout du diagnostic:', error);
+    logger.error('[addEquipmentDiagnostic]', error);
     return null;
   }
 }
