@@ -2,9 +2,12 @@ import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrencyStore } from '../stores/currencyStore';
 import type { Currency } from '../types';
-import { logger } from '../utils/logger';
 
-// Exporte pour pouvoir reutiliser dans CurrencySelector (bouton "Auto").
+// Note : on utilise console.info / console.warn directement (et pas le logger
+// centralise qui est silent en prod) pour que la detection de devise reste
+// diagnosticable en production. La detection est un point utilisateur-visible,
+// on veut pouvoir tracer rapidement un probleme chez un user final.
+
 export const COUNTRY_TO_CURRENCY: Record<string, Currency> = {
   MA: 'MAD',
   US: 'USD', CA: 'USD',
@@ -18,47 +21,107 @@ export const COUNTRY_TO_CURRENCY: Record<string, Currency> = {
   GH: 'GHS',
 };
 
-/**
- * Tente de detecter le pays via plusieurs strategies (ordre de fiabilite) :
- *   1. ipapi.co (geolocation IP, tres precis mais depend d'un tiers)
- *   2. navigator.language (ex: 'fr-MA' -> 'MA', depend du systeme user)
- */
-export async function detectCurrencyFromBrowser(): Promise<Currency | null> {
-  try {
-    const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout?.(4000) });
-    if (res.ok) {
-      const geo = await res.json();
-      const countryCode = String(geo?.country_code || '').toUpperCase();
-      const mapped = COUNTRY_TO_CURRENCY[countryCode];
-      if (mapped) {
-        logger.info(`[currency] detected ${mapped} from ipapi country=${countryCode}`);
-        return mapped;
-      }
-      logger.info(`[currency] ipapi returned country=${countryCode} (no mapping)`);
-    } else {
-      logger.warn(`[currency] ipapi returned status ${res.status}`);
-    }
-  } catch (err) {
-    logger.warn('[currency] ipapi fetch failed, falling back to navigator.language', err);
-  }
+// Fournisseurs IP-geolocation gratuits, sans cle API.
+// On essaie dans l'ordre et on s'arrete au premier qui repond avec un code
+// pays utilisable. Chacun expose un format different donc extractor dedie.
+type IpProvider = {
+  name: string;
+  url: string;
+  extract: (json: unknown) => string | null;
+};
 
+const IP_PROVIDERS: IpProvider[] = [
+  {
+    // ~30k req/mois gratuit, CORS ok. Retourne { country: "MA", ... }.
+    name: 'country.is',
+    url: 'https://api.country.is/',
+    extract: (json) => (json as { country?: string } | null)?.country || null,
+  },
+  {
+    // GeoJS (sponsorise par StackPath). Retourne { country: "MA", ... }.
+    name: 'geojs',
+    url: 'https://get.geojs.io/v1/ip/country.json',
+    extract: (json) => (json as { country?: string } | null)?.country || null,
+  },
+  {
+    // Fallback historique, souvent bloque par ad-blockers.
+    name: 'ipapi.co',
+    url: 'https://ipapi.co/json/',
+    extract: (json) => (json as { country_code?: string } | null)?.country_code || null,
+  },
+];
+
+async function detectCountryFromIp(): Promise<{ provider: string; country: string } | null> {
+  for (const p of IP_PROVIDERS) {
+    try {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 3500);
+      const res = await fetch(p.url, { signal: ctrl.signal });
+      clearTimeout(timeout);
+      if (!res.ok) {
+        // console.info (pas logger.warn) : visible en prod, utile pour
+        // diagnostiquer un provider bloque chez un utilisateur final.
+        console.info(`[currency] ${p.name} status=${res.status}`);
+        continue;
+      }
+      const json = await res.json();
+      const country = p.extract(json)?.toUpperCase();
+      if (country && country.length === 2) {
+        console.info(`[currency] ${p.name} -> ${country}`);
+        return { provider: p.name, country };
+      }
+      console.info(`[currency] ${p.name} no country in response`, json);
+    } catch (err) {
+      console.info(`[currency] ${p.name} fetch failed`, err);
+    }
+  }
+  return null;
+}
+
+function countryFromNavigator(): string | null {
   try {
     const locales = navigator.languages && navigator.languages.length > 0
       ? navigator.languages
       : [navigator.language || ''];
     for (const loc of locales) {
       const region = loc.split('-')[1]?.toUpperCase();
-      if (region && COUNTRY_TO_CURRENCY[region]) {
-        const mapped = COUNTRY_TO_CURRENCY[region];
-        logger.info(`[currency] detected ${mapped} from navigator.language locale=${loc}`);
-        return mapped;
-      }
+      if (region && region.length === 2) return region;
     }
-    logger.info('[currency] navigator.language no mapping', locales);
-  } catch (err) {
-    logger.warn('[currency] navigator.language fallback failed', err);
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+/**
+ * Detection multi-providers :
+ *   1. api.country.is (rapide, CORS ok, gratuit)
+ *   2. geojs.io (fallback)
+ *   3. ipapi.co (fallback historique, souvent bloque)
+ *   4. navigator.language (dernier recours, depend du systeme user)
+ */
+export async function detectCurrencyFromBrowser(): Promise<Currency | null> {
+  const geo = await detectCountryFromIp();
+  if (geo) {
+    const mapped = COUNTRY_TO_CURRENCY[geo.country];
+    if (mapped) {
+      console.info(`[currency] detected ${mapped} via ${geo.provider} (country=${geo.country})`);
+      return mapped;
+    }
+    console.info(`[currency] ${geo.provider} -> ${geo.country} (pas de devise mappee)`);
   }
 
+  const navCountry = countryFromNavigator();
+  if (navCountry) {
+    const mapped = COUNTRY_TO_CURRENCY[navCountry];
+    if (mapped) {
+      console.info(`[currency] detected ${mapped} via navigator.language (country=${navCountry})`);
+      return mapped;
+    }
+    console.info(`[currency] navigator.language -> ${navCountry} (pas de devise mappee)`);
+  }
+
+  console.warn('[currency] aucun provider IP n\'a repondu, on garde EUR par defaut');
   return null;
 }
 
