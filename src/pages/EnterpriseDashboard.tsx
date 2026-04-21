@@ -146,7 +146,7 @@ import { MapWidget } from "./enterprise/widgets/MapWidget";
 import { ListWidget } from "./enterprise/widgets/ListWidget";
 import { WidgetComponent } from "./enterprise/widgets/WidgetComponent";
 import { renderWidgetContent } from "./enterprise/widgets/renderWidgetContent";
-
+import { toast } from '../utils/toast';
 // Hook pour l'adaptation automatique des widgets
 // Données simulées pour les widgets
 // Nouveau composant Score de Performance Commerciale
@@ -557,7 +557,7 @@ export default function EnterpriseDashboard() {
     const existingSaves = JSON.parse(localStorage.getItem('enterpriseDashboardSaves') || '[]');
 
     if (existingSaves.length === 0) {
-      alert('Aucune sauvegarde trouvée.');
+      toast('Aucune sauvegarde trouvée.');
       return;
     }
 
@@ -580,7 +580,7 @@ export default function EnterpriseDashboard() {
     // Fermer la modale
     setShowLoadModal(false);
 
-    alert(`Tableau de bord "${selectedSave.name}" chargé avec succès.`);
+    toast(`Tableau de bord "${selectedSave.name}" chargé avec succès.`);
   };
 
   const handleShowRentalDetails = (rental: any) => {

@@ -9,7 +9,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-
+import { toast } from '../../../utils/toast';
 export function MessagesTab({ messages, onRefresh }: { messages: any[], onRefresh: () => Promise<void> }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -137,14 +137,14 @@ export function MessagesTab({ messages, onRefresh }: { messages: any[], onRefres
       
       // Afficher notification de succès
       if (emailError) {
-        alert('Réponse sauvegardée mais erreur d\'envoi email. Le destinataire recevra une notification interne.');
+        toast('Réponse sauvegardée mais erreur d\'envoi email. Le destinataire recevra une notification interne.');
       } else {
-        alert('Réponse envoyée avec succès !');
+        toast('Réponse envoyée avec succès !');
       }
 
     } catch (error) {
       console.error('Erreur lors de l\'envoi de la réponse:', error);
-      alert('Erreur lors de l\'envoi de la réponse');
+      toast('Erreur lors de l\'envoi de la réponse');
     }
   };
 

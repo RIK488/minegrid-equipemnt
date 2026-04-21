@@ -26,7 +26,7 @@ import supabase from '../utils/supabaseClient';
 import { getSellerMachines } from '../utils/api';
 import { getCurrentUser } from '../utils/auth';
 import { fetchModelSpecs, fetchModelSpecsFull, toPublicationRapideForm, summarizeSpecs, missingForPublication } from '../services/autoSpecsService';
-
+import { toast } from '../utils/toast';
 interface MachineFormData {
   name: string;
   brand: string;
@@ -419,15 +419,15 @@ export default function PublicationRapide() {
       
       if (error) {
         console.error('Erreur suppression:', error);
-        alert('Erreur lors de la suppression');
+        toast('Erreur lors de la suppression');
         return;
       }
       
-      alert('Annonce supprimée avec succès !');
+      toast('Annonce supprimée avec succès !');
       loadMachines(); // Recharger la liste
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la suppression');
+      toast('Erreur lors de la suppression');
     }
   };
 
@@ -475,7 +475,7 @@ export default function PublicationRapide() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('Vous devez être connecté pour publier une machine');
+        toast('Vous devez être connecté pour publier une machine');
         return;
       }
 
@@ -540,11 +540,11 @@ export default function PublicationRapide() {
 
       if (result.error) {
         console.error('Erreur opération machine:', result.error);
-        alert(editingMachineId ? 'Erreur lors de la modification' : 'Erreur lors de la publication');
+        toast(editingMachineId ? 'Erreur lors de la modification' : 'Erreur lors de la publication');
         return;
       }
 
-      alert(editingMachineId ? 'Machine modifiée avec succès !' : 'Machine publiée avec succès !');
+      toast(editingMachineId ? 'Machine modifiée avec succès !' : 'Machine publiée avec succès !');
       
       // Reset du formulaire et retour à la liste
       setFormData({
@@ -574,7 +574,7 @@ export default function PublicationRapide() {
 
     } catch (error) {
       console.error('Erreur:', error);
-      alert(editingMachineId ? 'Erreur lors de la modification' : 'Erreur lors de la publication');
+      toast(editingMachineId ? 'Erreur lors de la modification' : 'Erreur lors de la publication');
     } finally {
       setLoading(false);
     }
@@ -618,11 +618,11 @@ export default function PublicationRapide() {
       ];
 
       setPreviewData(mockExtractedData);
-      alert('Fichier traité avec succès ! Vérifiez les données extraites.');
+      toast('Fichier traité avec succès ! Vérifiez les données extraites.');
 
     } catch (error) {
       console.error('Erreur traitement fichier:', error);
-      alert('Erreur lors du traitement du fichier');
+      toast('Erreur lors du traitement du fichier');
     } finally {
       setLoading(false);
     }
@@ -635,7 +635,7 @@ export default function PublicationRapide() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('Vous devez être connecté pour publier des machines');
+        toast('Vous devez être connecté pour publier des machines');
         return;
       }
 
@@ -659,17 +659,17 @@ export default function PublicationRapide() {
 
       if (error) {
         console.error('Erreur publication machines:', error);
-        alert('Erreur lors de la publication');
+        toast('Erreur lors de la publication');
         return;
       }
 
-      alert(`${previewData.length} machines publiées avec succès !`);
+      toast(`${previewData.length} machines publiées avec succès !`);
       setPreviewData([]);
       setExcelFile(null);
 
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la publication');
+      toast('Erreur lors de la publication');
     } finally {
       setLoading(false);
     }
@@ -1304,7 +1304,7 @@ export default function PublicationRapide() {
                       className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
                       onClick={async () => {
                         if (!formData.brand || !formData.model) {
-                          alert('Renseignez la marque et le modèle');
+                          toast('Renseignez la marque et le modèle');
                           return;
                         }
                         try {
@@ -1322,7 +1322,7 @@ export default function PublicationRapide() {
                             specifications: formData.specifications
                           };
                                                       const { specs } = await fetchModelSpecsFull(formData.brand, formData.model, context); // context complet, champs vides inclus
-                          if (!specs) { alert('Aucune spécification trouvée'); return; }
+                          if (!specs) { toast('Aucune spécification trouvée'); return; }
                           const mapped = toPublicationRapideForm(specs);
                           setFormData(prev => ({ 
                             ...prev, 
@@ -1332,10 +1332,10 @@ export default function PublicationRapide() {
                           const summary = summarizeSpecs(specs);
                           const missing = missingForPublication(specs);
                           const msg = `Spécifications pré-remplies.\n${summary}${missing.length ? `\nChamps manquants: ${missing.join(', ')}` : ''}`;
-                          alert(msg);
+                          toast(msg);
                         } catch (e) {
                           console.error(e);
-                          alert('Erreur lors de la récupération des spécifications');
+                          toast('Erreur lors de la récupération des spécifications');
                         }
                       }}
                     >

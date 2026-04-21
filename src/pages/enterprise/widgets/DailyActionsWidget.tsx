@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import { toast } from '../../../utils/toast';
 export const DailyActionsWidget = ({ data }: { data: any[] }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [selectedAction, setSelectedAction] = useState<any>(null);
@@ -94,7 +94,7 @@ export const DailyActionsWidget = ({ data }: { data: any[] }) => {
 
   const handleExecuteAction = (action: any) => {
     // Simulation d'exécution d'action
-    alert(`✅ Action exécutée : ${action.title}\n\n${action.action}\n\nTemps estimé : ${action.estimatedTime}\nImpact attendu : ${action.impact}`);
+    toast(`✅ Action exécutée : ${action.title}\n\n${action.action}\n\nTemps estimé : ${action.estimatedTime}\nImpact attendu : ${action.impact}`);
 
     // Ici on pourrait appeler une API pour marquer l'action comme effectuée
     console.log(`[API] Action exécutée: ${action.id} - ${action.title}`);

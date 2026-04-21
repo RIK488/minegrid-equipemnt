@@ -16,7 +16,7 @@ import {
   MapPin
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
-
+import { toast } from '../utils/toast';
 interface DevisItem {
   id: string;
   description: string;
@@ -134,7 +134,7 @@ export default function DevisGenerator() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('Vous devez être connecté pour sauvegarder un devis');
+        toast('Vous devez être connecté pour sauvegarder un devis');
         return;
       }
 
@@ -162,15 +162,15 @@ export default function DevisGenerator() {
 
       if (result.error) {
         console.error('Erreur sauvegarde devis:', result.error);
-        alert('Erreur lors de la sauvegarde');
+        toast('Erreur lors de la sauvegarde');
         return;
       }
 
       setDevis(prev => ({ ...prev, id: result.data.id }));
-      alert('Devis sauvegardé avec succès !');
+      toast('Devis sauvegardé avec succès !');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la sauvegarde');
+      toast('Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
@@ -178,7 +178,7 @@ export default function DevisGenerator() {
 
   const generatePDF = () => {
     // Simulation de génération PDF
-    alert('Génération du PDF en cours...');
+    toast('Génération du PDF en cours...');
     // Ici on pourrait intégrer une vraie librairie PDF comme jsPDF
   };
 

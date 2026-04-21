@@ -1,5 +1,5 @@
 // src/services/autoSpecsService.ts
-
+import { toast } from '../utils/toast';
 export interface NormalizedSpecs {
   brand?: string;
   model?: string;
@@ -55,7 +55,7 @@ function showDebugPayload(label: string, data: unknown): void {
     if (typeof window !== 'undefined' && localStorage.getItem('debugAutoSpecs') === 'true') {
       const text = JSON.stringify(data, null, 2);
       // Limiter la taille pour éviter les alertes trop longues
-      alert(`${label}:\n` + (text.length > 2000 ? text.slice(0, 2000) + '\n…(tronqué)' : text));
+      toast(`${label}:\n` + (text.length > 2000 ? text.slice(0, 2000) + '\n…(tronqué)' : text));
     }
   } catch {}
 }

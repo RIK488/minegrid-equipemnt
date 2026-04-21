@@ -14,7 +14,7 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
-
+import { toast } from '../../../utils/toast';
 export const SalesEvolutionWidgetEnriched = ({ data = [] }: { data?: any[] }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<'6m' | '12m' | '24m'>('12m');
   const [selectedMetric, setSelectedMetric] = useState<'sales' | 'units' | 'growth'>('sales');
@@ -352,14 +352,14 @@ export const SalesEvolutionWidgetEnriched = ({ data = [] }: { data?: any[] }) =>
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        alert('Export Excel terminé avec succès');
+        toast('Export Excel terminé avec succès');
       } else {
         // Simulation d'export PDF
-        alert('Export PDF terminé avec succès');
+        toast('Export PDF terminé avec succès');
       }
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
-      alert('Erreur lors de l\'export');
+      toast('Erreur lors de l\'export');
     } finally {
       setIsExporting(false);
       setExportFormat(null);
@@ -414,26 +414,26 @@ export const SalesEvolutionWidgetEnriched = ({ data = [] }: { data?: any[] }) =>
         case 'correct-month':
           // Simulation d'action corrective
           await new Promise(resolve => setTimeout(resolve, 1000));
-          alert('Action corrective appliquée : Promotion lancée pour le mois en cours');
+          toast('Action corrective appliquée : Promotion lancée pour le mois en cours');
           break;
         case 'publish-promo':
           await new Promise(resolve => setTimeout(resolve, 1000));
-          alert('Promotion publiée avec succès');
+          toast('Promotion publiée avec succès');
           break;
         case 'add-equipment':
           await new Promise(resolve => setTimeout(resolve, 1000));
-          alert('Nouveaux équipements ajoutés au catalogue');
+          toast('Nouveaux équipements ajoutés au catalogue');
           break;
         case 'show-benchmark':
           setShowBenchmark(true);
           break;
         case 'adjust-pricing':
           await new Promise(resolve => setTimeout(resolve, 1000));
-          alert('Prix ajustés selon les recommandations IA');
+          toast('Prix ajustés selon les recommandations IA');
           break;
         case 'prepare-inventory':
           await new Promise(resolve => setTimeout(resolve, 1000));
-          alert('Inventaire préparé pour la croissance attendue');
+          toast('Inventaire préparé pour la croissance attendue');
           break;
         default:
           console.log('Action non reconnue:', action);
@@ -443,7 +443,7 @@ export const SalesEvolutionWidgetEnriched = ({ data = [] }: { data?: any[] }) =>
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
     } catch (error) {
       console.error('Erreur lors de l\'action:', error);
-      alert('Erreur lors de l\'exécution de l\'action');
+      toast('Erreur lors de l\'exécution de l\'action');
     } finally {
       setActionLoading(null);
     }
@@ -456,23 +456,23 @@ export const SalesEvolutionWidgetEnriched = ({ data = [] }: { data?: any[] }) =>
       
       switch (insight.type) {
         case 'pricing':
-          alert(`Pricing dynamique appliqué : ${insight.action}`);
+          toast(`Pricing dynamique appliqué : ${insight.action}`);
           break;
         case 'catalog':
-          alert(`Catalogue repositionné : ${insight.action}`);
+          toast(`Catalogue repositionné : ${insight.action}`);
           break;
         case 'promo':
-          alert(`Campagne promotionnelle lancée : ${insight.action}`);
+          toast(`Campagne promotionnelle lancée : ${insight.action}`);
           break;
         case 'forecast':
-          alert(`Prévision IA appliquée : ${insight.action}`);
+          toast(`Prévision IA appliquée : ${insight.action}`);
           break;
         default:
-          alert(`Action appliquée : ${insight.action}`);
+          toast(`Action appliquée : ${insight.action}`);
       }
     } catch (error) {
       console.error('Erreur lors de l\'application de l\'insight:', error);
-      alert('Erreur lors de l\'application de l\'insight');
+      toast('Erreur lors de l\'application de l\'insight');
     } finally {
       setActionLoading(null);
     }
@@ -483,7 +483,7 @@ export const SalesEvolutionWidgetEnriched = ({ data = [] }: { data?: any[] }) =>
     // Afficher les détails du mois sélectionné
     const monthData = extendedData.find(item => item.month === month);
     if (monthData) {
-      alert(`Détails ${month}:\nCA: ${formatCurrency(monthData.sales)}\nUnités: ${monthData.units}\nCroissance: ${monthData.growth}%\nObjectif: ${formatCurrency(monthData.target)}`);
+      toast(`Détails ${month}:\nCA: ${formatCurrency(monthData.sales)}\nUnités: ${monthData.units}\nCroissance: ${monthData.growth}%\nObjectif: ${formatCurrency(monthData.target)}`);
     }
   };
 
@@ -495,26 +495,26 @@ export const SalesEvolutionWidgetEnriched = ({ data = [] }: { data?: any[] }) =>
       switch (action) {
         case 'refresh-data':
           // Recharger les données
-          alert('Données actualisées');
+          toast('Données actualisées');
           break;
         case 'generate-report':
           // Générer un rapport
-          alert('Rapport généré avec succès');
+          toast('Rapport généré avec succès');
           break;
         case 'send-alert':
           // Envoyer une alerte
-          alert('Alerte envoyée à l\'équipe');
+          toast('Alerte envoyée à l\'équipe');
           break;
         case 'optimize-prices':
           // Optimiser les prix
-          alert('Prix optimisés selon les recommandations IA');
+          toast('Prix optimisés selon les recommandations IA');
           break;
         default:
           console.log('Action rapide non reconnue:', action);
       }
     } catch (error) {
       console.error('Erreur lors de l\'action rapide:', error);
-      alert('Erreur lors de l\'exécution de l\'action');
+      toast('Erreur lors de l\'exécution de l\'action');
     } finally {
       setActionLoading(null);
     }

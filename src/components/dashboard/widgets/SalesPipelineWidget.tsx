@@ -6,7 +6,7 @@ import {
 import { apiCall, showNotification, sendMessage, exportData } from '../../../services/apiService';
 import { getDashboardStats } from '../../../utils/api';
 import { RealPipelineService, RealLead, RealPipelineAction, RealPipelineInsight } from '../../../services/realPipelineService';
-
+import { toast } from '../../../utils/toast';
 // Composant spécialisé pour le Pipeline Commercial (version avancée)
 // Correction : data doit être de type { leads: any[] }
 const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
@@ -312,7 +312,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
         'Conclu': 'Vente conclue',
         'Perdu': 'Vente perdue'
       };
-      alert(`✅ Lead passé à l'étape: ${stageNames[nextStage as keyof typeof stageNames] || nextStage}`);
+      toast(`✅ Lead passé à l'étape: ${stageNames[nextStage as keyof typeof stageNames] || nextStage}`);
     }
   };
 
@@ -340,7 +340,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
     setLeadsData(updatedLeads);
     setShowEditForm(false);
     setEditForm({});
-    alert('✅ Lead modifié avec succès');
+    toast('✅ Lead modifié avec succès');
   };
 
   const handleAddNote = () => {
@@ -360,7 +360,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
         ...selectedLead,
         notes: selectedLead.notes ? `${selectedLead.notes}\n${new Date().toLocaleDateString()}: ${note}` : `${new Date().toLocaleDateString()}: ${note}`
       });
-      alert('✅ Note ajoutée avec succès');
+      toast('✅ Note ajoutée avec succès');
     }
   };
 
@@ -390,7 +390,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
         lastContact: date
       });
 
-      alert('✅ Rendez-vous programmé avec succès');
+      toast('✅ Rendez-vous programmé avec succès');
     }
   };
 
@@ -410,7 +410,7 @@ const SalesPipelineWidget = ({ data }: { data: { leads: any[] } }) => {
 
     if (newLead.title !== 'Nouveau prospect') {
       setLeadsData([...leadsData, newLead]);
-      alert('✅ Nouveau lead ajouté avec succès');
+      toast('✅ Nouveau lead ajouté avec succès');
     }
   };
 

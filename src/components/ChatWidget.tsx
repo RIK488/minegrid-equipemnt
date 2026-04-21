@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Minimize2, Maximize2, Move } from 'lucide-react';
-
+import { toast } from '../utils/toast';
 interface Message {
   id: number;
   text: string;
@@ -329,10 +329,10 @@ const ChatWidget: React.FC = () => {
                       body: JSON.stringify({ message: 'test' })
                     });
                     console.log('✅ Test réussi - Status:', response.status);
-                    alert(`Test de connexion réussi ! Status: ${response.status}`);
+                    toast(`Test de connexion réussi ! Status: ${response.status}`);
                   } catch (error) {
                     console.error('❌ Test échoué:', error);
-                    alert(`Test de connexion échoué: ${error instanceof Error ? error.message : String(error)}`);
+                    toast(`Test de connexion échoué: ${error instanceof Error ? error.message : String(error)}`);
                   }
                 }}
                 className="hover:bg-orange-700 p-1 rounded transition-colors text-xs"

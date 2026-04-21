@@ -20,7 +20,7 @@ import PremiumServices from '../components/PremiumServices';
 import FinancingSimulator from '../components/FinancingSimulator';
 import Price from '../components/Price';
 import { useCurrencyStore } from '../stores/currencyStore';
-
+import { toast } from '../utils/toast';
 interface MachineDetailProps {
   machineId: string;
 }
@@ -241,10 +241,10 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
         .eq('id', machineData.id);
   
       if (error) {
-        alert("Erreur lors de la suppression.");
+        toast("Erreur lors de la suppression.");
         console.error(error);
       } else {
-        alert("Annonce supprimée.");
+        toast("Annonce supprimée.");
         window.location.hash = '#dashboard/annonces';
       }
     }
@@ -272,7 +272,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
       );
 
       if (!response.ok) {
-        alert("❌ Erreur lors du téléchargement");
+        toast("❌ Erreur lors du téléchargement");
         return;
       }
 
@@ -286,7 +286,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Erreur téléchargement fiche :", error);
-      alert("❌ Une erreur est survenue.");
+      toast("❌ Une erreur est survenue.");
     }
   };
 
@@ -778,7 +778,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
                     console.log('Debug - machineData:', machineData);
                     console.log('Debug - seller:', machineData.seller);
                     console.log('Debug - seller_id from raw data:', (machineData as any).seller_id);
-                    alert(`Informations du vendeur non disponibles.\n\nDebug:\n- Seller ID: ${(machineData as any).sellerid || 'null'}\n- Seller data: ${machineData.seller ? 'présent' : 'absent'}`);
+                    toast(`Informations du vendeur non disponibles.\n\nDebug:\n- Seller ID: ${(machineData as any).sellerid || 'null'}\n- Seller data: ${machineData.seller ? 'présent' : 'absent'}`);
                   }}
                   className="w-full border border-gray-300 text-gray-500 px-6 py-3 rounded-md hover:bg-gray-50 flex items-center justify-center cursor-not-allowed"
                   disabled
@@ -789,7 +789,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
               )}
               {canEdit && (
                 <div className="pt-4 border-t space-y-2">
-                  <button className="w-full text-sm text-blue-600 hover:underline" onClick={() => alert("Formulaire d'édition à venir")}>
+                  <button className="w-full text-sm text-blue-600 hover:underline" onClick={() => toast("Formulaire d'édition à venir")}>
                     ✏️ Modifier cette annonce
                   </button>
                   <button className="w-full text-sm text-blue-600 hover:underline" onClick={() => imageUrls.forEach((img) => window.open(img, '_blank'))}>

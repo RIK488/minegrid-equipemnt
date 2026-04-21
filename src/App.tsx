@@ -1,6 +1,8 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import { NotificationContainer } from './components/NotificationToast';
 import Header from './components/Header';
 import CategoryList from './components/CategoryList';
 import FeaturedMachines from './components/FeaturedMachines';
@@ -274,6 +276,7 @@ function AppContent() {
         </ErrorBoundary>
       </main>
       <ChatWidget />
+      <NotificationContainer />
     </div>
   );
 }
@@ -281,9 +284,11 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
+      <AuthProvider>
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

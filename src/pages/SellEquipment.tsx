@@ -6,7 +6,7 @@ import { brands } from '../data/brands';
 import { categories } from '../data/categories';
 import { fetchModelSpecs, fetchModelSpecsFull, toSellEquipmentForm, summarizeSpecs, missingForSell } from '../services/autoSpecsService';
 import { logger } from '../utils/logger';
-
+import { toast } from '../utils/toast';
 // NOTE: 'exceljs' (~600 kB minifie) est importe dynamiquement dans
 // handleExcelFileUpload ci-dessous. Cela evite d'alourdir le chunk de la
 // page SellEquipment pour les utilisateurs qui ne font pas d'import Excel.
@@ -69,7 +69,7 @@ export default function SellEquipment() {
     if (!file) return;
 
     if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
-      alert('Veuillez sélectionner un fichier Excel (.xlsx, .xls) ou CSV');
+      toast('Veuillez sélectionner un fichier Excel (.xlsx, .xls) ou CSV');
       return;
     }
 
@@ -80,7 +80,7 @@ export default function SellEquipment() {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
       const worksheet = workbook.worksheets[0];
-      if (!worksheet) { alert('Aucune feuille trouvée'); return; }
+      if (!worksheet) { toast('Aucune feuille trouvée'); return; }
 
       const headers: string[] = [];
       worksheet.getRow(1).eachCell((cell, colNum) => {
@@ -128,7 +128,7 @@ export default function SellEquipment() {
 
     } catch (error) {
       if (import.meta.env.DEV) logger.error('Erreur lecture Excel:', error);
-      alert('Erreur lors de la lecture du fichier Excel');
+      toast('Erreur lors de la lecture du fichier Excel');
     }
   };
 
@@ -152,7 +152,7 @@ export default function SellEquipment() {
 
   const handleExcelSubmit = async () => {
     if (!excelFile) {
-      alert("Veuillez sélectionner un fichier Excel");
+      toast("Veuillez sélectionner un fichier Excel");
       return;
     }
 
@@ -167,7 +167,7 @@ export default function SellEquipment() {
       logger.info("🆔 ID est truthy:", !!user?.id);
       
       if (!user) {
-        alert("Vous devez être connecté pour importer des machines.");
+        toast("Vous devez être connecté pour importer des machines.");
         setIsImporting(false);
         return;
       }
@@ -175,7 +175,7 @@ export default function SellEquipment() {
       if (!user.id) {
         logger.error("❌ L'utilisateur n'a pas d'ID !");
         logger.error("❌ Détails de l'utilisateur:", JSON.stringify(user, null, 2));
-        alert("Erreur : Impossible de récupérer votre identifiant. Veuillez vous reconnecter.");
+        toast("Erreur : Impossible de récupérer votre identifiant. Veuillez vous reconnecter.");
         setIsImporting(false);
         return;
       }
@@ -229,7 +229,7 @@ export default function SellEquipment() {
         logger.error("❌ CRITIQUE : Le sellerId n'est pas dans les données JSON !");
         logger.error("❌ user.id original:", user.id);
         logger.error("❌ Type user.id:", typeof user.id);
-        alert("Erreur : Le sellerId n'a pas été ajouté aux données. Veuillez réessayer.");
+        toast("Erreur : Le sellerId n'a pas été ajouté aux données. Veuillez réessayer.");
         return;
       }
 
@@ -272,11 +272,11 @@ export default function SellEquipment() {
       if (!response.ok) {
         let errorMsg = `Erreur lors de l'envoi des données (code HTTP ${response.status})`;
         errorMsg += `\nRéponse brute : ${rawText}`;
-        alert(errorMsg);
+        toast(errorMsg);
         return;
       }
 
-      alert('✅ Données envoyées avec succès ! Les annonces apparaîtront bientôt dans votre dashboard.');
+      toast('✅ Données envoyées avec succès ! Les annonces apparaîtront bientôt dans votre dashboard.');
       setExcelData([]);
       setImagesExcelUpload([]);
       setExcelFile(null);
@@ -284,7 +284,7 @@ export default function SellEquipment() {
     } catch (error) {
       logger.error('❌ Erreur:', error);
       logger.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A');
-      alert('Erreur lors de l\'envoi des données : ' + (error instanceof Error ? error.message : String(error)));
+      toast('Erreur lors de l\'envoi des données : ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsImporting(false);
     }
@@ -340,7 +340,7 @@ export default function SellEquipment() {
       setImages(prev => [...prev, ...newImages]);
       
       if (imageFiles.length > remainingSlots) {
-        alert(`Seules ${remainingSlots} image(s) ont été ajoutées. Maximum 8 images autorisées.`);
+        toast(`Seules ${remainingSlots} image(s) ont été ajoutées. Maximum 8 images autorisées.`);
       }
     }
   };
@@ -387,7 +387,7 @@ export default function SellEquipment() {
       setImagesExcelUpload(prev => [...prev, ...newImages]);
       
       if (imageFiles.length > remainingSlots) {
-        alert(`Seules ${remainingSlots} image(s) ont été ajoutées. Maximum 10 images autorisées.`);
+        toast(`Seules ${remainingSlots} image(s) ont été ajoutées. Maximum 10 images autorisées.`);
       }
     }
   };
@@ -441,11 +441,11 @@ export default function SellEquipment() {
 
       await publishMachine(payload as any, images);
 
-      alert('Équipement publié avec succès !');
+      toast('Équipement publié avec succès !');
       window.location.hash = '#dashboard/annonces';
     } catch (err: any) {
       logger.error(err);
-      alert('Erreur lors de la publication : ' + err.message);
+      toast('Erreur lors de la publication : ' + err.message);
     }
   };
 
@@ -710,7 +710,7 @@ export default function SellEquipment() {
                     type="button"
                     onClick={async () => {
                       if (!formData.brand || !formData.model) {
-                        alert('Renseignez la marque et le modèle');
+                        toast('Renseignez la marque et le modèle');
                         return;
                       }
                       try {
@@ -728,7 +728,7 @@ export default function SellEquipment() {
                         };
                                                  const { specs } = await fetchModelSpecsFull(formData.brand, formData.model, context); // context sérialisé avec champs vides transmis
                         if (!specs) {
-                          alert('Aucune spécification trouvée');
+                          toast('Aucune spécification trouvée');
                           return;
                         }
                         const mapped = toSellEquipmentForm(specs);
@@ -743,9 +743,9 @@ export default function SellEquipment() {
                         const summary = summarizeSpecs(specs);
                         const missing = missingForSell(specs);
                         const msg = `Spécifications pré-remplies.\n${summary}${missing.length ? `\nChamps manquants: ${missing.join(', ')}` : ''}`;
-                        alert(msg);
+                        toast(msg);
                       } catch (e) {
-                        alert('Erreur lors de la récupération des spécifications');
+                        toast('Erreur lors de la récupération des spécifications');
                         logger.error(e);
                       }
                     }}

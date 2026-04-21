@@ -26,7 +26,7 @@ import supabase from '../utils/supabaseClient';
 import { VITRINE_COLUMNS } from '../constants/apiQueryFields';
 import { useCurrencyStore } from '../stores/currencyStore';
 import Price from '../components/Price';
-
+import { toast } from '../utils/toast';
 interface VitrineData {
   id: string;
   company_name: string;
@@ -432,16 +432,16 @@ export default function VitrinePersonnalisee() {
 
       if (result.error) {
         console.error('Erreur sauvegarde:', result.error);
-        alert('Erreur lors de la sauvegarde');
+        toast('Erreur lors de la sauvegarde');
         return;
       }
 
       setVitrineData(result.data);
       setIsEditing(false);
-      alert('Vitrine sauvegardée avec succès !');
+      toast('Vitrine sauvegardée avec succès !');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la sauvegarde');
+      toast('Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
@@ -551,7 +551,7 @@ export default function VitrinePersonnalisee() {
     setShowRecommendations(true);
     // Simulation de recommandations basées sur les critères
     setTimeout(() => {
-      alert('Recommandations envoyées par email ! Nos experts vous contacteront dans les 24h.');
+      toast('Recommandations envoyées par email ! Nos experts vous contacteront dans les 24h.');
       setShowRecommendations(false);
     }, 1000);
   };
@@ -560,7 +560,7 @@ export default function VitrinePersonnalisee() {
     setShowCostSimulation(true);
     // Simulation de calcul de coût
     setTimeout(() => {
-      alert('Estimation envoyée par email ! Coût total estimé : 7 500€ pour 3 mois avec transport inclus.');
+      toast('Estimation envoyée par email ! Coût total estimé : 7 500€ pour 3 mois avec transport inclus.');
       setShowCostSimulation(false);
     }, 1000);
   };
@@ -569,7 +569,7 @@ export default function VitrinePersonnalisee() {
     setShowCallbackForm(true);
     // Simulation de demande de rappel
     setTimeout(() => {
-      alert('Demande de rappel enregistrée ! Un expert vous appellera sous 2h.');
+      toast('Demande de rappel enregistrée ! Un expert vous appellera sous 2h.');
       setShowCallbackForm(false);
     }, 1000);
   };
@@ -578,7 +578,7 @@ export default function VitrinePersonnalisee() {
     setShowExpertContact(true);
     // Simulation de contact expert
     setTimeout(() => {
-      alert('Expert contacté ! Il vous rappellera dans les 30 minutes.');
+      toast('Expert contacté ! Il vous rappellera dans les 30 minutes.');
       setShowExpertContact(false);
     }, 1000);
   };
@@ -587,7 +587,7 @@ export default function VitrinePersonnalisee() {
     setShowBundleForm(true);
     // Simulation de demande de bundle
     setTimeout(() => {
-      alert('Devis bundle demandé ! Notre équipe vous enverra une proposition complète sous 24h.');
+      toast('Devis bundle demandé ! Notre équipe vous enverra une proposition complète sous 24h.');
       setShowBundleForm(false);
     }, 1000);
   };
@@ -1935,7 +1935,7 @@ export default function VitrinePersonnalisee() {
               </button>
               <button
                 onClick={() => {
-                  alert('Demande de réservation envoyée !');
+                  toast('Demande de réservation envoyée !');
                   setShowRentalForm(false);
                 }}
                 className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"

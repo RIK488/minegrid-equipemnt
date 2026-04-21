@@ -11,7 +11,7 @@ import {
   TrendingUp,
   X,
 } from 'lucide-react';
-
+import { toast } from '../../../utils/toast';
 export const SalesPipelineWidget = ({ data }: { data: any[] }) => {
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'value' | 'probability' | 'lastContact'>('value');
@@ -261,13 +261,13 @@ export const SalesPipelineWidget = ({ data }: { data: any[] }) => {
         'Perdu': 'Vente perdue'
       };
 
-      alert(`✅ Lead "${lead.title}" passé avec succès à l'étape: ${stageNames[nextStage as keyof typeof stageNames]}`);
+      toast(`✅ Lead "${lead.title}" passé avec succès à l'étape: ${stageNames[nextStage as keyof typeof stageNames]}`);
 
       // Ici on pourrait appeler une API pour sauvegarder en base de données
       console.log(`[API] Mise à jour du lead ${lead.id}: ${lead.stage} → ${nextStage}`);
 
     } else {
-      alert('🎉 Ce lead est déjà à la dernière étape !');
+      toast('🎉 Ce lead est déjà à la dernière étape !');
     }
   };
 
@@ -320,7 +320,7 @@ export const SalesPipelineWidget = ({ data }: { data: any[] }) => {
       });
     }
 
-    alert('✅ Modifications sauvegardées avec succès');
+    toast('✅ Modifications sauvegardées avec succès');
     setShowEditForm(false);
     setEditForm({});
 
@@ -350,7 +350,7 @@ export const SalesPipelineWidget = ({ data }: { data: any[] }) => {
         notes: selectedLead.notes ? `${selectedLead.notes}\n${new Date().toLocaleString('fr-FR')}: ${note}` : `${new Date().toLocaleString('fr-FR')}: ${note}`
       });
 
-      alert('✅ Note ajoutée avec succès');
+      toast('✅ Note ajoutée avec succès');
       console.log(`[API] Note ajoutée au lead ${selectedLead.id}:`, note);
     }
   };
@@ -381,7 +381,7 @@ export const SalesPipelineWidget = ({ data }: { data: any[] }) => {
         lastContact: date
       });
 
-      alert('✅ Rendez-vous programmé avec succès');
+      toast('✅ Rendez-vous programmé avec succès');
       console.log(`[API] Rendez-vous programmé pour le lead ${selectedLead.id}: ${date} à ${time}`);
     }
   };
@@ -402,7 +402,7 @@ export const SalesPipelineWidget = ({ data }: { data: any[] }) => {
 
     if (newLead.title !== 'Nouveau prospect') {
       setLeadsData([...leadsData, newLead]);
-      alert('✅ Nouveau lead ajouté avec succès');
+      toast('✅ Nouveau lead ajouté avec succès');
       console.log('[API] Nouveau lead créé:', newLead);
     }
   };
@@ -411,16 +411,16 @@ export const SalesPipelineWidget = ({ data }: { data: any[] }) => {
   const handleAIInsightAction = (insight: any) => {
     switch (insight.type) {
       case 'blockage':
-        alert(`🔄 Relance automatique programmée pour ${insight.leads.length} leads bloqués`);
+        toast(`🔄 Relance automatique programmée pour ${insight.leads.length} leads bloqués`);
         break;
       case 'quote':
-        alert(`📧 Relances automatiques programmées pour ${insight.leads.length} devis`);
+        toast(`📧 Relances automatiques programmées pour ${insight.leads.length} devis`);
         break;
       case 'opportunity':
-        alert(`⭐ Priorité élevée accordée à ${insight.leads.length} opportunités à forte valeur`);
+        toast(`⭐ Priorité élevée accordée à ${insight.leads.length} opportunités à forte valeur`);
         break;
       case 'conversion':
-        alert(`📊 Analyse des taux de conversion lancée pour optimiser le processus`);
+        toast(`📊 Analyse des taux de conversion lancée pour optimiser le processus`);
         break;
     }
   };

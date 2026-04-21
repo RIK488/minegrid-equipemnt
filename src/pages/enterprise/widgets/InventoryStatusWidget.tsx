@@ -12,7 +12,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-
+import { toast } from '../../../utils/toast';
 export const InventoryStatusWidget = ({ data }: { data: any[] }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
@@ -219,12 +219,12 @@ export const InventoryStatusWidget = ({ data }: { data: any[] }) => {
     const body = encodeURIComponent(message);
     window.open(`mailto:${item.supplierEmail}?subject=${subject}&body=${body}`);
 
-    alert(`Email préparé pour ${item.supplier}\n\nSujet: ${subject}\n\nLe client email s'ouvrira automatiquement.`);
+    toast(`Email préparé pour ${item.supplier}\n\nSujet: ${subject}\n\nLe client email s'ouvrira automatiquement.`);
   };
 
   const handleSubmitOrder = () => {
     const totalCost = orderForm.suggestedQuantity * orderForm.unitValue;
-    alert(`✅ Commande soumise avec succès !\n\nProduit: ${orderForm.title}\nQuantité: ${orderForm.suggestedQuantity}\nCoût total: ${formatCurrency(totalCost)}\n\nUn email de confirmation sera envoyé au fournisseur.`);
+    toast(`✅ Commande soumise avec succès !\n\nProduit: ${orderForm.title}\nQuantité: ${orderForm.suggestedQuantity}\nCoût total: ${formatCurrency(totalCost)}\n\nUn email de confirmation sera envoyé au fournisseur.`);
     setShowOrderForm(false);
     setOrderForm({});
   };
@@ -237,21 +237,21 @@ export const InventoryStatusWidget = ({ data }: { data: any[] }) => {
     const body = encodeURIComponent(message);
     window.open(`mailto:?subject=${subject}&body=${body}`);
 
-    alert(`Email de recommandation préparé pour ${item.title}`);
+    toast(`Email de recommandation préparé pour ${item.title}`);
   };
 
   const handleBoostVisibility = (item: any) => {
-    alert(`🚀 ${item.title} mis en avant Premium !\n\nActions appliquées:\n- Position prioritaire dans les résultats\n- Badge "Premium" ajouté\n- Promotion sur la page d'accueil\n- Emailing aux prospects qualifiés`);
+    toast(`🚀 ${item.title} mis en avant Premium !\n\nActions appliquées:\n- Position prioritaire dans les résultats\n- Badge "Premium" ajouté\n- Promotion sur la page d'accueil\n- Emailing aux prospects qualifiés`);
   };
 
   const handleReducePrice = (item: any) => {
     const newPrice = item.value * 0.85; // Réduction de 15%
-    alert(`💰 Prix réduit pour ${item.title} !\n\nAncien prix: ${formatCurrency(item.value)}\nNouveau prix: ${formatCurrency(newPrice)}\nRéduction: 15%\n\nCette action sera visible dans 5 minutes.`);
+    toast(`💰 Prix réduit pour ${item.title} !\n\nAncien prix: ${formatCurrency(item.value)}\nNouveau prix: ${formatCurrency(newPrice)}\nRéduction: 15%\n\nCette action sera visible dans 5 minutes.`);
   };
 
   const handleAIAction = (item: any) => {
     const recommendation = item.aiRecommendation;
-    alert(`🤖 Recommandation IA pour ${item.title}:\n\n${recommendation.message}\n\nAction suggérée: ${recommendation.action}\n\nVoulez-vous appliquer cette recommandation ?`);
+    toast(`🤖 Recommandation IA pour ${item.title}:\n\n${recommendation.message}\n\nAction suggérée: ${recommendation.action}\n\nVoulez-vous appliquer cette recommandation ?`);
   };
 
   // Calculer les KPI de vente
@@ -1174,7 +1174,7 @@ export const InventoryStatusWidget = ({ data }: { data: any[] }) => {
                   <button 
                     onClick={() => {
                       const dormantItems = enrichedData.filter(item => item.dormantDays > 60);
-                      alert(`📧 Email de recommandation préparé pour ${dormantItems.length} articles en stock dormant !`);
+                      toast(`📧 Email de recommandation préparé pour ${dormantItems.length} articles en stock dormant !`);
                     }}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
                   >
@@ -1183,7 +1183,7 @@ export const InventoryStatusWidget = ({ data }: { data: any[] }) => {
                   <button 
                     onClick={() => {
                       const lowVisibilityItems = enrichedData.filter(item => item.visibilityRate < 30);
-                      alert(`🚀 ${lowVisibilityItems.length} articles mis en avant Premium !`);
+                      toast(`🚀 ${lowVisibilityItems.length} articles mis en avant Premium !`);
                     }}
                     className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm"
                   >
@@ -1192,7 +1192,7 @@ export const InventoryStatusWidget = ({ data }: { data: any[] }) => {
                   <button 
                     onClick={() => {
                       const criticalItems = enrichedData.filter(item => item.aiRecommendation?.type === 'critical');
-                      alert(`💰 Prix réduit pour ${criticalItems.length} articles critiques !`);
+                      toast(`💰 Prix réduit pour ${criticalItems.length} articles critiques !`);
                     }}
                     className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm"
                   >
@@ -1200,7 +1200,7 @@ export const InventoryStatusWidget = ({ data }: { data: any[] }) => {
                   </button>
                   <button 
                     onClick={() => {
-                      alert(`📊 Rapport de performance généré !`);
+                      toast(`📊 Rapport de performance généré !`);
                     }}
                     className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm"
                   >

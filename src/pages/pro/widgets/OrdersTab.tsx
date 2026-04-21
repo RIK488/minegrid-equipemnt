@@ -11,7 +11,7 @@ import {
   Truck,
   X,
 } from 'lucide-react';
-
+import { toast } from '../../../utils/toast';
 export function OrdersTab({ orders, onRefresh }: { orders: ClientOrder[], onRefresh: () => Promise<void> }) {
   // États pour les modals et actions
   const [showAddOrderModal, setShowAddOrderModal] = useState(false);
@@ -104,16 +104,16 @@ export function OrdersTab({ orders, onRefresh }: { orders: ClientOrder[], onRefr
 
       if (error) {
         console.error('Erreur lors de l\'acceptation:', error);
-        alert('Erreur lors de l\'acceptation de l\'offre');
+        toast('Erreur lors de l\'acceptation de l\'offre');
         return;
       }
 
       console.log('✅ Offre acceptée avec succès');
-      alert('Offre acceptée avec succès !');
+      toast('Offre acceptée avec succès !');
       loadIncomingOrders(); // Recharger les données
     } catch (error) {
       console.error('Erreur lors de l\'acceptation:', error);
-      alert('Erreur lors de l\'acceptation de l\'offre');
+      toast('Erreur lors de l\'acceptation de l\'offre');
     }
   };
 
@@ -126,27 +126,27 @@ export function OrdersTab({ orders, onRefresh }: { orders: ClientOrder[], onRefr
 
       if (error) {
         console.error('Erreur lors du refus:', error);
-        alert('Erreur lors du refus de l\'offre');
+        toast('Erreur lors du refus de l\'offre');
         return;
       }
 
       console.log('✅ Offre refusée avec succès');
-      alert('Offre refusée avec succès !');
+      toast('Offre refusée avec succès !');
       loadIncomingOrders(); // Recharger les données
     } catch (error) {
       console.error('Erreur lors du refus:', error);
-      alert('Erreur lors du refus de l\'offre');
+      toast('Erreur lors du refus de l\'offre');
     }
   };
 
   const handleSendInvoice = async (offerId: string) => {
     // TODO: Implémenter l'envoi de facture
-    alert('Fonctionnalité d\'envoi de facture à implémenter');
+    toast('Fonctionnalité d\'envoi de facture à implémenter');
   };
 
   const handleMarkShipped = async (offerId: string) => {
     // TODO: Implémenter le marquage comme expédié
-    alert('Fonctionnalité de marquage expédié à implémenter');
+    toast('Fonctionnalité de marquage expédié à implémenter');
   };
 
   const handleViewOrder = (order: ClientOrder) => {
@@ -181,15 +181,15 @@ export function OrdersTab({ orders, onRefresh }: { orders: ClientOrder[], onRefr
 
         if (error) {
           console.error('Erreur lors de la suppression:', error);
-          alert('Erreur lors de la suppression de la commande');
+          toast('Erreur lors de la suppression de la commande');
         } else {
           console.log('✅ Commande supprimée avec succès');
-          alert(`Commande ${order.order_number} supprimée avec succès`);
+          toast(`Commande ${order.order_number} supprimée avec succès`);
           onRefresh();
         }
       } catch (error) {
         console.error('Erreur lors de la suppression:', error);
-        alert('Erreur lors de la suppression de la commande');
+        toast('Erreur lors de la suppression de la commande');
       }
     }
   };
@@ -239,11 +239,11 @@ export function OrdersTab({ orders, onRefresh }: { orders: ClientOrder[], onRefr
         // Recharger les données
         await onRefresh();
         
-        alert('Commande créée avec succès !');
+        toast('Commande créée avec succès !');
       }
     } catch (error) {
       console.error('❌ Erreur lors de la création de la commande:', error);
-      alert('Erreur lors de la création de la commande');
+      toast('Erreur lors de la création de la commande');
     } finally {
       setIsSubmitting(false);
     }
@@ -269,18 +269,18 @@ export function OrdersTab({ orders, onRefresh }: { orders: ClientOrder[], onRefr
 
       if (error) {
         console.error('Erreur lors de la mise à jour:', error);
-        alert('Erreur lors de la mise à jour de la commande');
+        toast('Erreur lors de la mise à jour de la commande');
         return;
       }
 
       console.log('✅ Commande mise à jour avec succès');
-      alert(`Commande ${selectedOrder.order_number} mise à jour avec succès`);
+      toast(`Commande ${selectedOrder.order_number} mise à jour avec succès`);
       setShowEditOrderModal(false);
       setSelectedOrder(null);
       onRefresh();
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
-      alert('Erreur lors de la mise à jour de la commande');
+      toast('Erreur lors de la mise à jour de la commande');
     }
   };
 

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
 import { PLANNING_EVENTS_COLUMNS } from '../constants/apiQueryFields';
-
+import { toast } from '../utils/toast';
 interface PlanningEvent {
   id?: string;
   title: string;
@@ -79,7 +79,7 @@ export default function PlanningPro() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert('Vous devez être connecté');
+        toast('Vous devez être connecté');
         return;
       }
 
@@ -107,17 +107,17 @@ export default function PlanningPro() {
 
       if (result.error) {
         console.error('Erreur sauvegarde événement:', result.error);
-        alert('Erreur lors de la sauvegarde');
+        toast('Erreur lors de la sauvegarde');
         return;
       }
 
       await loadEvents();
       setShowForm(false);
       setEditingEvent(null);
-      alert('Événement sauvegardé avec succès !');
+      toast('Événement sauvegardé avec succès !');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la sauvegarde');
+      toast('Erreur lors de la sauvegarde');
     }
   };
 
@@ -132,15 +132,15 @@ export default function PlanningPro() {
 
       if (error) {
         console.error('Erreur suppression:', error);
-        alert('Erreur lors de la suppression');
+        toast('Erreur lors de la suppression');
         return;
       }
 
       await loadEvents();
-      alert('Événement supprimé avec succès !');
+      toast('Événement supprimé avec succès !');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la suppression');
+      toast('Erreur lors de la suppression');
     }
   };
 

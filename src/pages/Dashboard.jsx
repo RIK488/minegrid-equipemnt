@@ -4,7 +4,7 @@ import StripePaymentForm from '../components/StripePaymentForm';
 import { getSellerMachines, logoutUser, getDashboardStats, getWeeklyActivityData, getOffers } from '../utils/api';
 import { supabaseClient as supabase } from '../utils/supabaseClient';
 import { logger } from '../utils/logger';
-
+import { toast } from '../utils/toast';
 // Fonction utilitaire pour vérifier si une configuration valide existe
 const hasValidConfiguration = () => {
     // Vérifier d'abord si la configuration a été explicitement validée
@@ -442,7 +442,7 @@ export default function Dashboard({ section = 'overview' }) {
                 detail: { cancelled: true }
             }));
             
-            alert('Votre abonnement a été résilié avec succès ! Vous pouvez maintenant choisir un nouvel abonnement.');
+            toast('Votre abonnement a été résilié avec succès ! Vous pouvez maintenant choisir un nouvel abonnement.');
         }
     };
 
@@ -450,7 +450,7 @@ export default function Dashboard({ section = 'overview' }) {
         if (confirm('Voulez-vous réinitialiser votre tableau de bord entreprise ? Cela vous permettra de le reconfigurer.')) {
             localStorage.removeItem('enterpriseDashboardConfigured');
             setIsFirstTimeEnterpriseDashboard(true);
-            alert('Tableau de bord entreprise réinitialisé. Vous pouvez maintenant le reconfigurer.');
+            toast('Tableau de bord entreprise réinitialisé. Vous pouvez maintenant le reconfigurer.');
         }
     };
 
@@ -599,14 +599,14 @@ export default function Dashboard({ section = 'overview' }) {
             
             // Afficher notification de succès
             if (emailError) {
-                alert('Réponse sauvegardée mais erreur d\'envoi email. Le destinataire recevra une notification interne.');
+                toast('Réponse sauvegardée mais erreur d\'envoi email. Le destinataire recevra une notification interne.');
             } else {
-                alert('Réponse envoyée avec succès !');
+                toast('Réponse envoyée avec succès !');
             }
 
         } catch (error) {
             logger.error('Erreur lors de l\'envoi de la réponse:', error);
-            alert('Erreur lors de l\'envoi de la réponse');
+            toast('Erreur lors de l\'envoi de la réponse');
         } finally {
             setIsSendingReply(false);
         }
@@ -621,10 +621,10 @@ export default function Dashboard({ section = 'overview' }) {
 
     const handlePromoCodeValidation = () => {
         if (promoCode === 'minegrid2026') {
-            alert('✅ Code promo valide ! Accès temporaire de 30 jours.');
+            toast('✅ Code promo valide ! Accès temporaire de 30 jours.');
             activateSubscriptionWithPromo();
         } else {
-            alert('❌ Code promo invalide');
+            toast('❌ Code promo invalide');
         }
     };
 
@@ -643,11 +643,11 @@ export default function Dashboard({ section = 'overview' }) {
             localStorage.setItem('tempSubscription', selectedPlanForPayment);
             
             setShowPaymentPage(false);
-            alert(`✅ Abonnement ${selectedPlanForPayment} activé avec succès grâce au code promo ! Accès temporaire de 30 jours.`);
+            toast(`✅ Abonnement ${selectedPlanForPayment} activé avec succès grâce au code promo ! Accès temporaire de 30 jours.`);
             setActiveSection('overview');
         } catch (error) {
             logger.error('Erreur activation abonnement promo:', error);
-            alert('Erreur lors de l\'activation de l\'abonnement');
+            toast('Erreur lors de l\'activation de l\'abonnement');
         }
     };
 
@@ -676,12 +676,12 @@ export default function Dashboard({ section = 'overview' }) {
         
         setShowPaymentPage(false);
         setActiveSection('overview');
-        alert('✅ Paiement réussi ! Votre abonnement est maintenant actif.');
+        toast('✅ Paiement réussi ! Votre abonnement est maintenant actif.');
     };
 
     const handleStripePaymentError = (error) => {
         logger.error('Erreur paiement Stripe:', error);
-        alert(`Erreur lors du paiement: ${error}`);
+        toast(`Erreur lors du paiement: ${error}`);
     };
 
     const handleStripePaymentCancel = () => {
@@ -711,7 +711,7 @@ export default function Dashboard({ section = 'overview' }) {
         localStorage.setItem('dashboardConfigured', 'true');
         
         logger.info('✅ Configuration du tableau de bord sauvegardée');
-        alert('✅ Configuration du tableau de bord sauvegardée avec succès !');
+        toast('✅ Configuration du tableau de bord sauvegardée avec succès !');
     };
 
     return (

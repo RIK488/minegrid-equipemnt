@@ -3,7 +3,7 @@ import { usePermissions } from '../../../utils/permissions';
 import supabase from '../../../utils/supabaseClient';
 import { TECHNICAL_DOCUMENT_COLUMNS } from '../../../constants/proClientQueryFields';
 import { Download, Trash2, X } from 'lucide-react';
-
+import { toast } from '../../../utils/toast';
 export function DocumentsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +52,7 @@ export function DocumentsTab({ onRefresh }: { onRefresh: () => Promise<void> }) 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile || !documentData.title) {
-      alert('Veuillez sélectionner un fichier et saisir un titre');
+      toast('Veuillez sélectionner un fichier et saisir un titre');
       return;
     }
 
@@ -63,7 +63,7 @@ export function DocumentsTab({ onRefresh }: { onRefresh: () => Promise<void> }) 
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
-        alert('Erreur: Utilisateur non connecté');
+        toast('Erreur: Utilisateur non connecté');
         return;
       }
 
@@ -75,7 +75,7 @@ export function DocumentsTab({ onRefresh }: { onRefresh: () => Promise<void> }) 
 
       if (uploadError) {
         console.error('Erreur lors de l\'upload:', uploadError);
-        alert('Erreur lors de l\'upload du fichier: ' + uploadError.message);
+        toast('Erreur lors de l\'upload du fichier: ' + uploadError.message);
         return;
       }
 
@@ -95,12 +95,12 @@ export function DocumentsTab({ onRefresh }: { onRefresh: () => Promise<void> }) 
 
       if (dbError) {
         console.error('Erreur lors de la création du document:', dbError);
-        alert('Erreur lors de la création du document: ' + dbError.message);
+        toast('Erreur lors de la création du document: ' + dbError.message);
         return;
       }
 
       // Succès
-      alert('Document ajouté avec succès !');
+      toast('Document ajouté avec succès !');
       setShowUploadModal(false);
       setSelectedFile(null);
       setDocumentData({ title: '', document_type: 'manual', is_public: false });
@@ -108,7 +108,7 @@ export function DocumentsTab({ onRefresh }: { onRefresh: () => Promise<void> }) 
       await onRefresh();
     } catch (error) {
       console.error('Erreur lors de l\'upload:', error);
-      alert('Erreur lors de l\'upload: ' + (error as Error).message);
+      toast('Erreur lors de l\'upload: ' + (error as Error).message);
     } finally {
       setUploading(false);
     }
@@ -144,7 +144,7 @@ export function DocumentsTab({ onRefresh }: { onRefresh: () => Promise<void> }) 
       if (error) {
         // Si le bucket n'existe pas ou erreur, afficher les infos du document
         console.log('Bucket Storage non configuré, affichage des informations:', error);
-        alert(`📄 Informations du document "${doc.title}"\n\n` +
+        toast(`📄 Informations du document "${doc.title}"\n\n` +
               `📁 Fichier: ${doc.file_path}\n` +
               `📏 Taille: ${Math.round(doc.file_size / 1024)} KB\n` +
               `📋 Type: ${doc.mime_type}\n\n` +
@@ -165,7 +165,7 @@ export function DocumentsTab({ onRefresh }: { onRefresh: () => Promise<void> }) 
       console.log('Téléchargement réussi:', doc.title);
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
-      alert('Erreur lors du téléchargement: ' + (error as Error).message);
+      toast('Erreur lors du téléchargement: ' + (error as Error).message);
     }
   };
 

@@ -33,7 +33,7 @@ import {
   type UserInvitation 
 } from '../utils/userManagement';
 import { setupUserInvitationsTable } from '../utils/setupUserInvitations';
-
+import { toast } from '../utils/toast';
 interface TeamMember {
   id: string;
   name: string;
@@ -413,9 +413,9 @@ const MultiUserManagement: React.FC = () => {
                            role: 'viewer'
                          });
                          if (result.success) {
-                           alert('✅ Utilisateur créé avec succès !');
+                           toast('✅ Utilisateur créé avec succès !');
                          } else {
-                           alert(`❌ Erreur: ${result.error}`);
+                           toast(`❌ Erreur: ${result.error}`);
                          }
                        }}
                        className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"

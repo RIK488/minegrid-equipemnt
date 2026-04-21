@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
 import { MESSAGES_INBOX_COLUMNS } from '../constants/apiQueryFields';
-
+import { toast } from '../utils/toast';
 interface Message {
   id: string;
   sender_name: string;
@@ -147,7 +147,7 @@ export default function MessagesBoite() {
 
       if (replyError) {
         console.error('Erreur envoi réponse:', replyError);
-        alert('Erreur lors de l\'envoi');
+        toast('Erreur lors de l\'envoi');
         return;
       }
 
@@ -155,10 +155,10 @@ export default function MessagesBoite() {
       await updateMessageStatus(selectedMessage.id, 'repondu');
 
       setReplyContent('');
-      alert('Réponse envoyée avec succès !');
+      toast('Réponse envoyée avec succès !');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'envoi');
+      toast('Erreur lors de l\'envoi');
     } finally {
       setSending(false);
     }
@@ -175,7 +175,7 @@ export default function MessagesBoite() {
 
       if (error) {
         console.error('Erreur suppression:', error);
-        alert('Erreur lors de la suppression');
+        toast('Erreur lors de la suppression');
         return;
       }
 
@@ -183,10 +183,10 @@ export default function MessagesBoite() {
       if (selectedMessage?.id === messageId) {
         setSelectedMessage(null);
       }
-      alert('Message supprimé avec succès !');
+      toast('Message supprimé avec succès !');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la suppression');
+      toast('Erreur lors de la suppression');
     }
   };
 

@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { fetchModelSpecsFull, summarizeSpecs } from '../../../services/autoSpecsService';
-
+import { toast } from '../../../utils/toast';
 export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment: ClientEquipment[], userMachines: any[], onRefresh: () => Promise<void> }) {
   const [showAddEquipmentModal, setShowAddEquipmentModal] = useState(false);
   const [showProEquipmentForm, setShowProEquipmentForm] = useState(false);
@@ -111,16 +111,16 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
 
         if (error) {
           console.error('Erreur lors de la suppression:', error);
-          alert('Erreur lors de la suppression de l\'équipement');
+          toast('Erreur lors de la suppression de l\'équipement');
         } else {
           console.log('✅ Équipement supprimé avec succès');
-          alert(`Équipement ${equipment.serial_number} supprimé avec succès`);
+          toast(`Équipement ${equipment.serial_number} supprimé avec succès`);
           // Recharger les données
           onRefresh();
         }
       } catch (error) {
         console.error('Erreur lors de la suppression:', error);
-        alert('Erreur lors de la suppression de l\'équipement');
+        toast('Erreur lors de la suppression de l\'équipement');
       }
     }
   };
@@ -182,7 +182,7 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
 
       if (error) {
         console.error('Erreur lors de la mise à jour machines:', error);
-        alert('Erreur lors de la mise à jour de l\'équipement');
+        toast('Erreur lors de la mise à jour de l\'équipement');
         return;
       }
 
@@ -206,13 +206,13 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
 
         if (proError) {
           console.error('Erreur lors de la mise à jour pro_equipment_details:', proError);
-          alert('Erreur lors de la mise à jour des détails Pro');
+          toast('Erreur lors de la mise à jour des détails Pro');
           return;
         }
       }
 
       console.log('✅ Équipement mis à jour avec succès');
-      alert(`Équipement ${editEquipmentForm.serial_number} mis à jour avec succès`);
+      toast(`Équipement ${editEquipmentForm.serial_number} mis à jour avec succès`);
       setShowEditEquipmentModal(false);
       setSelectedEquipment(null);
       // Réinitialiser les états d'images
@@ -222,7 +222,7 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
       onRefresh();
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
-      alert('Erreur lors de la mise à jour de l\'équipement');
+      toast('Erreur lors de la mise à jour de l\'équipement');
     }
   };
 
@@ -312,9 +312,9 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
     } else {
       // Fallback : copier le lien dans le presse-papiers
       navigator.clipboard.writeText(window.location.href).then(() => {
-        alert('Lien copié dans le presse-papiers !');
+        toast('Lien copié dans le presse-papiers !');
       }).catch(() => {
-        alert(`Partager l'annonce: ${announcement.name}`);
+        toast(`Partager l'annonce: ${announcement.name}`);
       });
     }
   };
@@ -327,14 +327,14 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
       // Ici vous pouvez implémenter la mise à jour en base de données
       // Pour l'instant, on simule la mise à jour
       console.log('✅ Annonce mise à jour:', editAnnouncementForm);
-      alert(`Annonce ${editAnnouncementForm.name} mise à jour avec succès`);
+      toast(`Annonce ${editAnnouncementForm.name} mise à jour avec succès`);
       setShowEditAnnouncementModal(false);
       setSelectedAnnouncement(null);
       // Recharger les données
       onRefresh();
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
-      alert('Erreur lors de la mise à jour de l\'annonce');
+      toast('Erreur lors de la mise à jour de l\'annonce');
     }
   };
 
@@ -429,17 +429,17 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
 
             if (announcementError) {
               console.error('Erreur création annonce:', announcementError);
-              alert('Équipement Pro ajouté, mais erreur lors de la création de l\'annonce publique');
+              toast('Équipement Pro ajouté, mais erreur lors de la création de l\'annonce publique');
             } else {
               console.log('✅ Annonce publique créée:', announcement);
-              alert('Équipement Pro ajouté et annonce publique créée avec succès !');
+              toast('Équipement Pro ajouté et annonce publique créée avec succès !');
             }
           } catch (error) {
             console.error('Erreur création annonce:', error);
-            alert('Équipement Pro ajouté, mais erreur lors de la création de l\'annonce publique');
+            toast('Équipement Pro ajouté, mais erreur lors de la création de l\'annonce publique');
           }
         } else {
-          alert('Équipement Pro ajouté avec succès ! (interne uniquement)');
+          toast('Équipement Pro ajouté avec succès ! (interne uniquement)');
         }
         
         setShowProEquipmentForm(false);
@@ -462,11 +462,11 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
         await onRefresh();
         
         // Notification de succès (vous pouvez implémenter un système de notification)
-        alert('Équipement Pro ajouté avec succès !');
+        toast('Équipement Pro ajouté avec succès !');
       }
     } catch (error) {
       console.error('❌ Erreur lors de l\'ajout de l\'équipement Pro:', error);
-      alert('Erreur lors de l\'ajout de l\'équipement Pro');
+      toast('Erreur lors de l\'ajout de l\'équipement Pro');
     } finally {
       setIsSubmitting(false);
     }
@@ -867,7 +867,7 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
                       className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
                       onClick={async () => {
                         if (!proEquipmentForm.brand || !proEquipmentForm.model) {
-                          alert('Renseignez la marque et le modèle');
+                          toast('Renseignez la marque et le modèle');
                           return;
                         }
                         try {
@@ -892,16 +892,16 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
                             }
                           };
                           const { specs } = await fetchModelSpecsFull(proEquipmentForm.brand, proEquipmentForm.model, context);
-                          if (!specs) { alert('Aucune spécification trouvée'); return; }
+                          if (!specs) { toast('Aucune spécification trouvée'); return; }
                           const summary = summarizeSpecs(specs);
                           setProEquipmentForm(prev => ({ 
                             ...prev, 
                             description: prev.description ? `${prev.description}\n\n${summary}` : summary 
                           }));
-                          alert('Spécifications récupérées et ajoutées à la description');
+                          toast('Spécifications récupérées et ajoutées à la description');
                         } catch (e) {
                           console.error(e);
-                          alert('Erreur lors de la récupération des spécifications');
+                          toast('Erreur lors de la récupération des spécifications');
                         }
                       }}
                     >
@@ -1204,12 +1204,12 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
                       className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
                       onClick={async () => {
                         if (!editEquipmentForm.brand || !editEquipmentForm.model) {
-                          alert('Renseignez la marque et le modèle');
+                          toast('Renseignez la marque et le modèle');
                           return;
                         }
                         try {
                           const { specs } = await fetchModelSpecsFull(editEquipmentForm.brand, editEquipmentForm.model, { name: editEquipmentForm.equipment_type || '', brand: editEquipmentForm.brand || '', model: editEquipmentForm.model || '', year: editEquipmentForm.year || null, total_hours: editEquipmentForm.total_hours || 0, location: editEquipmentForm.location || '', specifications: { weight: '', dimensions: { length: '', width: '', height: '' }, power: { value: '', unit: 'kW' }, operatingCapacity: { value: '', unit: 'kg' }, workingWeight: '' } });
-                          if (!specs) { alert('Aucune spécification trouvée'); return; }
+                          if (!specs) { toast('Aucune spécification trouvée'); return; }
                           const parts: string[] = [];
                           const d = specs.dimensions;
                           if (d) parts.push(`Dimensions: ${d.length_mm ?? '-'} x ${d.width_mm ?? '-'} x ${d.height_mm ?? '-'} mm`);
@@ -1218,10 +1218,10 @@ export function EquipmentTab({ equipment, userMachines, onRefresh }: { equipment
                           if (pkw || php) parts.push(`Puissance: ${pkw ?? ''}${pkw ? ' kW' : ''}${pkw && php ? ' / ' : ''}${php ?? ''}${php ? ' HP' : ''}`);
                           const summary = parts.join(' | ');
                           setEditEquipmentForm(prev => ({ ...prev, description: prev.description ? `${prev.description}\n${summary}` : summary }));
-                          alert('Spécifications récupérées et ajoutées à la description');
+                          toast('Spécifications récupérées et ajoutées à la description');
                         } catch (e) {
                           console.error(e);
-                          alert('Erreur lors de la récupération des spécifications');
+                          toast('Erreur lors de la récupération des spécifications');
                         }
                       }}
                     >

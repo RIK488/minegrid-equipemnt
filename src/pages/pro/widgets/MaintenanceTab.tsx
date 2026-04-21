@@ -10,7 +10,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-
+import { toast } from '../../../utils/toast';
 export function MaintenanceTab({ interventions, equipment, onRefresh }: { interventions: MaintenanceIntervention[], equipment: any[], onRefresh: () => Promise<void> }) {
   const [showAddInterventionModal, setShowAddInterventionModal] = useState(false);
   const [interventionForm, setInterventionForm] = useState({
@@ -70,11 +70,11 @@ export function MaintenanceTab({ interventions, equipment, onRefresh }: { interv
         await onRefresh();
         
         // Notification de succès
-        alert('Intervention de maintenance planifiée avec succès !');
+        toast('Intervention de maintenance planifiée avec succès !');
       }
     } catch (error) {
       console.error('❌ Erreur lors de la création de l\'intervention:', error);
-      alert('Erreur lors de la planification de l\'intervention');
+      toast('Erreur lors de la planification de l\'intervention');
     } finally {
       setIsSubmitting(false);
     }

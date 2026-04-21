@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Check, Building2, Users, Shield, Clock, FileText, Wrench, Activity, Briefcase, CreditCard, Lock, X, ArrowLeft, Gift } from 'lucide-react';
 import { upsertProClientProfile } from '../utils/proApi';
 import supabase from '../utils/supabaseClient';
-
+import { toast } from '../utils/toast';
 interface Plan {
   id: string;
   name: string;
@@ -135,7 +135,7 @@ export default function ProSubscription() {
     
     // Vérifier que tous les champs requis sont remplis
     if (!formData.companyName || !formData.contactPerson || !formData.email) {
-      alert('Veuillez remplir tous les champs obligatoires');
+      toast('Veuillez remplir tous les champs obligatoires');
       return;
     }
 
@@ -480,11 +480,11 @@ export default function ProSubscription() {
                         onClick={() => {
                           const code = (document.getElementById('promoCode') as HTMLInputElement).value;
                           if (code === 'minegrid2026') {
-                            alert('✅ Code promo valide ! Accès temporaire de 30 jours.');
+                            toast('✅ Code promo valide ! Accès temporaire de 30 jours.');
                             // Activer l'abonnement avec code promo
                             activateSubscriptionWithPromo();
                           } else {
-                            alert('❌ Code promo invalide');
+                            toast('❌ Code promo invalide');
                           }
                         }}
                         className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
@@ -536,11 +536,11 @@ export default function ProSubscription() {
                     if (code === 'minegrid2026') {
                       activateSubscriptionWithPromo();
                     } else {
-                      alert('Veuillez entrer un code promo valide');
+                      toast('Veuillez entrer un code promo valide');
                     }
                   } else {
                     // Simulation de paiement par carte
-                    alert('💳 Paiement traité avec succès ! Votre abonnement est maintenant actif.');
+                    toast('💳 Paiement traité avec succès ! Votre abonnement est maintenant actif.');
                     activateSubscriptionWithCard();
                   }
                 }}
@@ -588,12 +588,12 @@ export default function ProSubscription() {
         throw subscriptionError;
       }
 
-      alert('✅ Abonnement activé avec succès grâce au code promo ! Accès temporaire de 30 jours.');
+      toast('✅ Abonnement activé avec succès grâce au code promo ! Accès temporaire de 30 jours.');
       setShowPayment(false);
       window.location.hash = '#pro';
     } catch (error) {
       console.error('Erreur activation abonnement promo:', error);
-      alert('Erreur lors de l\'activation de l\'abonnement');
+      toast('Erreur lors de l\'activation de l\'abonnement');
     }
   };
 
@@ -628,7 +628,7 @@ export default function ProSubscription() {
       window.location.hash = '#pro';
     } catch (error) {
       console.error('Erreur paiement carte:', error);
-      alert('Erreur lors du traitement du paiement');
+      toast('Erreur lors du traitement du paiement');
     }
   };
 } 

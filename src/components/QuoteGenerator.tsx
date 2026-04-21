@@ -11,7 +11,7 @@ import {
   User,
   Package
 } from 'lucide-react';
-
+import { toast } from '../utils/toast';
 interface QuoteItem {
   id: string;
   description: string;
@@ -174,7 +174,7 @@ export default function QuoteGenerator() {
     setSavedQuotes(newSavedQuotes);
     localStorage.setItem('savedQuotes', JSON.stringify(newSavedQuotes));
     setIsEditing(false);
-    alert('Devis sauvegardé avec succès !');
+    toast('Devis sauvegardé avec succès !');
   };
 
   const loadQuote = (quote: QuoteData) => {
@@ -192,7 +192,7 @@ export default function QuoteGenerator() {
   };
 
   const generatePDF = () => {
-    alert('📄 Génération du PDF en cours...\n\nFonctionnalité qui permettra de télécharger le devis au format PDF professionnel.');
+    toast('📄 Génération du PDF en cours...\n\nFonctionnalité qui permettra de télécharger le devis au format PDF professionnel.');
   };
 
   const getStatusBadge = (status: string) => {

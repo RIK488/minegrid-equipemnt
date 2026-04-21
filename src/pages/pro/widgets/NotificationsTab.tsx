@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ClientNotification, markNotificationAsRead } from '../../../utils/proApi';
 import { usePermissions } from '../../../utils/permissions';
-
+import { toast } from '../../../utils/toast';
 export function NotificationsTab({ notifications }: { notifications: ClientNotification[] }) {
   const [loading, setLoading] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<ClientNotification | null>(null);
@@ -20,7 +20,7 @@ export function NotificationsTab({ notifications }: { notifications: ClientNotif
       }
     } catch (error) {
       console.error('Erreur lors du marquage comme lu:', error);
-      alert('Erreur lors du marquage de la notification');
+      toast('Erreur lors du marquage de la notification');
     } finally {
       setLoading(false);
     }
@@ -39,7 +39,7 @@ export function NotificationsTab({ notifications }: { notifications: ClientNotif
       window.location.reload();
     } catch (error) {
       console.error('Erreur lors du marquage de toutes les notifications:', error);
-      alert('Erreur lors du marquage des notifications');
+      toast('Erreur lors du marquage des notifications');
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,7 @@ export function NotificationsTab({ notifications }: { notifications: ClientNotif
 
   const handleNavigateToEntity = (notification: ClientNotification) => {
     if (!notification.related_entity_type || !notification.related_entity_id) {
-      alert('Aucune entité liée à cette notification');
+      toast('Aucune entité liée à cette notification');
       return;
     }
 
@@ -83,7 +83,7 @@ export function NotificationsTab({ notifications }: { notifications: ClientNotif
         }
         break;
       default:
-        alert('Type d\'entité non reconnu');
+        toast('Type d\'entité non reconnu');
     }
   };
 

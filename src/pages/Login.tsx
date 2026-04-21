@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, ChevronRight } from 'lucide-react';
 import { loginUser } from '../utils/api';
-
+import { toast } from '../utils/toast';
 // TODO: retirer ce code d'accès temporaire avant la mise en production
 const TEMP_ACCESS_CODE = 'minegrid2026';
 
@@ -20,7 +20,7 @@ export default function Login() {
       localStorage.setItem('user', JSON.stringify(user));
       window.location.hash = '#dashboard';  
     } catch (err: any) {
-      alert('Erreur de connexion : ' + err.message);
+      toast('Erreur de connexion : ' + err.message);
     }
   };
 

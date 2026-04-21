@@ -3,7 +3,7 @@ import { registerUser } from '../utils/api';
 import { Crown, Star, Building, Check, Lock } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
 import PaymentPage from './PaymentPage';
-
+import { toast } from '../utils/toast';
 // TODO: retirer ce code d'accès temporaire avant la mise en production
 const TEMP_ACCESS_CODE = 'minegrid2026';
 
@@ -121,37 +121,37 @@ export default function Register({ initialType }: RegisterProps) {
     const isBusinessProfile = formData.accountType === 'seller' || formData.subscription === 'enterprise';
 
     if (!formData.accountType) {
-      alert("Veuillez sélectionner un type de compte : Client ou Revendeur.");
+      toast("Veuillez sélectionner un type de compte : Client ou Revendeur.");
       return false;
     }
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      alert("Veuillez renseigner votre prénom et votre nom.");
+      toast("Veuillez renseigner votre prénom et votre nom.");
       return false;
     }
     if (!formData.phone.trim()) {
-      alert("Veuillez renseigner votre téléphone.");
+      toast("Veuillez renseigner votre téléphone.");
       return false;
     }
     if (!formData.email.trim()) {
-      alert("Veuillez renseigner votre email.");
+      toast("Veuillez renseigner votre email.");
       return false;
     }
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(formData.email.trim())) {
-      alert("Veuillez saisir une adresse email valide.");
+      toast("Veuillez saisir une adresse email valide.");
       return false;
     }
     if (formData.password.length < 8) {
-      alert("Le mot de passe doit contenir au moins 8 caractères.");
+      toast("Le mot de passe doit contenir au moins 8 caractères.");
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
-      alert("Les mots de passe ne correspondent pas.");
+      toast("Les mots de passe ne correspondent pas.");
       return false;
     }
     if (isBusinessProfile) {
       if (!formData.company.trim() || !formData.businessType.trim() || !formData.address.trim() || !formData.country.trim() || !formData.city.trim()) {
-        alert("Veuillez compléter les informations entreprise obligatoires (société, secteur, adresse, pays, ville).");
+        toast("Veuillez compléter les informations entreprise obligatoires (société, secteur, adresse, pays, ville).");
         return false;
       }
     }
@@ -185,7 +185,7 @@ export default function Register({ initialType }: RegisterProps) {
         localStorage.setItem('selectedSubscription', formData.subscription);
         window.location.hash = '#dashboard';
       } catch (err: any) {
-        alert('Erreur lors de l\'inscription : ' + err.message);
+        toast('Erreur lors de l\'inscription : ' + err.message);
       } finally {
         setLoading(false);
       }
@@ -232,11 +232,11 @@ export default function Register({ initialType }: RegisterProps) {
       if (hasSession) {
         window.location.hash = '#dashboard';
       } else {
-        alert("Compte créé. Un email de confirmation vient d'être envoyé. Confirmez votre email puis connectez-vous pour accéder au service.");
+        toast("Compte créé. Un email de confirmation vient d'être envoyé. Confirmez votre email puis connectez-vous pour accéder au service.");
         window.location.hash = '#connexion';
       }
     } catch (err: any) {
-      alert("Erreur lors de la création du compte : " + (err?.message || 'Erreur inconnue'));
+      toast("Erreur lors de la création du compte : " + (err?.message || 'Erreur inconnue'));
     } finally {
       setLoading(false);
       setShowPayment(false);

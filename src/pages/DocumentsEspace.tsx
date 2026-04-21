@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
 import { DOCUMENTS_ESPACE_COLUMNS } from '../constants/apiQueryFields';
-
+import { toast } from '../utils/toast';
 interface Document {
   id: string;
   name: string;
@@ -124,7 +124,7 @@ export default function DocumentsEspace() {
 
       if (uploadError) {
         console.error('Erreur upload:', uploadError);
-        alert('Erreur lors de l\'upload');
+        toast('Erreur lors de l\'upload');
         return;
       }
 
@@ -154,7 +154,7 @@ export default function DocumentsEspace() {
 
       if (dbError) {
         console.error('Erreur sauvegarde:', dbError);
-        alert('Erreur lors de la sauvegarde');
+        toast('Erreur lors de la sauvegarde');
         return;
       }
 
@@ -168,10 +168,10 @@ export default function DocumentsEspace() {
         tags: ''
       });
       loadDocuments();
-      alert('Document uploadé avec succès !');
+      toast('Document uploadé avec succès !');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de l\'upload');
+      toast('Erreur lors de l\'upload');
     } finally {
       setUploading(false);
     }
@@ -188,15 +188,15 @@ export default function DocumentsEspace() {
 
       if (error) {
         console.error('Erreur suppression:', error);
-        alert('Erreur lors de la suppression');
+        toast('Erreur lors de la suppression');
         return;
       }
 
       loadDocuments();
-      alert('Document supprimé avec succès !');
+      toast('Document supprimé avec succès !');
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la suppression');
+      toast('Erreur lors de la suppression');
     }
   };
 

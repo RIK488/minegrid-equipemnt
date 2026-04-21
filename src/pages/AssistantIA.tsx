@@ -15,7 +15,7 @@ import {
   Loader2
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
-
+import { toast } from '../utils/toast';
 interface Message {
   id: string;
   content: string;
@@ -270,7 +270,7 @@ Que puis-je faire pour vous aujourd'hui ?`;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert('Contenu copié dans le presse-papiers !');
+    toast('Contenu copié dans le presse-papiers !');
   };
 
   const downloadContent = (content: string, filename: string) => {

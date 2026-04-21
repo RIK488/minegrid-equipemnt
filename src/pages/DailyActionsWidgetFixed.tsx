@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import { toast } from '../utils/toast';
 // Widget Actions Commerciales Prioritaires - Version corrigée
 export const DailyActionsPriorityWidget = ({ data, widgetSize = 'normal' }: { data: any[]; widgetSize?: 'small' | 'normal' | 'large' }) => {
   const [showDetails, setShowDetails] = useState(false);
@@ -99,12 +99,12 @@ export const DailyActionsPriorityWidget = ({ data, widgetSize = 'normal' }: { da
   };
 
   const handleMarkAsDone = (action: any) => {
-    alert(`✅ Action marquée comme terminée : ${action.title}`);
+    toast(`✅ Action marquée comme terminée : ${action.title}`);
     console.log(`[API] Action terminée: ${action.id} - ${action.title}`);
   };
 
   const handlePostpone = (action: any) => {
-    alert(`⏰ Action reportée : ${action.title}`);
+    toast(`⏰ Action reportée : ${action.title}`);
     console.log(`[API] Action reportée: ${action.id} - ${action.title}`);
   };
 
@@ -112,7 +112,7 @@ export const DailyActionsPriorityWidget = ({ data, widgetSize = 'normal' }: { da
     if (phone && phone !== 'N/A' && phone !== 'Voir détails') {
       window.open(`tel:${phone}`, '_blank');
     } else {
-      alert('Numéro de téléphone non disponible');
+      toast('Numéro de téléphone non disponible');
     }
   };
 
@@ -120,7 +120,7 @@ export const DailyActionsPriorityWidget = ({ data, widgetSize = 'normal' }: { da
     if (email && email !== 'N/A') {
       window.open(`mailto:${email}`, '_blank');
     } else {
-      alert('Email non disponible');
+      toast('Email non disponible');
     }
   };
 
@@ -129,7 +129,7 @@ export const DailyActionsPriorityWidget = ({ data, widgetSize = 'normal' }: { da
       const cleanPhone = phone.replace(/\s/g, '');
       window.open(`https://wa.me/${cleanPhone}`, '_blank');
     } else {
-      alert('Numéro WhatsApp non disponible');
+      toast('Numéro WhatsApp non disponible');
     }
   };
 

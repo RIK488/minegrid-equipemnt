@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Lock, Check, X, ArrowLeft, Gift } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
-
+import { toast } from '../utils/toast';
 interface PaymentPageProps {
   subscription: {
     id: string;
@@ -71,7 +71,7 @@ export default function PaymentPage({ subscription, userData, onSuccess, onBack 
       }
     } catch (error) {
       console.error('Erreur lors du paiement:', error);
-      alert('Erreur lors du traitement du paiement');
+      toast('Erreur lors du traitement du paiement');
     } finally {
       setLoading(false);
     }
@@ -115,7 +115,7 @@ export default function PaymentPage({ subscription, userData, onSuccess, onBack 
       localStorage.setItem('subscriptionActivated', 'true');
       localStorage.setItem('promoCodeUsed', VALID_PROMO_CODE);
 
-      alert('✅ Abonnement activé avec succès grâce au code promo ! Accès temporaire de 30 jours.');
+      toast('✅ Abonnement activé avec succès grâce au code promo ! Accès temporaire de 30 jours.');
       onSuccess();
     } catch (error) {
       console.error('Erreur activation abonnement promo:', error);
@@ -161,7 +161,7 @@ export default function PaymentPage({ subscription, userData, onSuccess, onBack 
       localStorage.setItem('selectedSubscription', subscription.id);
       localStorage.setItem('subscriptionActivated', 'true');
 
-      alert('✅ Paiement traité avec succès ! Votre abonnement est maintenant actif.');
+      toast('✅ Paiement traité avec succès ! Votre abonnement est maintenant actif.');
       onSuccess();
     } catch (error) {
       console.error('Erreur paiement carte:', error);
