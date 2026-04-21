@@ -1,6 +1,7 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
+import { useRouteParams } from './router';
 import ErrorBoundary from './components/ErrorBoundary';
 import { NotificationContainer } from './components/NotificationToast';
 import Header from './components/Header';
@@ -89,21 +90,7 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const [currentHash, setCurrentHash] = useState(() => window.location.hash || '#');
-
-  useEffect(() => {
-    const handleHash = () => {
-      setCurrentHash(window.location.hash || '#');
-    };
-
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
-
-  const [page, params] = currentHash.slice(1).split('?');
-  const searchParams = new URLSearchParams(params || '');
-  const pathParts = page.split('?')[0].split('/');
+  const { segments: pathParts, searchParams } = useRouteParams();
 
   useExchangeRates();
 
