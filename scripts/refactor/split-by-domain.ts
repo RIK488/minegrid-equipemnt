@@ -131,6 +131,21 @@ const CONFIGS: Record<string, SplitConfig> = {
       sessions: ['getActiveSessions', 'revokeSession'],
     },
   },
+  mockData: {
+    name: 'mockData',
+    sourcePath: path.join(REPO_ROOT, 'src', 'constants', 'mockData.ts'),
+    hasTypes: false,
+    mapping: {
+      metrics: ['metricData'],
+      charts: ['chartData'],
+      lists: ['listData'],
+      'daily-actions': ['dailyActionsData'],
+      inventory: ['inventoryData'],
+      performance: ['performanceData'],
+      'sales-analytics': ['salesAnalyticsData'],
+      'widget-data': ['getWidgetData'],
+    },
+  },
   enterpriseApi: {
     name: 'enterpriseApi',
     sourcePath: path.join(REPO_ROOT, 'src', 'utils', 'enterpriseApi.ts'),
