@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Package, TrendingUp, AlertTriangle, Plus, Download, 
-  Camera, Star, Send, BarChart3, DollarSign, ChevronRight, ChevronDown 
+import {
+  Package, TrendingUp, AlertTriangle, Plus, Download,
+  Camera, Star, Send, BarChart3, DollarSign, ChevronRight, ChevronDown
 } from 'lucide-react';
 import { apiCall, showNotification, sendMessage, exportData } from '../../../services/apiService';
 import { RealStockService, RealEquipment, RealPromotion, StockInsight } from '../../../services/realStockService';
 import { supabaseClient } from '../../../utils/supabaseClient';
 import { MACHINE_LIST_COLUMNS, SELLER_MACHINES_MAX_ROWS } from '../../../constants/machineQueryFields';
+import { logger } from '../../../utils/logger';
 
 // Interface pour les équipements
 interface Equipment {
@@ -82,7 +83,7 @@ const StockStatusWidget = () => {
   const filteredEquipments = equipments.filter(equipment => {
     // Filtre par catégorie
     if (selectedCategory !== 'Toutes' && equipment.category !== selectedCategory) {
-      console.log(`❌ Équipement "${equipment.name}" filtré: catégorie="${equipment.category}" ≠ sélection="${selectedCategory}"`);
+      logger.info(`❌ Équipement "${equipment.name}" filtré: catégorie="${equipment.category}" ≠ sélection="${selectedCategory}"`);
       return false;
     }
     
@@ -92,38 +93,38 @@ const StockStatusWidget = () => {
       switch (selectedAnciennete) {
         case '0-30j':
           if (days > 30) {
-            console.log(`❌ Équipement "${equipment.name}" filtré: ${days} jours > 30`);
+            logger.info(`❌ Équipement "${equipment.name}" filtré: ${days} jours > 30`);
             return false;
           }
           break;
         case '30-60j':
           if (days < 30 || days > 60) {
-            console.log(`❌ Équipement "${equipment.name}" filtré: ${days} jours hors 30-60`);
+            logger.info(`❌ Équipement "${equipment.name}" filtré: ${days} jours hors 30-60`);
             return false;
           }
           break;
         case '60j+':
           if (days < 60) {
-            console.log(`❌ Équipement "${equipment.name}" filtré: ${days} jours < 60`);
+            logger.info(`❌ Équipement "${equipment.name}" filtré: ${days} jours < 60`);
             return false;
           }
           break;
         case '90j+':
           if (days < 90) {
-            console.log(`❌ Équipement "${equipment.name}" filtré: ${days} jours < 90`);
+            logger.info(`❌ Équipement "${equipment.name}" filtré: ${days} jours < 90`);
             return false;
           }
           break;
       }
     }
     
-    console.log(`✅ Équipement "${equipment.name}" accepté: catégorie="${equipment.category}", jours="${equipment.daysInStock}"`);
+    logger.info(`✅ Équipement "${equipment.name}" accepté: catégorie="${equipment.category}", jours="${equipment.daysInStock}"`);
     return true;
   });
 
   // Log du filtrage
-  console.log(`🔍 Filtrage: catégorie="${selectedCategory}", ancienneté="${selectedAnciennete}"`);
-  console.log(`📊 Résultat: ${filteredEquipments.length}/${equipments.length} équipements affichés`);
+  logger.info(`🔍 Filtrage: catégorie="${selectedCategory}", ancienneté="${selectedAnciennete}"`);
+  logger.info(`📊 Résultat: ${filteredEquipments.length}/${equipments.length} équipements affichés`);
 
   // Charger les données réelles depuis Supabase
   useEffect(() => {
@@ -133,28 +134,28 @@ const StockStatusWidget = () => {
   const loadRealData = async () => {
     try {
       setLoading(true);
-      console.log("🔄 Chargement des données réelles du stock depuis Supabase...");
+      logger.info("🔄 Chargement des données réelles du stock depuis Supabase...");
       
       // Récupérer l'utilisateur connecté
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-      console.log("👤 Utilisateur connecté:", user?.id, userError);
+      logger.info("👤 Utilisateur connecté:", user?.id, userError);
       
       if (!user) {
-        console.error("❌ Aucun utilisateur connecté");
+        logger.error("❌ Aucun utilisateur connecté");
         setEquipments(getDemoEquipments());
         return;
       }
       
       // Test 1: Vérifier toutes les machines sans filtre
-      console.log("🔍 Test 1: Récupération de toutes les machines...");
+      logger.info("🔍 Test 1: Récupération de toutes les machines...");
       const { data: allMachines, error: allMachinesError } = await supabaseClient
         .from('machines')
         .select(MACHINE_LIST_COLUMNS)
         .limit(5);
       
-      console.log("📊 Toutes les machines:", allMachines?.length || 0, allMachinesError);
+      logger.info("📊 Toutes les machines:", allMachines?.length || 0, allMachinesError);
       if (allMachines && allMachines.length > 0) {
-        console.log("📝 Exemple de machine:", {
+        logger.info("📝 Exemple de machine:", {
           id: allMachines[0].id,
           name: allMachines[0].name,
           sellerid: allMachines[0].sellerid,
@@ -164,7 +165,7 @@ const StockStatusWidget = () => {
       }
       
       // Test 2: Vérifier les colonnes seller possibles
-      console.log("🔍 Test 2: Test des colonnes seller...");
+      logger.info("🔍 Test 2: Test des colonnes seller...");
       const possibleColumns = ['sellerid', 'seller_id', 'user_id', 'owner_id'];
       
       for (const column of possibleColumns) {
@@ -175,17 +176,17 @@ const StockStatusWidget = () => {
             .limit(1);
           
           if (!error && data && data.length > 0) {
-            console.log(`✅ Colonne "${column}" existe avec valeur:`, data[0][column]);
+            logger.info(`✅ Colonne "${column}" existe avec valeur:`, data[0][column]);
           } else {
-            console.log(`❌ Colonne "${column}" n'existe pas ou erreur:`, error?.message);
+            logger.info(`❌ Colonne "${column}" n'existe pas ou erreur:`, error?.message);
           }
         } catch (err) {
-          console.log(`❌ Erreur test colonne "${column}":`, err.message);
+          logger.info(`❌ Erreur test colonne "${column}":`, err.message);
         }
       }
       
       // Test 3: Récupérer les machines avec la colonne correcte
-      console.log("🔍 Test 3: Récupération des machines de l'utilisateur...");
+      logger.info("🔍 Test 3: Récupération des machines de l'utilisateur...");
       
       // Essayer d'abord avec sellerid
       let { data: userMachines, error: userMachinesError } = await supabaseClient
@@ -194,11 +195,11 @@ const StockStatusWidget = () => {
         .eq('sellerid', user.id)
         .limit(SELLER_MACHINES_MAX_ROWS);
       
-      console.log("📊 Machines avec sellerid:", userMachines?.length || 0, userMachinesError);
+      logger.info("📊 Machines avec sellerid:", userMachines?.length || 0, userMachinesError);
       
       // Si pas de résultats, essayer avec seller_id
       if (!userMachines || userMachines.length === 0) {
-        console.log("🔄 Essai avec seller_id...");
+        logger.info("🔄 Essai avec seller_id...");
         const { data: userMachines2, error: userMachinesError2 } = await supabaseClient
           .from('machines')
           .select(MACHINE_LIST_COLUMNS)
@@ -207,12 +208,12 @@ const StockStatusWidget = () => {
         
         userMachines = userMachines2;
         userMachinesError = userMachinesError2;
-        console.log("📊 Machines avec seller_id:", userMachines?.length || 0, userMachinesError);
+        logger.info("📊 Machines avec seller_id:", userMachines?.length || 0, userMachinesError);
       }
       
       // Si toujours pas de résultats, essayer avec user_id
       if (!userMachines || userMachines.length === 0) {
-        console.log("🔄 Essai avec user_id...");
+        logger.info("🔄 Essai avec user_id...");
         const { data: userMachines3, error: userMachinesError3 } = await supabaseClient
           .from('machines')
           .select(MACHINE_LIST_COLUMNS)
@@ -221,28 +222,28 @@ const StockStatusWidget = () => {
         
         userMachines = userMachines3;
         userMachinesError = userMachinesError3;
-        console.log("📊 Machines avec user_id:", userMachines?.length || 0, userMachinesError);
+        logger.info("📊 Machines avec user_id:", userMachines?.length || 0, userMachinesError);
       }
       
       // Important: ne jamais charger les machines d'autres comptes.
       // Si aucune machine n'est trouvée pour l'utilisateur connecté, on reste sur un tableau vide.
       if (!userMachines || userMachines.length === 0) {
-        console.log("ℹ️ Aucune machine trouvée pour l'utilisateur connecté.");
+        logger.info("ℹ️ Aucune machine trouvée pour l'utilisateur connecté.");
         userMachines = [];
       }
       
       // Récupérer les promotions réelles
       const realPromotions = await RealStockService.getSellerPromotions();
-      console.log("✅ Promotions réelles récupérées:", realPromotions.length);
+      logger.info("✅ Promotions réelles récupérées:", realPromotions.length);
       
       // Récupérer les insights réels
       const realInsights = await RealStockService.getStockInsights();
-      console.log("✅ Insights réels récupérés:", realInsights.length);
+      logger.info("✅ Insights réels récupérés:", realInsights.length);
       
       // Générer des insights automatiques si nécessaire
       if (realInsights.length === 0) {
         const generatedInsights = await RealStockService.generateAutomaticInsights();
-        console.log("✅ Insights générés automatiquement:", generatedInsights);
+        logger.info("✅ Insights générés automatiquement:", generatedInsights);
       }
       
       // Convertir les équipements réels au format attendu par le widget
@@ -315,7 +316,7 @@ const StockStatusWidget = () => {
           mappedCategory = 'Matériel';
         }
         
-        console.log(`🔍 Équipement "${equipment.name}": catégorie originale="${equipment.category}", mappée="${mappedCategory}"`);
+        logger.info(`🔍 Équipement "${equipment.name}": catégorie originale="${equipment.category}", mappée="${mappedCategory}"`);
         
         return {
           id: parseInt(equipment.id),
@@ -341,8 +342,8 @@ const StockStatusWidget = () => {
       
       // Log des catégories finales
       const finalCategories = [...new Set(formattedEquipments.map(eq => eq.category))];
-      console.log("📊 Catégories finales des équipements:", finalCategories);
-      console.log("📊 Répartition par catégorie:", finalCategories.map(cat => ({
+      logger.info("📊 Catégories finales des équipements:", finalCategories);
+      logger.info("📊 Répartition par catégorie:", finalCategories.map(cat => ({
         category: cat,
         count: formattedEquipments.filter(eq => eq.category === cat).length
       })));
@@ -362,10 +363,10 @@ const StockStatusWidget = () => {
       setEquipments(formattedEquipments);
       setPromotions(formattedPromotions);
       
-      console.log("✅ Données réelles du stock chargées avec succès:", formattedEquipments.length, "équipements");
+      logger.info("✅ Données réelles du stock chargées avec succès:", formattedEquipments.length, "équipements");
       
     } catch (error) {
-      console.error("❌ Erreur lors du chargement des données réelles du stock:", error);
+      logger.error("❌ Erreur lors du chargement des données réelles du stock:", error);
       // En cas d'erreur, utiliser des données de démonstration
       setEquipments(getDemoEquipments());
       setPromotions([]);
@@ -461,7 +462,7 @@ const StockStatusWidget = () => {
       button.style.cursor = 'not-allowed';
     }
 
-    console.log(`🔄 Action rapide: ${action}`, equipment);
+    logger.info(`🔄 Action rapide: ${action}`, equipment);
     
     // Notification immédiate
     showNotification('info', `Exécution de ${action}...`);
@@ -511,7 +512,7 @@ const StockStatusWidget = () => {
       // Action immédiate - redirection
       window.location.href = '/#publication';
     } catch (error) {
-      console.error('Erreur lors de l\'ajout de l\'équipement:', error);
+      logger.error('Erreur lors de l\'ajout de l\'équipement:', error);
       showNotification('error', 'Impossible d\'ajouter l\'équipement');
     }
   };
@@ -537,7 +538,7 @@ const StockStatusWidget = () => {
       showNotification('success', 'Export du stock réussi');
       
     } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
+      logger.error('Erreur lors de l\'export:', error);
       showNotification('error', 'Impossible d\'exporter le stock');
     }
   };
@@ -564,12 +565,12 @@ const StockStatusWidget = () => {
           equipmentId: equipment.id,
           boostType: 'visibility'
         }).catch(error => {
-          console.error('Erreur API boost:', error);
+          logger.error('Erreur API boost:', error);
         });
       }, 50);
       
     } catch (error) {
-      console.error('Erreur lors du boost:', error);
+      logger.error('Erreur lors du boost:', error);
       showNotification('error', 'Impossible de booster la visibilité');
     }
   };
@@ -600,12 +601,12 @@ const StockStatusWidget = () => {
       // Appel API en arrière-plan (sans await)
       setTimeout(() => {
         apiCall('POST', '/api/promotions/create', flashOffer).catch(error => {
-          console.error('Erreur API création offre:', error);
+          logger.error('Erreur API création offre:', error);
         });
       }, 50);
       
     } catch (error) {
-      console.error('Erreur lors de la création de l\'offre:', error);
+      logger.error('Erreur lors de la création de l\'offre:', error);
       showNotification('error', 'Impossible de créer l\'offre flash');
     }
   };
@@ -639,7 +640,7 @@ const StockStatusWidget = () => {
               equipmentId: equipment.id,
               photo: file
             }).catch(error => {
-              console.error('Erreur API upload photo:', error);
+              logger.error('Erreur API upload photo:', error);
             });
           }, 50);
         }
@@ -647,7 +648,7 @@ const StockStatusWidget = () => {
       input.click();
       
     } catch (error) {
-      console.error('Erreur lors de l\'ajout de photo:', error);
+      logger.error('Erreur lors de l\'ajout de photo:', error);
       showNotification('error', 'Impossible d\'ajouter la photo');
     }
   };
@@ -673,12 +674,12 @@ const StockStatusWidget = () => {
       // Appel API en arrière-plan (sans await)
       setTimeout(() => {
         apiCall('POST', '/api/promotions/send', promotion).catch(error => {
-          console.error('Erreur API envoi promotion:', error);
+          logger.error('Erreur API envoi promotion:', error);
         });
       }, 50);
       
     } catch (error) {
-      console.error('Erreur lors de l\'envoi de promotion:', error);
+      logger.error('Erreur lors de l\'envoi de promotion:', error);
       showNotification('error', 'Impossible d\'envoyer la promotion');
     }
   };
@@ -697,17 +698,17 @@ const StockStatusWidget = () => {
       };
 
       showNotification('success', 'Analyse de performance terminée');
-      console.log('Résultats de l\'analyse:', analysis);
+      logger.info('Résultats de l\'analyse:', analysis);
       
       // Appel API en arrière-plan (sans await)
       setTimeout(() => {
         apiCall('POST', '/api/analytics/performance', analysis).catch(error => {
-          console.error('Erreur API analyse:', error);
+          logger.error('Erreur API analyse:', error);
         });
       }, 50);
       
     } catch (error) {
-      console.error('Erreur lors de l\'analyse:', error);
+      logger.error('Erreur lors de l\'analyse:', error);
       showNotification('error', 'Impossible d\'analyser la performance');
     }
   };
@@ -724,17 +725,17 @@ const StockStatusWidget = () => {
       }));
 
       showNotification('success', 'Optimisation des prix terminée');
-      console.log('Suggestions d\'optimisation:', optimizations);
+      logger.info('Suggestions d\'optimisation:', optimizations);
       
       // Appel API en arrière-plan (sans await)
       setTimeout(() => {
         apiCall('POST', '/api/pricing/optimize', { optimizations }).catch(error => {
-          console.error('Erreur API optimisation:', error);
+          logger.error('Erreur API optimisation:', error);
         });
       }, 50);
       
     } catch (error) {
-      console.error('Erreur lors de l\'optimisation:', error);
+      logger.error('Erreur lors de l\'optimisation:', error);
       showNotification('error', 'Impossible d\'optimiser les prix');
     }
   };

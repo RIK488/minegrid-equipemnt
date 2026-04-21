@@ -3,13 +3,14 @@ import { Plus, Package, Settings, FileText, Bell, User, LogOut, ChevronRight, Sh
 import StripePaymentForm from '../components/StripePaymentForm';
 import { getSellerMachines, logoutUser, getDashboardStats, getWeeklyActivityData, getOffers } from '../utils/api';
 import { supabaseClient as supabase } from '../utils/supabaseClient';
+import { logger } from '../utils/logger';
 
 // Fonction utilitaire pour vérifier si une configuration valide existe
 const hasValidConfiguration = () => {
     // Vérifier d'abord si la configuration a été explicitement validée
     const isConfigured = localStorage.getItem('enterpriseDashboardConfigured');
     if (isConfigured !== 'true') {
-        console.log('🔍 Configuration non validée explicitement');
+        logger.info('🔍 Configuration non validée explicitement');
         return false;
     }
     
@@ -25,11 +26,11 @@ const hasValidConfiguration = () => {
                 Array.isArray(config.widgets) && 
                 config.widgets.length > 0 &&
                 config.widgets.every(widget => widget && typeof widget === 'object' && widget.type && widget.title)) {
-                console.log('✅ Configuration vendeur valide détectée');
+                logger.info('✅ Configuration vendeur valide détectée');
                 return true;
             }
         } catch (e) {
-            console.log('❌ Erreur parsing vendeurConfig:', e);
+            logger.info('❌ Erreur parsing vendeurConfig:', e);
         }
     }
     
@@ -43,15 +44,15 @@ const hasValidConfiguration = () => {
                 Array.isArray(config.dashboardConfig.widgets) && 
                 config.dashboardConfig.widgets.length > 0 &&
                 config.dashboardConfig.widgets.every(widget => widget && typeof widget === 'object' && widget.type && widget.title)) {
-                console.log('✅ Configuration générale valide détectée');
+                logger.info('✅ Configuration générale valide détectée');
                 return true;
             }
         } catch (e) {
-            console.log('❌ Erreur parsing generalConfig:', e);
+            logger.info('❌ Erreur parsing generalConfig:', e);
         }
     }
     
-    console.log('❌ Aucune configuration valide détectée');
+    logger.info('❌ Aucune configuration valide détectée');
     return false;
 };
 
@@ -152,7 +153,7 @@ export default function Dashboard({ section = 'overview' }) {
         
         // Écouter l'événement d'activation de l'abonnement entreprise
         const handleEnterpriseActivation = (event) => {
-            console.log('🎉 Événement d\'activation entreprise reçu:', event.detail);
+            logger.info('🎉 Événement d\'activation entreprise reçu:', event.detail);
             setHasEnterpriseSubscription(true);
             // Forcer le rafraîchissement de l'interface
             setTimeout(() => {
@@ -162,7 +163,7 @@ export default function Dashboard({ section = 'overview' }) {
         
         // Écouter l'événement d'annulation d'abonnement
         const handleSubscriptionCancellation = (event) => {
-            console.log('🚫 Événement d\'annulation d\'abonnement reçu:', event.detail);
+            logger.info('🚫 Événement d\'annulation d\'abonnement reçu:', event.detail);
             setHasEnterpriseSubscription(false);
             setHasActiveSubscription(false);
             setSubscriptionType('aucun');
@@ -213,7 +214,7 @@ export default function Dashboard({ section = 'overview' }) {
                                 subscriptionCancelled !== 'true';
             
             if (hasEnterprise !== hasEnterpriseSubscription) {
-                console.log('🔄 Changement d\'état d\'abonnement détecté:', hasEnterprise ? 'Actif' : 'Inactif');
+                logger.info('🔄 Changement d\'état d\'abonnement détecté:', hasEnterprise ? 'Actif' : 'Inactif');
                 setHasEnterpriseSubscription(hasEnterprise);
             }
         };
@@ -225,7 +226,7 @@ export default function Dashboard({ section = 'overview' }) {
         const handleStorageChange = (e) => {
             if (e.key === 'userSubscription' || e.key === 'enterpriseService' || 
                 e.key === 'userServices' || e.key === 'subscriptionCancelled') {
-                console.log('📊 Changement localStorage détecté:', e.key, e.newValue);
+                logger.info('📊 Changement localStorage détecté:', e.key, e.newValue);
                 setTimeout(checkSubscriptionStatus, 100);
             }
         };
@@ -250,7 +251,7 @@ export default function Dashboard({ section = 'overview' }) {
             const machinesData = await getSellerMachines();
             setMachines(machinesData || []);
         } catch (error) {
-            console.error('Erreur lors du chargement des machines:', error);
+            logger.error('Erreur lors du chargement des machines:', error);
         } finally {
             setLoading(false);
         }
@@ -281,15 +282,15 @@ export default function Dashboard({ section = 'overview' }) {
                     .order('created_at', { ascending: false });
 
                 if (error) {
-                    console.error('Erreur lors du chargement des messages:', error);
+                    logger.error('Erreur lors du chargement des messages:', error);
                     setMessages([]);
                 } else {
                     setMessages(messagesData || []);
-                    console.log('📧 Messages chargés:', messagesData?.length || 0);
+                    logger.info('📧 Messages chargés:', messagesData?.length || 0);
                 }
             }
         } catch (error) {
-            console.error('Erreur lors du chargement des données du dashboard:', error);
+            logger.error('Erreur lors du chargement des données du dashboard:', error);
         }
     };
 
@@ -319,7 +320,7 @@ export default function Dashboard({ section = 'overview' }) {
             
             checkEnterpriseSubscription();
         } catch (error) {
-            console.error('Erreur lors du chargement des données utilisateur:', error);
+            logger.error('Erreur lors du chargement des données utilisateur:', error);
         }
     };
 
@@ -337,8 +338,8 @@ export default function Dashboard({ section = 'overview' }) {
                                 enterpriseService === 'true') && 
                                 subscriptionCancelled !== 'true';
             
-            console.log('🔄 Rafraîchissement abonnement entreprise:', hasEnterprise ? 'Actif' : 'Inactif');
-            console.log('📊 Détails:', {
+            logger.info('🔄 Rafraîchissement abonnement entreprise:', hasEnterprise ? 'Actif' : 'Inactif');
+            logger.info('📊 Détails:', {
                 userServices,
                 userSubscription,
                 enterpriseService,
@@ -348,7 +349,7 @@ export default function Dashboard({ section = 'overview' }) {
             
             setHasEnterpriseSubscription(hasEnterprise);
         } catch (error) {
-            console.error('Erreur lors du rafraîchissement:', error);
+            logger.error('Erreur lors du rafraîchissement:', error);
             setHasEnterpriseSubscription(false);
         }
     };
@@ -391,7 +392,7 @@ export default function Dashboard({ section = 'overview' }) {
                 .single();
 
             if (error) {
-                console.error('Erreur chargement message pour réponse:', error);
+                logger.error('Erreur chargement message pour réponse:', error);
                 return;
             }
 
@@ -403,7 +404,7 @@ export default function Dashboard({ section = 'overview' }) {
                 window.history.replaceState({}, '', newUrl);
             }
         } catch (error) {
-            console.error('Erreur lors du chargement du message:', error);
+            logger.error('Erreur lors du chargement du message:', error);
         }
     };
 
@@ -412,7 +413,7 @@ export default function Dashboard({ section = 'overview' }) {
             await logoutUser();
             window.location.href = '/';
         } catch (error) {
-            console.error('Erreur lors de la déconnexion:', error);
+            logger.error('Erreur lors de la déconnexion:', error);
             window.location.href = '/';
         }
     };
@@ -434,7 +435,7 @@ export default function Dashboard({ section = 'overview' }) {
             // Marquer explicitement l'abonnement comme résilié
             localStorage.setItem('subscriptionCancelled', 'true');
             
-            console.log('🚫 Abonnement résilié - Toutes les données nettoyées');
+            logger.info('🚫 Abonnement résilié - Toutes les données nettoyées');
             
             // Déclencher un événement pour notifier les autres composants
             window.dispatchEvent(new CustomEvent('subscriptionCancelled', {
@@ -455,7 +456,7 @@ export default function Dashboard({ section = 'overview' }) {
 
     const handleActivateSubscription = (type) => {
         // Afficher la page de paiement
-        console.log(`💰 Abonnement ${type} sélectionné - affichage page de paiement`);
+        logger.info(`💰 Abonnement ${type} sélectionné - affichage page de paiement`);
         
         setSelectedPlanForPayment(type);
         setShowPaymentPage(true);
@@ -480,7 +481,7 @@ export default function Dashboard({ section = 'overview' }) {
                 .eq('id', messageId);
 
             if (error) {
-                console.error('Erreur lors du marquage comme lu:', error);
+                logger.error('Erreur lors du marquage comme lu:', error);
                 return;
             }
 
@@ -491,9 +492,9 @@ export default function Dashboard({ section = 'overview' }) {
                 )
             );
 
-            console.log('✅ Message marqué comme lu');
+            logger.info('✅ Message marqué comme lu');
         } catch (error) {
-            console.error('Erreur lors du marquage comme lu:', error);
+            logger.error('Erreur lors du marquage comme lu:', error);
         }
     };
 
@@ -587,9 +588,9 @@ export default function Dashboard({ section = 'overview' }) {
             }
 
             if (replyError) throw replyError;
-            if (emailError) console.error('Erreur email:', emailError);
-            if (notificationError) console.error('Erreur notification:', notificationError);
-            if (updateError) console.error('Erreur mise à jour:', updateError);
+            if (emailError) logger.error('Erreur email:', emailError);
+            if (notificationError) logger.error('Erreur notification:', notificationError);
+            if (updateError) logger.error('Erreur mise à jour:', updateError);
 
             // Succès
             setReplyText('');
@@ -604,7 +605,7 @@ export default function Dashboard({ section = 'overview' }) {
             }
 
         } catch (error) {
-            console.error('Erreur lors de l\'envoi de la réponse:', error);
+            logger.error('Erreur lors de l\'envoi de la réponse:', error);
             alert('Erreur lors de l\'envoi de la réponse');
         } finally {
             setIsSendingReply(false);
@@ -645,7 +646,7 @@ export default function Dashboard({ section = 'overview' }) {
             alert(`✅ Abonnement ${selectedPlanForPayment} activé avec succès grâce au code promo ! Accès temporaire de 30 jours.`);
             setActiveSection('overview');
         } catch (error) {
-            console.error('Erreur activation abonnement promo:', error);
+            logger.error('Erreur activation abonnement promo:', error);
             alert('Erreur lors de l\'activation de l\'abonnement');
         }
     };
@@ -662,14 +663,14 @@ export default function Dashboard({ section = 'overview' }) {
             localStorage.setItem('enterpriseService', 'true');
             localStorage.setItem('userServices', 'enterprise');
             localStorage.removeItem('subscriptionCancelled');
-            console.log('✅ Abonnement entreprise activé');
+            logger.info('✅ Abonnement entreprise activé');
             
             // Déclencher l'événement d'activation
             setTimeout(() => {
                 window.dispatchEvent(new CustomEvent('enterpriseSubscriptionActivated', {
                     detail: { planType: 'enterprise' }
                 }));
-                console.log('🎉 Événement enterpriseSubscriptionActivated déclenché après paiement');
+                logger.info('🎉 Événement enterpriseSubscriptionActivated déclenché après paiement');
             }, 100);
         }
         
@@ -679,7 +680,7 @@ export default function Dashboard({ section = 'overview' }) {
     };
 
     const handleStripePaymentError = (error) => {
-        console.error('Erreur paiement Stripe:', error);
+        logger.error('Erreur paiement Stripe:', error);
         alert(`Erreur lors du paiement: ${error}`);
     };
 
@@ -709,7 +710,7 @@ export default function Dashboard({ section = 'overview' }) {
         localStorage.setItem('dashboardConfig', JSON.stringify(dashboardConfig));
         localStorage.setItem('dashboardConfigured', 'true');
         
-        console.log('✅ Configuration du tableau de bord sauvegardée');
+        logger.info('✅ Configuration du tableau de bord sauvegardée');
         alert('✅ Configuration du tableau de bord sauvegardée avec succès !');
     };
 
@@ -1026,7 +1027,7 @@ export default function Dashboard({ section = 'overview' }) {
                                                             // Logique de redirection selon le type d'abonnement
                                                             switch (subscriptionType) {
                                                                 case 'pro':
-                                                                    console.log('🚀 Redirection vers tableau de bord pro');
+                                                                    logger.info('🚀 Redirection vers tableau de bord pro');
                                                                     window.location.href = '/#pro';
                                                                     break;
                                                                 case 'entreprise':
@@ -1035,7 +1036,7 @@ export default function Dashboard({ section = 'overview' }) {
                                                                     const vendeurConfig = localStorage.getItem('enterpriseDashboardConfig_vendeur');
                                                                     const generalConfig = localStorage.getItem('enterpriseDashboardConfig');
                                                                     
-                                                                    console.log('🔍 Debug configuration entreprise:', {
+                                                                    logger.info('🔍 Debug configuration entreprise:', {
                                                                         isConfigured,
                                                                         vendeurConfig,
                                                                         generalConfig
@@ -1043,16 +1044,16 @@ export default function Dashboard({ section = 'overview' }) {
                                                                     
                                                                     // Si une configuration existe et est marquée comme configurée
                                                                     if (isConfigured === 'true' && (vendeurConfig || generalConfig)) {
-                                                                        console.log('✅ Tableau de bord configuré - redirection vers affichage');
+                                                                        logger.info('✅ Tableau de bord configuré - redirection vers affichage');
                                                                         window.location.href = '/#dashboard-entreprise-display';
                                                                     } else {
-                                                                        console.log('🚀 Tableau de bord non configuré - redirection vers configuration');
+                                                                        logger.info('🚀 Tableau de bord non configuré - redirection vers configuration');
                                                                         window.location.href = '/#dashboard-entreprise';
                                                                     }
                                                                     break;
                                                                 default:
                                                                     // Par défaut, rediriger vers la configuration
-                                                                    console.log('🚀 Aucun abonnement détecté - redirection vers configuration');
+                                                                    logger.info('🚀 Aucun abonnement détecté - redirection vers configuration');
                                                                     window.location.href = '/#dashboard-entreprise';
                                                                     break;
                                                             }

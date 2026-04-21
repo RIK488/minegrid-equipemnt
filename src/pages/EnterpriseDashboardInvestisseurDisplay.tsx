@@ -10,6 +10,7 @@ import { useRef } from 'react';
 import WidgetRenderer from '../components/dashboard/WidgetRenderer';
 import { listData } from '../constants/mockData';
 import { NotificationContainer } from '../components/NotificationToast';
+import { logger } from '../utils/logger';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -192,7 +193,7 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
         widgetSizes: {}
       };
       shouldUpdate = true;
-      console.log('🆕 Configuration par défaut créée avec tous les widgets:', allWidgets.map(w => w.id));
+      logger.info('🆕 Configuration par défaut créée avec tous les widgets:', allWidgets.map(w => w.id));
     }
 
     // Garantir que le layout existe
@@ -207,7 +208,7 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
     }
 
     if (shouldUpdate) {
-      console.log('💾 Sauvegarde de la config mise à jour');
+      logger.info('💾 Sauvegarde de la config mise à jour');
       localStorage.setItem('enterpriseDashboardConfig_investisseur', JSON.stringify(parsed));
     }
 
@@ -237,10 +238,10 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
   // Effet de débogage pour vérifier la configuration
   useEffect(() => {
     if (config) {
-      console.log('🔍 Configuration actuelle:', config);
-      console.log('🔍 Widgets présents:', config.widgets?.map((w: any) => w.id));
-      console.log('🔍 Layout:', config.layout?.lg?.map((l: any) => l.i));
-      console.log('🔍 WidgetSizes:', config.widgetSizes);
+      logger.info('🔍 Configuration actuelle:', config);
+      logger.info('🔍 Widgets présents:', config.widgets?.map((w: any) => w.id));
+      logger.info('🔍 Layout:', config.layout?.lg?.map((l: any) => l.i));
+      logger.info('🔍 WidgetSizes:', config.widgetSizes);
       
       // Vérifier s'il manque des widgets
       const allWidgetIds = InvestisseurWidgets.widgets.map(w => w.id);
@@ -248,19 +249,19 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
       const missingWidgets = allWidgetIds.filter(id => !currentWidgetIds.includes(id));
       
       if (missingWidgets.length > 0) {
-        console.log('⚠️ Widgets manquants:', missingWidgets);
-        console.log('💡 Utilisez le bouton "Restaurer tous les widgets" pour les ajouter');
+        logger.info('⚠️ Widgets manquants:', missingWidgets);
+        logger.info('💡 Utilisez le bouton "Restaurer tous les widgets" pour les ajouter');
       } else {
-        console.log('✅ Tous les widgets sont présents');
+        logger.info('✅ Tous les widgets sont présents');
       }
       
-      console.log('🔍 Configuration chargée avec succès');
+      logger.info('🔍 Configuration chargée avec succès');
     }
   }, [config]);
 
   // 2. Gestion du layout responsive
   const onLayoutChange = (newLayout: any[], allLayouts?: any) => {
-    console.log('🔄 Layout changé:', newLayout);
+    logger.info('🔄 Layout changé:', newLayout);
     setLayout({ lg: newLayout });
     
     // Mettre à jour la config avec le nouveau layout
@@ -309,7 +310,7 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
 
   // Supprime un widget
   const handleRemoveWidget = (widgetId: string) => {
-    console.log('Suppression du widget:', widgetId);
+    logger.info('Suppression du widget:', widgetId);
     
     // Sauvegarder la position actuelle du widget avant suppression
     const currentLayoutItem = layout.lg.find((l: any) => l.i === widgetId);
@@ -334,7 +335,7 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
       }
       
       localStorage.setItem('enterpriseDashboardConfig_investisseur_backup', JSON.stringify(backupConfig));
-      console.log('Position sauvegardée pour restauration:', currentLayoutItem);
+      logger.info('Position sauvegardée pour restauration:', currentLayoutItem);
     }
     
     const newWidgets = config.widgets.filter((w: any) => w.id !== widgetId);
@@ -348,10 +349,10 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
 
   // Ajoute un widget
   const handleAddWidget = (widgetId: string) => {
-    console.log('Ajout du widget:', widgetId);
+    logger.info('Ajout du widget:', widgetId);
     const widgetToAdd = InvestisseurWidgets.widgets.find(w => w.id === widgetId);
     if (!widgetToAdd) {
-      console.log('Widget non trouvé:', widgetId);
+      logger.info('Widget non trouvé:', widgetId);
       return;
     }
     
@@ -367,7 +368,7 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
         const originalLayoutItem = backupConfig.layout?.lg?.find((l: any) => l.i === widgetId);
         if (originalLayoutItem) {
           originalPosition = originalLayoutItem;
-          console.log('Position originale trouvée:', originalPosition);
+          logger.info('Position originale trouvée:', originalPosition);
         }
       } catch {
         localStorage.removeItem('enterpriseDashboardConfig_investisseur_backup');
@@ -388,14 +389,14 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
           h: originalPosition.h
         }
       ];
-      console.log('Position originale restaurée pour', widgetId);
+      logger.info('Position originale restaurée pour', widgetId);
     } else {
       // Positionner à la fin par défaut
       newLayout = [
         ...layout.lg,
         { i: widgetId, x: 0, y: layout.lg.length, w: 4, h: 2 }
       ];
-      console.log('Position par défaut pour', widgetId);
+      logger.info('Position par défaut pour', widgetId);
     }
     
     const newConfig = { ...config, widgets: newWidgets, layout: { ...config.layout, lg: newLayout } };
@@ -415,7 +416,7 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
           const backupConfig = JSON.parse(existingBackup);
           backupConfig.layout.lg = backupConfig.layout.lg.filter((l: any) => l.i !== widgetId);
           localStorage.setItem('enterpriseDashboardConfig_investisseur_backup', JSON.stringify(backupConfig));
-          console.log('Backup nettoyé pour', widgetId);
+          logger.info('Backup nettoyé pour', widgetId);
         } catch {
           localStorage.removeItem('enterpriseDashboardConfig_investisseur_backup');
         }
@@ -433,7 +434,7 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
     const missingWidgets = allWidgets.filter(w => !currentIds.includes(w.id));
     if (missingWidgets.length === 0) return; // Rien à faire
 
-    console.log('🔧 Restauration des widgets manquants:', missingWidgets.map(w => w.id));
+    logger.info('🔧 Restauration des widgets manquants:', missingWidgets.map(w => w.id));
 
     // Ajoute les widgets manquants à la fin
     const newWidgets = [...config.widgets, ...missingWidgets];
@@ -546,7 +547,7 @@ const EnterpriseDashboardInvestisseurDisplay: React.FC = () => {
 
   // Gestion des actions de widgets
   const handleWidgetAction = (action: string, data: any) => {
-    console.log('Action widget:', action, data);
+    logger.info('Action widget:', action, data);
     // Implémenter les actions spécifiques ici
   };
 
