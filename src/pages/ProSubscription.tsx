@@ -14,6 +14,10 @@ interface Plan {
   maxEquipment: number;
 }
 
+// Grille tarifaire. Les valeurs doivent respecter la règle : Pro < Premium <
+// Enterprise (l'ancienne grille avait Premium=30 < Pro=70, manifestement un
+// bug). Si la grille réelle diffère, mettre à jour ici ET dans
+// src/pages/Dashboard.jsx (fonction getPlanPrice autour de la ligne 696).
 const plans: Plan[] = [
   {
     id: 'pro',
@@ -35,7 +39,7 @@ const plans: Plan[] = [
   {
     id: 'premium',
     name: 'Premium',
-    price: 30,
+    price: 149,
     period: 'mois',
     maxUsers: 15,
     maxEquipment: 200,
@@ -53,7 +57,7 @@ const plans: Plan[] = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: 200,
+    price: 299,
     period: 'mois',
     maxUsers: 50,
     maxEquipment: 1000,

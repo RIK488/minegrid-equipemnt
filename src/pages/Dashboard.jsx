@@ -691,11 +691,13 @@ export default function Dashboard({ section = 'overview' }) {
         setShowPaymentPage(false);
     };
 
+    // Grille tarifaire. DOIT rester synchronisée avec src/pages/ProSubscription.tsx
+    // (tableau `plans`). L'ancienne grille avait Premium=30 < Pro=70 = incohérent.
     const getPlanPrice = (planType) => {
         switch (planType) {
-            case 'premium': return 30;
             case 'pro': return 70;
-            case 'enterprise': return 200;
+            case 'premium': return 149;
+            case 'enterprise': return 299;
             default: return 0;
         }
     };
