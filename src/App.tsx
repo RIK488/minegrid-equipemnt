@@ -77,6 +77,7 @@ const PrioritySupport = lazy(() => import('./pages/PrioritySupport'));
 const MultiUserManagement = lazy(() => import('./pages/MultiUserManagement'));
 const GlobalMonitor = lazy(() => import('./pages/GlobalMonitor'));
 const SourcesAdmin = lazy(() => import('./pages/SourcesAdmin'));
+const DemoEntrepriseAccess = lazy(() => import('./pages/DemoEntrepriseAccess'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -126,6 +127,7 @@ const APP_ONLY_ROUTES = new Set<string>([
   'admin-sources',
   'test-widget',
   'update-password',
+  'demo-entreprise',
 ]);
 
 function AppContent() {
@@ -283,6 +285,9 @@ function AppContent() {
 
       case 'test-widget':
         return <WidgetTest />;
+
+      case 'demo-entreprise':
+        return <DemoEntrepriseAccess />;
 
       default:
         return (

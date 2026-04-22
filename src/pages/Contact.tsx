@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Clock, MessageSquare, Building2, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, MessageSquare, Building2, Send, Loader2 } from 'lucide-react';
+import { submitContactMessage } from '../utils/api/contact';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -12,11 +13,44 @@ export default function Contact() {
   });
 
   const [submitted, setSubmitted] = useState(false);
-  const [tempWidgetsGranted, setTempWidgetsGranted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submittedEmail, setSubmittedEmail] = useState<string>('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      await submitContactMessage({
+        name: formData.name,
+        email: formData.email,
+        company: formData.company,
+        subject: formData.subject,
+        message: formData.message,
+        service: formData.service,
+      });
+      setSubmittedEmail(formData.email);
+      setSubmitted(true);
+      setFormData({
+        name: '',
+        email: '',
+        company: '',
+        subject: '',
+        message: '',
+        service: 'general',
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      setErrorMessage(
+        `Impossible d'envoyer votre message pour le moment. Vous pouvez nous écrire directement à contact@minegrid.com. (Détail : ${msg})`,
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -24,29 +58,6 @@ export default function Contact() {
       ...formData,
       [e.target.name]: e.target.value
     });
-  };
-
-  const grantTemporaryWidgetsAccess = () => {
-    // Accès temporaire : déverrouiller le "service entreprise" (configuration),
-    // mais ne pas marquer le dashboard comme "configured" (sinon on redirige
-    // directement vers l'affichage des widgets).
-    localStorage.setItem('userSubscription', 'entreprise');
-    localStorage.setItem('enterpriseService', 'true');
-    localStorage.setItem('userServices', 'enterprise');
-    localStorage.setItem('tempSubscription', 'entreprise');
-    localStorage.setItem('tempHasActiveSubscription', 'true');
-    localStorage.setItem('widgetsTemporaryAccess', 'granted');
-    localStorage.removeItem('enterpriseDashboardConfigured');
-    localStorage.removeItem('enterpriseDashboardConfig_vendeur');
-    localStorage.removeItem('enterpriseDashboardConfig');
-    localStorage.removeItem('subscriptionCancelled');
-    window.dispatchEvent(new CustomEvent('enterpriseSubscriptionActivated', {
-      detail: { planType: 'entreprise', source: 'contact-temp-widgets' },
-    }));
-    setTempWidgetsGranted(true);
-    // Rediriger vers le service entreprise (configuration des widgets),
-    // pas directement vers l'affichage des widgets.
-    window.location.href = '/#dashboard-entreprise';
   };
 
   return (
@@ -148,36 +159,32 @@ export default function Contact() {
 
               <button
                 type="submit"
-                className="w-full bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 transition-colors flex items-center justify-center"
+                disabled={isSubmitting}
+                className="w-full bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Send className="h-5 w-5 mr-2" />
-                Envoyer le message
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Envoi en cours…
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-5 w-5 mr-2" />
+                    Envoyer le message
+                  </>
+                )}
               </button>
 
-              <div className="border-t border-gray-200 pt-5">
-                <h3 className="text-sm font-semibold text-gray-800 mb-2">
-                  Accès temporaire service entreprise (configuration)
-                </h3>
-                <p className="text-xs text-gray-600 mb-3">
-                  Active un accès de test pour déverrouiller la configuration du service entreprise.
-                </p>
-                <button
-                  type="button"
-                  onClick={grantTemporaryWidgetsAccess}
-                  className="w-full bg-orange-600 text-white px-6 py-3 rounded-md hover:bg-orange-700 transition-colors"
-                >
-                  Activer l'accès temporaire service entreprise
-                </button>
-                {tempWidgetsGranted && (
-                  <p className="mt-2 text-xs text-green-700 bg-green-50 px-3 py-2 rounded-md">
-                    Accès service entreprise activé. Redirection vers la configuration...
-                  </p>
-                )}
-              </div>
+              {submitted && !errorMessage && (
+                <div className="bg-green-50 text-green-800 px-4 py-3 rounded-md text-sm">
+                  Message bien reçu. Notre équipe vous répond sous 24 heures
+                  ouvrées{submittedEmail ? <> à l'adresse <strong>{submittedEmail}</strong></> : null}.
+                </div>
+              )}
 
-              {submitted && (
-                <div className="bg-green-50 text-green-800 px-4 py-3 rounded-md">
-                  Message envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.
+              {errorMessage && (
+                <div className="bg-red-50 text-red-800 px-4 py-3 rounded-md text-sm">
+                  {errorMessage}
                 </div>
               )}
             </form>
@@ -213,14 +220,18 @@ export default function Contact() {
                 </div>
               </div>
 
+              {/* Bloc téléphone masqué temporairement : remplacer par les
+                  vrais numéros puis retirer ce commentaire. Les anciens
+                  numéros (+212 524-000000) étaient des placeholders qui
+                  décrédibilisaient le site. */}
               <div className="flex items-start">
                 <Phone className="h-6 w-6 text-primary-600 mr-4 mt-1" />
                 <div>
                   <h3 className="font-medium text-gray-900">Téléphone</h3>
-                  <p className="text-gray-600">
-                    Standard: +212 524-000000<br />
-                    Support technique: +212 524-000001<br />
-                    Service commercial: +212 524-000002
+                  <p className="text-gray-600 text-sm">
+                    Standard commercial disponible prochainement.<br />
+                    En attendant, le plus rapide est le formulaire ci-contre
+                    ou l'email <a href="mailto:contact@minegrid.com" className="text-primary-600 hover:underline">contact@minegrid.com</a>.
                   </p>
                 </div>
               </div>
@@ -262,19 +273,8 @@ export default function Contact() {
             </div>
           </div>
 
-          <div className="bg-primary-50 rounded-lg p-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Support d'urgence 24/7</h3>
-            <p className="text-gray-700 mb-4">
-              Une urgence technique ? Notre équipe de support est disponible 24h/24 et 7j/7 pour les situations critiques.
-            </p>
-            <a
-              href="tel:+212524000000"
-              className="inline-flex items-center bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 transition-colors"
-            >
-              <Phone className="h-5 w-5 mr-2" />
-              Ligne d'urgence
-            </a>
-          </div>
+          {/* Bloc "Support 24/7" retiré tant que le numéro d'urgence n'est
+              pas en service. Réintroduire ici lorsque la ligne réelle existera. */}
         </div>
       </div>
     </div>
