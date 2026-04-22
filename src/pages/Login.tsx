@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, ChevronRight } from 'lucide-react';
 import { loginUser } from '../utils/api';
 import { toast } from '../utils/toast';
-// TODO: retirer ce code d'accès temporaire avant la mise en production
+// Code d'accès démo partagé (même valeur que Global Monitor et Register).
 const TEMP_ACCESS_CODE = 'minegrid2026';
 
 export default function Login() {

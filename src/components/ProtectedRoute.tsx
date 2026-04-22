@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Loader2, Lock, Globe } from 'lucide-react';
 
-// TODO: retirer ce code d'accès temporaire et revenir à la vérification Supabase uniquement
+// Code d'accès partagé pour Global Monitor, démo Login/Register et promo ProSubscription.
+// Unifié à 'minegrid2026' (voir aussi src/pages/Login.tsx, Register.tsx, PaymentPage.tsx, ProSubscription.tsx).
 const TEMP_ACCESS_CODE = 'minegrid2026';
 
 interface ProtectedRouteProps {

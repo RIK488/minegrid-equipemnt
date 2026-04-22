@@ -4,7 +4,7 @@ import { Crown, Star, Building, Check, Lock } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
 import PaymentPage from './PaymentPage';
 import { toast } from '../utils/toast';
-// TODO: retirer ce code d'accès temporaire avant la mise en production
+// Code d'accès démo partagé (même valeur que Global Monitor et Login).
 const TEMP_ACCESS_CODE = 'minegrid2026';
 
 interface RegisterProps {

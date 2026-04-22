@@ -5,6 +5,7 @@ import { useRouteParams } from './router';
 import ErrorBoundary from './components/ErrorBoundary';
 import { NotificationContainer } from './components/NotificationToast';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import CategoryList from './components/CategoryList';
 import FeaturedMachines from './components/FeaturedMachines';
 import Machines from './pages/Machines';
@@ -89,10 +90,53 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Routes considérées comme "application" : elles ont leur propre shell/navigation
+ * interne (tabs, sidebar…) et ne doivent PAS afficher le footer public global.
+ * Toutes les autres routes (accueil, machines, services, contact, inscription,
+ * connexion, blog, vendre, secteur, entreprise, financement…) affichent le footer.
+ */
+const APP_ONLY_ROUTES = new Set<string>([
+  'dashboard',
+  'pro',
+  'dashboard-entreprise',
+  'dashboard-entreprise-display',
+  'dashboard-loueur-display',
+  'dashboard-mecanicien-display',
+  'dashboard-transporteur-display',
+  'dashboard-transitaire-display',
+  'dashboard-logisticien-display',
+  'dashboard-investisseur-display',
+  'dashboard-courtier-display',
+  'premium-dashboard',
+  'dashboard-configurator',
+  'dashboard-vendeur-legacy',
+  'dashboard-vendeur-restored',
+  'vitrine',
+  'publication',
+  'devis',
+  'documents',
+  'messages',
+  'planning',
+  'assistant-ia',
+  'api-docs',
+  'priority-support',
+  'multi-user-management',
+  'global-monitor',
+  'admin-sources',
+  'test-widget',
+  'update-password',
+]);
+
 function AppContent() {
   const { segments: pathParts, searchParams } = useRouteParams();
 
   useExchangeRates();
+
+  const currentRoute = pathParts[0] ?? '';
+  const showFooter =
+    !APP_ONLY_ROUTES.has(currentRoute) &&
+    window.location.pathname !== '/update-password';
 
   const renderContent = () => {
     if (window.location.pathname === '/update-password') {
@@ -255,13 +299,14 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
-      <main>
+      <main className="flex-1">
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>{renderContent()}</Suspense>
         </ErrorBoundary>
       </main>
+      {showFooter && <Footer />}
       <ChatWidget />
       <NotificationContainer />
     </div>
