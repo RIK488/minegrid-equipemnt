@@ -143,6 +143,8 @@ useEffect(() => {
   const [hasMoreCatalog, setHasMoreCatalog] = useState(true);
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [yearMin, setYearMin] = useState('');
+  const [yearMax, setYearMax] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -281,6 +283,22 @@ useEffect(() => {
 
   const deferredSearch = useDeferredValue(searchTerm);
 
+  /**
+   * Marques dynamiques : agrégées depuis les annonces chargées,
+   * dédupliquées (case-insensitive), triées alphabétiquement.
+   * Évite la liste hardcodée qui masquait toutes les autres marques.
+   */
+  const availableBrands = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const m of machines) {
+      const raw = (m.brand || '').trim();
+      if (!raw) continue;
+      const key = raw.toLowerCase();
+      if (!seen.has(key)) seen.set(key, raw);
+    }
+    return Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
+  }, [machines]);
+
   const filteredMachines = useMemo(() => {
     return machines.filter((machine) => {
       const matchBrand = selectedBrand
@@ -320,12 +338,23 @@ useEffect(() => {
         (!priceMin || machine.price >= parseFloat(priceMin)) &&
         (!priceMax || machine.price <= parseFloat(priceMax));
 
+      const machineYear = Number(
+        (machine as any).year ?? (machine as any).specifications?.year ?? 0
+      );
+      const matchYear =
+        (!yearMin || (machineYear && machineYear >= parseInt(yearMin, 10))) &&
+        (!yearMax || (machineYear && machineYear <= parseInt(yearMax, 10)));
+
       const noFilters =
         !selectedJobCategory &&
         !selectedMachineCategory &&
         !selectedType &&
         !selectedBrand &&
         !searchTerm &&
+        !yearMin &&
+        !yearMax &&
+        !priceMin &&
+        !priceMax &&
         filterCondition === 'all';
 
       return (
@@ -336,6 +365,7 @@ useEffect(() => {
           matchCondition &&
           matchSearch &&
           matchPrice &&
+          matchYear &&
           matchBrand)
       );
     });
@@ -350,6 +380,8 @@ useEffect(() => {
     searchTerm,
     priceMin,
     priceMax,
+    yearMin,
+    yearMax,
   ]);
 
   const sortedMachines = useMemo(() => {
@@ -436,11 +468,13 @@ useEffect(() => {
   className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md"
 >
   <option value="">Toutes les marques</option>
-  <option value="Caterpillar">Caterpillar</option>
-  <option value="Volvo">Volvo</option>
-  <option value="Komatsu">Komatsu</option>
-  <option value="Liebherr">Liebherr</option>
-  <option value="JCB">JCB</option>
+  {availableBrands.length === 0 ? (
+    <option value="" disabled>(aucune marque détectée)</option>
+  ) : (
+    availableBrands.map((brand) => (
+      <option key={brand} value={brand}>{brand}</option>
+    ))
+  )}
 </select>
 
                 </div>
@@ -453,11 +487,19 @@ useEffect(() => {
                     <input
                       type="number"
                       placeholder="Min"
+                      value={yearMin}
+                      onChange={(e) => setYearMin(e.target.value)}
+                      min={1950}
+                      max={new Date().getFullYear() + 1}
                       className="px-2 py-1 text-sm border border-gray-300 rounded-md"
                     />
                     <input
                       type="number"
                       placeholder="Max"
+                      value={yearMax}
+                      onChange={(e) => setYearMax(e.target.value)}
+                      min={1950}
+                      max={new Date().getFullYear() + 1}
                       className="px-2 py-1 text-sm border border-gray-300 rounded-md"
                     />
                   </div>

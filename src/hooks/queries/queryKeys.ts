@@ -27,4 +27,7 @@ export const queryKeys = {
     all: ['clientNotifications'] as const,
     list: () => ['clientNotifications', 'list'] as const,
   },
+  categoryCounts: {
+    all: ['categoryCounts'] as const,
+  },
 } as const;

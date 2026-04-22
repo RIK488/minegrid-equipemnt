@@ -9,3 +9,5 @@ export {
   useDeleteClientNotification,
   useDeleteReadNotifications,
 } from './useClientNotifications';
+export { useCategoryCounts } from './useCategoryCounts';
+export type { CategoryCounts } from './useCategoryCounts';
