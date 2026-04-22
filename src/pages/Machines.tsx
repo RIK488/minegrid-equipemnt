@@ -146,7 +146,6 @@ useEffect(() => {
   const [yearMin, setYearMin] = useState('');
   const [yearMax, setYearMax] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
-  const [loadError, setLoadError] = useState<string | null>(null);
 
 
   
@@ -227,7 +226,6 @@ useEffect(() => {
         setHasMoreCatalog(
           data.length === firstBatch && data.length < MACHINES_CATALOG_MEMORY_CAP
         );
-        setLoadError(null);
         if (data.length === 0) {
           console.info('[Machines] Aucun résultat — table vide OU RLS bloque le SELECT anonyme.');
         }
@@ -235,7 +233,6 @@ useEffect(() => {
         console.error('[Machines] Erreur chargement machines :', error);
         setMachines([]);
         setHasMoreCatalog(false);
-        setLoadError((error as any)?.message || 'Erreur inconnue lors du chargement des annonces.');
       }
       setLoading(false);
     };
@@ -566,24 +563,18 @@ useEffect(() => {
                   <div className="text-center col-span-full space-y-3 text-gray-500">
                     <p>
                       {machines.length === 0
-                        ? 'Aucune annonce chargée pour le moment.'
-                        : 'Aucun résultat pour ces filtres.'}
+                        ? 'Aucune annonce disponible pour le moment.'
+                        : 'Aucun résultat pour ces filtres. Élargissez votre recherche ou retirez un critère.'}
                     </p>
-                    {loadError && (
-                      <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2 inline-block">
-                        Détail technique : {loadError}
-                      </p>
-                    )}
-                    {machines.length === 0 && !loadError && (
+                    {machines.length === 0 && (
                       <p className="text-xs text-gray-400 max-w-md mx-auto">
-                        La table `machines` est vide ou la politique RLS Supabase bloque le SELECT
-                        pour les visiteurs non connectés. Vérifie qu&apos;une policy publique
-                        `FOR SELECT USING (true)` existe.
+                        Revenez d'ici quelques jours — de nouvelles machines sont
+                        ajoutées régulièrement par nos vendeurs partenaires.
                       </p>
                     )}
                     {machines.length > 0 && hasMoreCatalog && (
                       <p className="text-sm text-gray-400">
-                        Élargissez les filtres ou chargez plus d&apos;annonces depuis le catalogue.
+                        Essayez d'élargir les filtres ou chargez d'autres annonces ci-dessous.
                       </p>
                     )}
                     {hasMoreCatalog && !loading && (

@@ -117,7 +117,7 @@ const Header = () => {
               <Menu className="h-6 w-6" />
             </button>
             <a href="#" className="flex-shrink-0 flex items-center space-x-2">
-              <img src="/logo Minegrid equipement trans.png" alt="Logo Minegrid" className="h-20 w-auto" />
+              <img src="/logo Minegrid equipement trans.png" alt="Logo Minegrid" className="h-12 w-auto" />
             </a>
           </div>
 
