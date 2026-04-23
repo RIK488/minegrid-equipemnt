@@ -1,4 +1,5 @@
 import { categories } from '../data/categories';
+import { DEFAULT_JOB_SECTOR, GROUP_TO_JOB_SECTOR } from '../data/sectors';
 
 /**
  * Alias Mascus → sous-catégorie locale (extrait de src/pages/Machines.tsx
@@ -26,21 +27,6 @@ const mascusCategoryAliases: Record<string, string> = {
   screeners: 'crible',
   drillingrigs: 'foreuse',
   tractors: 'tracteur-routier',
-};
-
-const groupToJobSector: Record<string, string> = {
-  'transport & camions': 'Transport',
-  'terrassement & excavation': 'Terrassement',
-  'voirie & compactage': 'Voirie',
-  'levage & manutention': 'Maintenance & Levage',
-  'concassage & criblage': 'Mines',
-  forage: 'Forage',
-  'camions & transport': 'Transport',
-  'terrassement et excavation': 'Terrassement',
-  'matériel de voirie': 'Voirie',
-  'maintenance & levage': 'Maintenance & Levage',
-  'concasseurs & cribles': 'Mines',
-  'outils & accessoires': 'Outils & Accessoires',
 };
 
 const subtypeToGroupName = new Map<string, string>();
@@ -84,5 +70,5 @@ export function resolveMachineSector(row: {
   }
 
   const machineGroup = subtypeToGroupName.get(normalizedCategory) || '';
-  return groupToJobSector[machineGroup] || 'Construction';
+  return GROUP_TO_JOB_SECTOR[machineGroup] || DEFAULT_JOB_SECTOR;
 }

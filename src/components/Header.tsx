@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useDeferredValue } from 'react';
+import { useMachineSearchSuggest } from '../hooks/queries/useMachineSearchSuggest';
+import { trackEvent } from '../utils/analytics';
 import {
   Search,
   Menu,
@@ -47,6 +48,20 @@ const Header = () => {
   const [isServicesMenuOpen, setIsServicesMenuOpen] = useState(false);
   const [hoveredCategoryId, setHoveredCategoryId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  /** Accordéon menu mobile : Machines / Services */
+  const [mobileOpenSection, setMobileOpenSection] = useState<null | 'machines' | 'services'>(null);
+  const [mobileCategoryId, setMobileCategoryId] = useState<string | null>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const deferredSearch = useDeferredValue(searchTerm.trim());
+  const { data: searchSuggestions = [], isFetching: searchSuggestLoading } =
+    useMachineSearchSuggest(deferredSearch);
+
+  const showSearchDropdown =
+    searchFocused &&
+    deferredSearch.length >= 2 &&
+    !window.location.hash.startsWith('#machines');
   const machinesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const servicesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -102,8 +117,20 @@ const Header = () => {
       listener.subscription.unsubscribe();
       if (machinesTimeoutRef.current) clearTimeout(machinesTimeoutRef.current);
       if (servicesTimeoutRef.current) clearTimeout(servicesTimeoutRef.current);
+      if (searchBlurTimer.current) clearTimeout(searchBlurTimer.current);
     };
   }, []);
+
+  const closeMobileMenu = () => {
+    setIsMenuOpen(false);
+    setMobileOpenSection(null);
+    setMobileCategoryId(null);
+  };
+
+  const toggleMobileSection = (section: 'machines' | 'services') => {
+    setMobileOpenSection((prev) => (prev === section ? null : section));
+    setMobileCategoryId(null);
+  };
 
   return (
     <header className="bg-white shadow-md relative z-50">
@@ -123,20 +150,71 @@ const Header = () => {
 
           {!window.location.hash.startsWith('#machines') && (
             <div className="flex-1 max-w-2xl mx-4 hidden lg:block">
-              <div className="relative">
+              <div className="relative z-[60]">
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => {
+                    if (searchBlurTimer.current) clearTimeout(searchBlurTimer.current);
+                    setSearchFocused(true);
+                  }}
+                  onBlur={() => {
+                    searchBlurTimer.current = setTimeout(() => setSearchFocused(false), 180);
+                  }}
                   placeholder="Rechercher des machines..."
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && searchTerm.trim()) {
-                      window.location.hash = `#machines?search=${encodeURIComponent(searchTerm)}`;
+                      trackEvent('header_search_submit', { query_len: searchTerm.trim().length });
+                      window.location.hash = `#machines?search=${encodeURIComponent(searchTerm.trim())}`;
+                      setSearchFocused(false);
                     }
                   }}
+                  autoComplete="off"
+                  aria-expanded={showSearchDropdown}
+                  aria-controls="header-machine-suggest"
                 />
-                <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none" />
+                {showSearchDropdown && (
+                  <ul
+                    id="header-machine-suggest"
+                    role="listbox"
+                    className="absolute left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+                  >
+                    {searchSuggestLoading && (
+                      <li className="px-3 py-2 text-xs text-gray-500">Recherche…</li>
+                    )}
+                    {!searchSuggestLoading &&
+                      searchSuggestions.length === 0 &&
+                      deferredSearch.length >= 2 && (
+                        <li className="px-3 py-2 text-xs text-gray-500">Aucune suggestion</li>
+                      )}
+                    {searchSuggestions.map((row) => (
+                      <li key={row.id} role="option">
+                        <button
+                          type="button"
+                          className="flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-orange-50"
+                          onMouseDown={(ev) => {
+                            ev.preventDefault();
+                            trackEvent('header_search_suggestion_click', {
+                              machine_id: row.id,
+                              query_len: deferredSearch.length,
+                            });
+                            window.location.hash = `#machines/${row.id}`;
+                            setSearchTerm('');
+                            setSearchFocused(false);
+                          }}
+                        >
+                          <span className="font-medium text-gray-900">{row.name}</span>
+                          {row.brand && (
+                            <span className="text-xs text-gray-500">{row.brand}</span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           )}
@@ -313,34 +391,130 @@ const Header = () => {
       </div>
 
       {isMenuOpen && (
-        <div className="lg:hidden absolute top-16 left-0 w-full bg-white shadow-md z-40">
-          <nav className="flex flex-col px-4 py-2 space-y-2">
-            <a href="#machines" className="text-gray-700 hover:text-primary-600">Machines</a>
-            <a href="#services" className="text-gray-700 hover:text-primary-600">Services</a>
-            <a href="#pro" className="text-gray-700 hover:text-primary-600 font-semibold">Espace Pro</a>
-            <a href="#global-monitor" className="text-gray-700 hover:text-primary-600 font-semibold flex items-center gap-2">
+        <div className="lg:hidden absolute top-16 left-0 w-full bg-white shadow-md z-40 max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <nav className="flex flex-col px-4 py-3 space-y-1 text-sm">
+            <button
+              type="button"
+              onClick={() => toggleMobileSection('machines')}
+              className="flex w-full items-center justify-between py-2 text-left font-medium text-gray-800 border-b border-gray-100"
+            >
+              Machines
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 transition-transform ${mobileOpenSection === 'machines' ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {mobileOpenSection === 'machines' && (
+              <div className="pl-2 pb-2 space-y-1 border-b border-gray-100">
+                <a
+                  href="#machines"
+                  onClick={closeMobileMenu}
+                  className="block py-1.5 text-orange-600 font-medium"
+                >
+                  Toutes les machines
+                </a>
+                {categories.map((cat) => (
+                  <div key={cat.id}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMobileCategoryId((id) => (id === cat.id ? null : cat.id))
+                      }
+                      className="flex w-full items-center justify-between py-1.5 text-left text-gray-700"
+                    >
+                      <span>{cat.name}</span>
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 shrink-0 transition-transform ${mobileCategoryId === cat.id ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {mobileCategoryId === cat.id && cat.subcategories && (
+                      <div className="ml-2 border-l border-orange-200 pl-2 space-y-0.5 pb-1">
+                        {cat.subcategories.map((sub) => (
+                          <a
+                            key={sub.id}
+                            href={`#machines?machine=${encodeURIComponent(cat.name)}&type=${encodeURIComponent(sub.id)}`}
+                            onClick={closeMobileMenu}
+                            className="block py-1 text-gray-600 hover:text-orange-600"
+                          >
+                            {sub.name}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => toggleMobileSection('services')}
+              className="flex w-full items-center justify-between py-2 text-left font-medium text-gray-800 border-b border-gray-100"
+            >
+              Services
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 transition-transform ${mobileOpenSection === 'services' ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {mobileOpenSection === 'services' && (
+              <div className="pl-2 pb-2 space-y-1 border-b border-gray-100">
+                <a href="#services" onClick={closeMobileMenu} className="block py-1.5 text-orange-600 font-medium">
+                  Vue d&apos;ensemble services
+                </a>
+                {servicesMenu.map((item) => (
+                  <a
+                    key={item.section}
+                    href={`#services/${item.section}`}
+                    onClick={closeMobileMenu}
+                    className="block py-1.5 text-gray-700 hover:text-orange-600"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+            )}
+
+            <a href="#pro" onClick={closeMobileMenu} className="py-2 text-gray-800 font-semibold border-b border-gray-100">
+              Espace Pro
+            </a>
+            <a
+              href="#global-monitor"
+              onClick={closeMobileMenu}
+              className="py-2 text-gray-800 font-semibold flex items-center gap-2 border-b border-gray-100"
+            >
               <Globe className="h-4 w-4" />
               Global Monitor
             </a>
-            <a href="#blog" className="text-gray-700 hover:text-primary-600">Blog</a>
-            <a href="#contact" className="text-gray-700 hover:text-primary-600">Contact</a>
+            <a href="#blog" onClick={closeMobileMenu} className="py-2 text-gray-700 hover:text-primary-600 border-b border-gray-100">
+              Blog
+            </a>
+            <a href="#contact" onClick={closeMobileMenu} className="py-2 text-gray-700 hover:text-primary-600 border-b border-gray-100">
+              Contact
+            </a>
             {user ? (
               <>
-                <a href="#dashboard" className="text-gray-700 hover:text-primary-600">Mon espace</a>
+                <a href="#dashboard" onClick={closeMobileMenu} className="py-2 text-gray-700 hover:text-primary-600">
+                  Mon espace
+                </a>
                 <button
+                  type="button"
                   onClick={async () => {
                     await supabaseClient.auth.signOut();
+                    closeMobileMenu();
                     window.location.hash = '#';
                   }}
-                  className="text-left text-gray-700 hover:text-primary-600"
+                  className="text-left py-2 text-gray-700 hover:text-primary-600"
                 >
                   Déconnexion
                 </button>
               </>
             ) : (
               <>
-                <a href="#connexion" className="text-gray-700 hover:text-primary-600">Connexion</a>
-                <a href="#inscription" className="text-gray-700 hover:text-primary-600">Inscription</a>
+                <a href="#connexion" onClick={closeMobileMenu} className="py-2 text-gray-700 hover:text-primary-600">
+                  Connexion
+                </a>
+                <a href="#inscription" onClick={closeMobileMenu} className="py-2 text-gray-700 hover:text-primary-600">
+                  Inscription
+                </a>
               </>
             )}
           </nav>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Clock, MessageSquare, Building2, Send, Loader2 } from 'lucide-react';
 import { submitContactMessage } from '../utils/api/contact';
+import { trackEvent } from '../utils/analytics';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -34,6 +35,7 @@ export default function Contact() {
         service: formData.service,
       });
       setSubmittedEmail(formData.email);
+      trackEvent('contact_submit_success', { service: formData.service });
       setSubmitted(true);
       setFormData({
         name: '',

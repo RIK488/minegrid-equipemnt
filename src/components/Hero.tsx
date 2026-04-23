@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Store } from 'lucide-react';
+import { trackEvent } from '../utils/analytics';
 
 export default function Hero() {
   return (
@@ -28,23 +29,50 @@ export default function Hero() {
               <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
                 L'expertise dans la distribution de machines et de solutions pour les secteurs minier, BTP, et industriel en Afrique.
               </p>
-              <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
-                <div className="rounded-md shadow">
+              <div className="mt-5 sm:mt-8 sm:flex sm:flex-wrap sm:justify-center lg:justify-start gap-3">
+                <div className="rounded-md shadow w-full sm:w-auto">
                   <a
                     href="#machines"
+                    onClick={() => trackEvent('hero_cta', { target: 'machines' })}
                     className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 md:py-4 md:text-lg md:px-10"
                   >
                     Découvrir nos machines
                   </a>
                 </div>
-                <div className="mt-3 sm:mt-0 sm:ml-3">
+                <div className="rounded-md shadow w-full sm:w-auto">
                   <a
                     href="#financement"
+                    onClick={() => trackEvent('hero_cta', { target: 'financement' })}
                     className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-orange-700 bg-orange-100 hover:bg-orange-200 md:py-4 md:text-lg md:px-10"
                   >
                     Demander un financement
                   </a>
                 </div>
+              </div>
+              <div className="mt-6 sm:mt-8">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 sm:text-center lg:text-left mb-2">
+                  Vous êtes vendeur professionnel ?
+                </p>
+                <a
+                  href="#inscription?type=seller"
+                  onClick={() => trackEvent('hero_cta', { target: 'inscription_seller' })}
+                  className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg border-2 border-orange-500 bg-white px-6 py-3 text-base font-semibold text-orange-700 shadow-sm hover:bg-orange-50 transition-colors md:px-8"
+                >
+                  <Store className="h-5 w-5 shrink-0" aria-hidden />
+                  Publier une annonce
+                  <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+                </a>
+                <p className="mt-2 text-xs text-gray-500 sm:text-center lg:text-left max-w-md">
+                  Inscription vendeur en quelques minutes — ou accédez directement à{' '}
+                  <a
+                    href="#vendre"
+                    onClick={() => trackEvent('hero_cta', { target: 'vendre' })}
+                    className="text-orange-600 hover:underline font-medium"
+                  >
+                    l&apos;espace publication rapide
+                  </a>
+                  .
+                </p>
               </div>
             </div>
           </main>

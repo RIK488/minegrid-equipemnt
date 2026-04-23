@@ -11,3 +11,5 @@ export {
 } from './useClientNotifications';
 export { useCategoryCounts } from './useCategoryCounts';
 export type { CategoryCounts } from './useCategoryCounts';
+export { usePublicMachineCount } from './usePublicMachineCount';
+export { useMachineSearchSuggest } from './useMachineSearchSuggest';

@@ -11,6 +11,7 @@ import {
   MACHINES_CATALOG_STEP,
 } from '../constants/machineQueryFields';
 import { jobCategories } from '../data/jobcategories'; // ajout pour catégorie métier
+import { DEFAULT_JOB_SECTOR, GROUP_TO_JOB_SECTOR } from '../data/sectors';
 
 const subtypeToGroupName = new Map<string, string>();
 const subtypeToLabel = new Map<string, string>();
@@ -52,23 +53,6 @@ categories.forEach((group) => {
   });
 });
 
-const groupToJobSector: Record<string, string> = {
-  // Noms actuels des onglets
-  'transport & camions': 'Transport',
-  'terrassement & excavation': 'Terrassement',
-  'voirie & compactage': 'Voirie',
-  'levage & manutention': 'Maintenance & Levage',
-  'concassage & criblage': 'Mines',
-  forage: 'Forage',
-  // Compat anciens noms (données/hash historiques)
-  'camions & transport': 'Transport',
-  'terrassement et excavation': 'Terrassement',
-  'matériel de voirie': 'Voirie',
-  'maintenance & levage': 'Maintenance & Levage',
-  'concasseurs & cribles': 'Mines',
-  'outils & accessoires': 'Outils & Accessoires',
-};
-
 function mapSupabaseRowToMachine(m: any): Machine {
   const specs = m.specifications || {};
   const fallbackLocation = [m.city, m.region, m.country].filter(Boolean).join(', ') || 'Localisation inconnue';
@@ -92,7 +76,7 @@ function mapSupabaseRowToMachine(m: any): Machine {
 
   const machineGroup = subtypeToGroupName.get(normalizedCategory) || '';
   const machineType = subtypeToLabel.get(normalizedCategory) || m.type || m.category || '';
-  const jobSector = groupToJobSector[machineGroup] || 'Construction';
+  const jobSector = GROUP_TO_JOB_SECTOR[machineGroup] || DEFAULT_JOB_SECTOR;
   const normalizedPower =
     specs?.power && typeof specs.power === 'object'
       ? specs.power

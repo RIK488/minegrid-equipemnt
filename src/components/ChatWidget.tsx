@@ -1,6 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Minimize2, Maximize2, Move } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { MessageCircle, X, Send, Minimize2, Maximize2, Move, ExternalLink } from 'lucide-react';
 import { toast } from '../utils/toast';
+import { logger } from '../utils/logger';
+import { trackEvent } from '../utils/analytics';
+
+function getWhatsAppHref(): string | null {
+  const raw = String(import.meta.env.VITE_WHATSAPP_NUMBER || '').trim();
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length < 8) return null;
+  return `https://wa.me/${digits}`;
+}
 interface Message {
   id: number;
   text: string;
@@ -19,6 +28,8 @@ interface DragOffset {
 }
 
 const ChatWidget: React.FC = () => {
+  const whatsAppHref = useMemo(() => getWhatsAppHref(), []);
+
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const [position, setPosition] = useState<Position>({ x: 20, y: 100 }); // Position plus haute par défaut
@@ -122,23 +133,33 @@ const ChatWidget: React.FC = () => {
       timestamp: new Date()
     };
 
-    console.log('🚀 Envoi du message:', userMessage.text);
+    logger.info('[ChatWidget] envoi message', { length: userMessage.text.length });
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
 
     try {
       const assistantUrl = import.meta.env.VITE_N8N_ASSISTANT_URL || '';
-      console.log('📡 Tentative de connexion à l\'API...');
-      console.log('🔗 URL:', assistantUrl);
-      
+      logger.debug('[ChatWidget] appel assistant', { configured: Boolean(assistantUrl) });
+
+      if (!assistantUrl.trim()) {
+        const botMessage: Message = {
+          id: Date.now() + 1,
+          text:
+            "L'assistant en ligne n'est pas encore configuré sur ce site. Utilisez le bouton WhatsApp ci-dessous (si disponible) ou la page Contact.",
+          isUser: false,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, botMessage]);
+        return;
+      }
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 secondes de timeout
 
       const requestBody = {
         message: userMessage.text
       };
-      console.log('📦 Body envoyé:', requestBody);
 
       const response = await fetch(assistantUrl, {
         method: 'POST',
@@ -151,25 +172,21 @@ const ChatWidget: React.FC = () => {
       
       clearTimeout(timeoutId);
 
-      console.log('📊 Status de la réponse:', response.status);
-      console.log('📊 Headers de la réponse:', Object.fromEntries(response.headers.entries()));
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Erreur HTTP:', response.status, errorText);
+        logger.error('[ChatWidget] HTTP erreur', { status: response.status, errorText });
         throw new Error(`Erreur HTTP ${response.status}: La réponse du serveur est vide ou erronée.`);
       }
 
       // Lire le body une seule fois
       const raw = await response.text();
-      console.log('📄 Réponse brute:', raw);
+      logger.debug('[ChatWidget] réponse brute', { bytes: raw.length });
       
       let data;
       try {
         data = JSON.parse(raw); // ← si n8n renvoie du JSON (recommandé)
-        console.log('📦 Données JSON reçues:', data);
       } catch (e) {
-        console.log('⚠️ Réponse non-JSON, tentative de parsing manuel...');
+        logger.debug('[ChatWidget] réponse non-JSON, parsing manuel');
         
         // nettoie et tente de parser quand même
         let cleaned = raw.trim().replace(/^=\s*/, '');
@@ -183,9 +200,7 @@ const ChatWidget: React.FC = () => {
         cleaned = cleaned.replace(/\\n/g, ' ');
         try { 
           data = JSON.parse(cleaned); 
-          console.log('✅ Parsing manuel réussi:', data);
         } catch (parseError) { 
-          console.log('❌ Parsing manuel échoué, utilisation du texte brut');
           data = { response: cleaned }; 
         }
       }
@@ -205,7 +220,7 @@ const ChatWidget: React.FC = () => {
           botResponseText.includes('Format de réponse') || 
           botResponseText.includes('JSON') ||
           botResponseText.includes('[object Object]')) {
-        console.log('⚠️ Message d\'erreur technique détecté, remplacement par message générique');
+        logger.warn('[ChatWidget] réponse assistant filtrée (contenu technique)');
         botResponseText = "Bonjour ! Je suis l'assistant virtuel de Minegrid Équipement. Comment puis-je vous aider ?";
       }
 
@@ -216,12 +231,9 @@ const ChatWidget: React.FC = () => {
         timestamp: new Date()
       };
 
-      console.log('💬 Message du bot:', botMessage.text);
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
-      console.error('❌ Erreur détaillée:', error);
-      console.error('❌ Type d\'erreur:', error instanceof Error ? error.constructor.name : typeof error);
-      console.error('❌ Message d\'erreur:', error instanceof Error ? error.message : String(error));
+      logger.error('[ChatWidget] erreur assistant', error);
       
       let errorText = "Désolé, une erreur s'est produite. Veuillez réessayer.";
       if (error instanceof Error) {
@@ -318,28 +330,28 @@ const ChatWidget: React.FC = () => {
               <span className="font-semibold">Assistant Virtuel</span>
             </div>
             <div className="flex items-center space-x-2">
-              <button
-                onClick={async () => {
-                  const assistantUrl = import.meta.env.VITE_N8N_ASSISTANT_URL || '';
-                  console.log('🧪 Test de connexion à l\'API...');
-                  try {
-                    const response = await fetch(assistantUrl, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ message: 'test' })
-                    });
-                    console.log('✅ Test réussi - Status:', response.status);
-                    toast(`Test de connexion réussi ! Status: ${response.status}`);
-                  } catch (error) {
-                    console.error('❌ Test échoué:', error);
-                    toast(`Test de connexion échoué: ${error instanceof Error ? error.message : String(error)}`);
-                  }
-                }}
-                className="hover:bg-orange-700 p-1 rounded transition-colors text-xs"
-                title="Tester la connexion"
-              >
-                🧪
-              </button>
+              {import.meta.env.DEV && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const assistantUrl = import.meta.env.VITE_N8N_ASSISTANT_URL || '';
+                    try {
+                      const response = await fetch(assistantUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: 'test' }),
+                      });
+                      toast(`Test connexion assistant — HTTP ${response.status}`);
+                    } catch (error) {
+                      toast(`Test échoué : ${error instanceof Error ? error.message : String(error)}`);
+                    }
+                  }}
+                  className="hover:bg-orange-700 p-1 rounded transition-colors text-xs"
+                  title="Tester la connexion (dev)"
+                >
+                  🧪
+                </button>
+              )}
               <button
                 onClick={minimizeChat}
                 className="hover:bg-orange-700 p-1 rounded transition-colors"
@@ -398,6 +410,31 @@ const ChatWidget: React.FC = () => {
                 )}
                 
                 <div ref={messagesEndRef} />
+              </div>
+
+              <div className="border-t border-amber-100 bg-amber-50/90 px-3 py-2 space-y-2">
+                <p className="text-[11px] text-amber-950 leading-snug">
+                  Réponses automatisées si un assistant est configuré (
+                  <code className="rounded bg-white/80 px-0.5">VITE_N8N_ASSISTANT_URL</code>
+                  ). Pour un interlocuteur humain, privilégiez WhatsApp ou le formulaire Contact.
+                </p>
+                {whatsAppHref ? (
+                  <a
+                    href={whatsAppHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackEvent('chat_whatsapp_click')}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
+                  >
+                    WhatsApp commercial
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                  </a>
+                ) : (
+                  <p className="text-[11px] text-gray-600">
+                    Ajoutez <code className="rounded bg-white/80 px-0.5">VITE_WHATSAPP_NUMBER</code> (ex. 2126… sans +)
+                    dans <code className="rounded bg-white/80 px-0.5">.env</code> pour afficher le bouton WhatsApp.
+                  </p>
+                )}
               </div>
 
               {/* Zone de saisie */}

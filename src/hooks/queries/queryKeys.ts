@@ -30,4 +30,11 @@ export const queryKeys = {
   categoryCounts: {
     all: ['categoryCounts'] as const,
   },
+  publicMachineCount: {
+    all: ['publicMachineCount'] as const,
+  },
+  machineSearchSuggest: {
+    all: ['machineSearchSuggest'] as const,
+    byTerm: (term: string) => ['machineSearchSuggest', term] as const,
+  },
 } as const;

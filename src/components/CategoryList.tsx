@@ -1,18 +1,7 @@
 import React from 'react';
-import type { Category } from '../types';
-import { Truck, Shovel, Drill, Construction, GitFork, Mountain, Hammer, Wrench } from 'lucide-react';
+import { Truck, Shovel, Drill, Construction, GitFork, Mountain, Hammer } from 'lucide-react';
 import { useCategoryCounts } from '../hooks/queries';
-
-const categories: Category[] = [
-  { id: '1', name: 'Transport', icon: 'Truck', count: 0 },
-  { id: '2', name: 'Terrassement', icon: 'Shovel', count: 0 },
-  { id: '3', name: 'Forage', icon: 'Drill', count: 0 },
-  { id: '4', name: 'Voirie', icon: 'Construction', count: 0 },
-  { id: '5', name: 'Maintenance & Levage', icon: 'GitFork', count: 0 },
-  { id: '6', name: 'Construction', icon: 'Construction', count: 0 },
-  { id: '7', name: 'Mines', icon: 'Mountain', count: 0 },
-  { id: '8', name: 'Outils & Accessoires', icon: 'Hammer', count: 0 },
-];
+import { JOB_SECTORS_HOME } from '../data/sectors';
 
 const iconMap = {
   Truck: Truck,
@@ -22,7 +11,6 @@ const iconMap = {
   GitFork: GitFork,
   Mountain: Mountain,
   Hammer: Hammer,
-  Wrench: Wrench,
 };
 
 const largeIcons = [
@@ -36,8 +24,6 @@ const largeIcons = [
   'Outils',
 ];
 
-// Seuil "Populaire" : on l'applique aux compteurs dynamiques. Un secteur qui
-// a plus de 20% du total des annonces est considéré "Populaire".
 const POPULAR_SHARE_THRESHOLD = 0.2;
 
 export default function CategoryList() {
@@ -49,7 +35,7 @@ export default function CategoryList() {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-      {categories.map((category) => {
+      {JOB_SECTORS_HOME.map((category) => {
         const Icon = iconMap[category.icon as keyof typeof iconMap];
         const dynamicCount = counts?.[category.name];
         const displayCount = dynamicCount ?? 0;
