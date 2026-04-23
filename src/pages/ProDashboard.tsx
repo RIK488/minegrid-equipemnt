@@ -37,8 +37,7 @@ import {
   MessageSquare,
   Archive,
   Save,
-  Shield,
-  Home
+  Shield
 } from 'lucide-react';
 import { 
   getProClientProfile, 
@@ -132,7 +131,6 @@ export default function ProDashboard() {
         return [];
       }
 
-      console.log('✅ Messages chargés:', messages?.length || 0);
       return messages || [];
     } catch (error) {
       console.error('Erreur chargement messages:', error);
@@ -142,8 +140,6 @@ export default function ProDashboard() {
 
   const loadDashboardData = async () => {
     try {
-      console.log('🔄 Chargement des données du dashboard...');
-      
       const [
         profile,
         equipmentData,
@@ -164,8 +160,6 @@ export default function ProDashboard() {
         getPortalStats()
       ]);
 
-      console.log('📊 Données chargées:', { profile, equipmentData, userMachinesData, ordersData, messagesData, interventionsData, notificationsData, statsData });
-      
       setProProfile(profile);
       setEquipment(equipmentData);
       setUserMachines(userMachinesData);
@@ -229,52 +223,47 @@ export default function ProDashboard() {
 
   const tabs = getTabs();
 
-  console.log('🎯 Rendu du ProDashboard, loading:', loading, 'proProfile:', proProfile);
-  
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Portail Pro - {proProfile?.company_name || 'Minegrid'}
-              </h1>
-              <p className="text-sm text-gray-600">
-                Abonnement {proProfile?.subscription_type || 'Pro'} • 
-                {proProfile?.subscription_status === 'active' ? (
-                  <span className="text-orange-600 ml-1">Actif</span>
-                ) : (
-                  <span className="text-orange-600 ml-1">En attente</span>
-                )}
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => window.location.href = '/'}
-                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
-              >
-                <Home className="w-4 h-4" />
-                <span>Retourner à l'accueil</span>
-              </button>
-            </div>
-          </div>
+      {/* Bandeau contexte (le header global du site fournit logo + navigation) */}
+      <div className="bg-orange-50/90 border-b border-orange-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-800">
+          <span className="font-semibold text-gray-900">Portail Pro</span>
+          <span className="text-gray-300 hidden sm:inline" aria-hidden>
+            ·
+          </span>
+          <span className="text-gray-700">{proProfile?.company_name || '—'}</span>
+          <span className="text-gray-300 hidden sm:inline" aria-hidden>
+            ·
+          </span>
+          <span className="text-orange-800 font-medium capitalize">
+            {proProfile?.subscription_type || 'Pro'}
+          </span>
+          {proProfile?.subscription_status === 'active' ? (
+            <span className="ml-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+              Actif
+            </span>
+          ) : (
+            <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+              En attente
+            </span>
+          )}
         </div>
-      </header>
+      </div>
 
       {/* Navigation Tabs */}
       <nav className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
+          <div className="flex gap-4 sm:gap-8 overflow-x-auto pb-px [-webkit-overflow-scrolling:touch]">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   data-tab={tab.id}
+                  type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
+                  className={`flex shrink-0 items-center py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-orange-500 text-orange-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

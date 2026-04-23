@@ -20,6 +20,7 @@ import { useExchangeRates } from './hooks/useExchangeRates';
 import SectorMachines from './pages/SectorMachines';
 import SellerMachines from './pages/SellerMachines';
 import Hero from './components/Hero';
+import HomeTrustSection from './components/HomeTrustSection';
 import ForgotPassword from './pages/ForgotPassword';
 import UpdatePassword from './pages/UpdatePassword';
 import ChatWidget from './components/ChatWidget';
@@ -78,6 +79,7 @@ const MultiUserManagement = lazy(() => import('./pages/MultiUserManagement'));
 const GlobalMonitor = lazy(() => import('./pages/GlobalMonitor'));
 const SourcesAdmin = lazy(() => import('./pages/SourcesAdmin'));
 const DemoEntrepriseAccess = lazy(() => import('./pages/DemoEntrepriseAccess'));
+const LegalStaticPage = lazy(() => import('./pages/LegalStaticPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -167,8 +169,21 @@ function AppContent() {
       case 'contact':
         return <Contact />;
 
-      case 'inscription':
-        return <Register initialType={searchParams.get('type') as 'client' | 'seller'} />;
+      case 'mentions-legales':
+        return <LegalStaticPage slug="mentions" />;
+
+      case 'politique-confidentialite':
+        return <LegalStaticPage slug="privacy" />;
+
+      case 'conditions-utilisation':
+        return <LegalStaticPage slug="terms" />;
+
+      case 'inscription': {
+        const t = searchParams.get('type');
+        const preType =
+          t === 'seller' ? 'seller' : t === 'client' ? 'client' : undefined;
+        return <Register initialType={preType} />;
+      }
 
       case 'connexion':
         return <Login />;
@@ -293,6 +308,7 @@ function AppContent() {
         return (
           <>
             <Hero />
+            <HomeTrustSection />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Parcourir par Secteur d'activité</h2>
               <CategoryList />

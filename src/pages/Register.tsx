@@ -8,7 +8,8 @@ import { toast } from '../utils/toast';
 const TEMP_ACCESS_CODE = 'minegrid2026';
 
 interface RegisterProps {
-  initialType: 'client' | 'seller';
+  /** Pré-sélection depuis l'URL (#inscription?type=seller). */
+  initialType?: 'client' | 'seller' | null;
 }
 
 function TempAccessPanel() {
@@ -92,7 +93,8 @@ export default function Register({ initialType }: RegisterProps) {
     country: string;
     city: string;
   }>({
-    accountType: '',
+    accountType:
+      initialType === 'seller' || initialType === 'client' ? initialType : '',
     email: '',
     password: '',
     confirmPassword: '',
