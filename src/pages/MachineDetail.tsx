@@ -21,6 +21,9 @@ import FinancingSimulator from '../components/FinancingSimulator';
 import Price from '../components/Price';
 import { useCurrencyStore } from '../stores/currencyStore';
 import { toast } from '../utils/toast';
+import { submitQuoteRequest } from '../utils/api/quoteRequests';
+import { trackEvent } from '../utils/analytics';
+import { logger } from '../utils/logger';
 interface MachineDetailProps {
   machineId: string;
 }
@@ -29,6 +32,8 @@ interface ContactFormData {
   name: string;
   email: string;
   phone: string;
+  country: string;
+  needByDate?: string;
   message: string;
   offerAmount?: number;
 }
@@ -48,6 +53,8 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
     name: '',
     email: '',
     phone: '',
+    country: '',
+    needByDate: '',
     message: '',
     offerAmount: undefined
   });
@@ -195,6 +202,15 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
       setIsFavorite(Array.isArray(ids) && ids.includes(machineId));
     } catch {
       setIsFavorite(false);
+    }
+  }, [machineId]);
+
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    const query = hash.includes('?') ? hash.split('?')[1] : '';
+    const params = new URLSearchParams(query);
+    if (params.get('contact') === '1' || params.get('quote') === '1') {
+      setShowContactForm(true);
     }
   }, [machineId]);
 
@@ -359,6 +375,25 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
     setEmailError(null);
 
     try {
+      await submitQuoteRequest({
+        machine_id: machineId,
+        machine_name: machineData?.name || 'Machine',
+        brand: machineData?.brand || null,
+        seller_id: machineData?.seller?.id || (machineData as any)?.sellerid || null,
+        buyer_name: contactForm.name,
+        buyer_email: contactForm.email,
+        buyer_phone: contactForm.phone || null,
+        country: contactForm.country || null,
+        budget_max: contactForm.offerAmount || null,
+        need_by_date: contactForm.needByDate || null,
+        message: contactForm.message,
+        source: 'machine_detail_contact_form',
+      });
+      trackEvent('lead_submit', {
+        source: 'machine_detail_contact_form',
+        has_budget: Boolean(contactForm.offerAmount),
+      });
+
       // Si un montant d'offre est fourni, créer une offre
       if (contactForm.offerAmount && contactForm.offerAmount > 0) {
         // Récupérer l'utilisateur connecté ou créer un profil temporaire
@@ -406,7 +441,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
           throw new Error('Erreur lors de la création de l\'offre');
         }
 
-        console.log('✅ Offre créée avec succès:', offer);
+        logger.info('[MachineDetail] offre créée', { offerId: offer?.id });
       }
 
       // 1. Sauvegarder le message dans la base de données
@@ -432,7 +467,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
         throw new Error('Erreur lors de la sauvegarde du message');
       }
 
-      console.log('✅ Message sauvegardé avec succès:', messageData);
+      logger.info('[MachineDetail] message vendeur sauvegardé', { messageId: messageData?.id });
 
       // 2. Récupérer l'email du vendeur depuis la base de données
       let sellerEmail = 'contact@minegrid-equipment.com'; // Email par défaut
@@ -485,7 +520,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
       if (emailError) {
         console.error('Erreur envoi email:', emailError);
         // Même si l'email échoue, le message est sauvegardé
-        console.log('Message sauvegardé mais email non envoyé');
+        logger.warn('[MachineDetail] message sauvegardé, email non envoyé');
         
         // Afficher quand même un message de succès car le message est sauvegardé
         setEmailSent(true);
@@ -493,6 +528,8 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
           name: '',
           email: '',
           phone: '',
+          country: '',
+          needByDate: '',
           message: '',
           offerAmount: undefined
         });
@@ -505,7 +542,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
         
         return; // Sortir de la fonction ici
       } else {
-        console.log('✅ Email envoyé avec succès:', emailData);
+        logger.info('[MachineDetail] email vendeur envoyé', { ok: Boolean(emailData) });
       }
 
       // 4. Succès
@@ -514,7 +551,10 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
         name: '',
         email: '',
         phone: '',
-        message: ''
+        country: '',
+        needByDate: '',
+        message: '',
+        offerAmount: undefined
       });
 
       // 5. Fermer le formulaire après 3 secondes
@@ -524,7 +564,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
       }, 3000);
 
     } catch (error) {
-      console.error('Erreur envoi contact:', error);
+      logger.error('[MachineDetail] erreur envoi contact', error);
       setEmailError('Une erreur est survenue lors de l\'envoi. Veuillez réessayer.');
     } finally {
       setSendingEmail(false);
@@ -760,6 +800,16 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
                 <Mail className="h-5 w-5 mr-2" />
                 Contacter le vendeur
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowContactForm(true);
+                  trackEvent('quote_cta_click', { origin: 'machine_detail' });
+                }}
+                className="w-full border border-orange-300 text-orange-700 px-6 py-3 rounded-md hover:bg-orange-50 transition-colors flex items-center justify-center"
+              >
+                Demander un devis
+              </button>
               <button className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-md hover:bg-gray-50 flex items-center justify-center" onClick={downloadTechSheet}>
                 <Download className="h-5 w-5 mr-2" />
                 Télécharger la fiche technique
@@ -860,6 +910,31 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
                       value={contactForm.phone}
                       onChange={(e) => handleContactFormChange('phone', e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Pays
+                    </label>
+                    <input
+                      type="text"
+                      value={contactForm.country || ''}
+                      onChange={(e) => handleContactFormChange('country', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                      placeholder="Ex: Maroc, Côte d'Ivoire..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Besoin avant (date souhaitée)
+                    </label>
+                    <input
+                      type="date"
+                      value={contactForm.needByDate || ''}
+                      onChange={(e) => handleContactFormChange('needByDate', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                     />
                   </div>
                   

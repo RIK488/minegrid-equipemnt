@@ -14,3 +14,5 @@ export * from './api/notifications';
 export * from './api/premium';
 export * from './api/service-history';
 export * from './api/sessions';
+export * from './api/contact';
+export * from './api/quoteRequests';

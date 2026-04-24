@@ -355,6 +355,13 @@ const Header = () => {
                       <Globe className="h-4 w-4 mr-2" />
                       Global Monitor
                     </a>
+                    <a
+                      href="#leads"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600"
+                    >
+                      <Bell className="h-4 w-4 mr-2" />
+                      Leads
+                    </a>
                     <button
                       onClick={async () => {
                         await supabaseClient.auth.signOut();
@@ -494,6 +501,9 @@ const Header = () => {
               <>
                 <a href="#dashboard" onClick={closeMobileMenu} className="py-2 text-gray-700 hover:text-primary-600">
                   Mon espace
+                </a>
+                <a href="#leads" onClick={closeMobileMenu} className="py-2 text-gray-700 hover:text-primary-600">
+                  Leads
                 </a>
                 <button
                   type="button"

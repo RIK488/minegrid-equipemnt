@@ -80,6 +80,7 @@ const GlobalMonitor = lazy(() => import('./pages/GlobalMonitor'));
 const SourcesAdmin = lazy(() => import('./pages/SourcesAdmin'));
 const DemoEntrepriseAccess = lazy(() => import('./pages/DemoEntrepriseAccess'));
 const LegalStaticPage = lazy(() => import('./pages/LegalStaticPage'));
+const LeadsInbox = lazy(() => import('./pages/LeadsInbox'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -127,6 +128,7 @@ const APP_ONLY_ROUTES = new Set<string>([
   'multi-user-management',
   'global-monitor',
   'admin-sources',
+  'leads',
   'test-widget',
   'update-password',
   'demo-entreprise',
@@ -295,6 +297,13 @@ function AppContent() {
         return (
           <ProtectedRoute>
             <SourcesAdmin />
+          </ProtectedRoute>
+        );
+
+      case 'leads':
+        return (
+          <ProtectedRoute>
+            <LeadsInbox />
           </ProtectedRoute>
         );
 
