@@ -375,24 +375,42 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
     setEmailError(null);
 
     try {
-      await submitQuoteRequest({
-        machine_id: machineId,
-        machine_name: machineData?.name || 'Machine',
-        brand: machineData?.brand || null,
-        seller_id: machineData?.seller?.id || (machineData as any)?.sellerid || null,
-        buyer_name: contactForm.name,
-        buyer_email: contactForm.email,
-        buyer_phone: contactForm.phone || null,
-        country: contactForm.country || null,
-        budget_max: contactForm.offerAmount || null,
-        need_by_date: contactForm.needByDate || null,
-        message: contactForm.message,
-        source: 'machine_detail_contact_form',
-      });
-      trackEvent('lead_submit', {
-        source: 'machine_detail_contact_form',
-        has_budget: Boolean(contactForm.offerAmount),
-      });
+      let primaryLeadCaptured = false;
+      /**
+       * Le lead commercial (quote_requests) est important, mais ne doit PAS bloquer
+       * l'envoi du message principal si la table n'existe pas encore en prod
+       * ou si la policy RLS est mal configurée.
+       */
+      const sellerIdRaw = machineData?.seller?.id || (machineData as any)?.sellerid || null;
+      const sellerId =
+        typeof sellerIdRaw === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sellerIdRaw)
+          ? sellerIdRaw
+          : null;
+
+      try {
+        await submitQuoteRequest({
+          machine_id: machineId,
+          machine_name: machineData?.name || 'Machine',
+          brand: machineData?.brand || null,
+          seller_id: sellerId,
+          buyer_name: contactForm.name,
+          buyer_email: contactForm.email,
+          buyer_phone: contactForm.phone || null,
+          country: contactForm.country || null,
+          budget_max: contactForm.offerAmount || null,
+          need_by_date: contactForm.needByDate || null,
+          message: contactForm.message,
+          source: 'machine_detail_contact_form',
+        });
+        trackEvent('lead_submit', {
+          source: 'machine_detail_contact_form',
+          has_budget: Boolean(contactForm.offerAmount),
+        });
+        primaryLeadCaptured = true;
+      } catch (quoteErr) {
+        logger.warn('[MachineDetail] quote request non bloquante', quoteErr);
+      }
 
       // Si un montant d'offre est fourni, créer une offre
       if (contactForm.offerAmount && contactForm.offerAmount > 0) {
@@ -414,34 +432,35 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
             .select()
             .single();
 
-          if (profileError) {
-            console.error('Erreur création profil temporaire:', profileError);
-            throw new Error('Erreur lors de la création du profil');
+          if (profileError || !tempProfile?.id) {
+            logger.warn('[MachineDetail] profil temporaire non créé (offre ignorée)', profileError);
+            buyerId = null;
+          } else {
+            buyerId = tempProfile.id;
           }
-
-          buyerId = tempProfile.id;
         }
 
-        // Créer l'offre dans la base de données
-        const { data: offer, error: offerError } = await supabase
-          .from('offers')
-          .insert({
-            machine_id: machineId,
-            buyer_id: buyerId,
-            seller_id: (machineData as any)?.sellerid,
-            amount: contactForm.offerAmount,
-            message: contactForm.message,
-            status: 'pending'
-          })
-          .select()
-          .single();
+        if (buyerId) {
+          // Créer l'offre dans la base de données (non bloquant pour le lead)
+          const { data: offer, error: offerError } = await supabase
+            .from('offers')
+            .insert({
+              machine_id: machineId,
+              buyer_id: buyerId,
+              seller_id: (machineData as any)?.sellerid,
+              amount: contactForm.offerAmount,
+              message: contactForm.message,
+              status: 'pending'
+            })
+            .select()
+            .single();
 
-        if (offerError) {
-          console.error('Erreur création offre:', offerError);
-          throw new Error('Erreur lors de la création de l\'offre');
+          if (offerError) {
+            logger.warn('[MachineDetail] création offre échouée (lead conservé)', offerError);
+          } else {
+            logger.info('[MachineDetail] offre créée', { offerId: offer?.id });
+          }
         }
-
-        logger.info('[MachineDetail] offre créée', { offerId: offer?.id });
       }
 
       // 1. Sauvegarder le message dans la base de données
@@ -463,8 +482,10 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
         .single();
 
       if (messageError) {
-        console.error('Erreur sauvegarde message:', messageError);
-        throw new Error('Erreur lors de la sauvegarde du message');
+        logger.warn('[MachineDetail] sauvegarde message échouée', messageError);
+        if (!primaryLeadCaptured) {
+          throw new Error('Erreur lors de la sauvegarde du message');
+        }
       }
 
       logger.info('[MachineDetail] message vendeur sauvegardé', { messageId: messageData?.id });
@@ -513,7 +534,7 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
             <p>${contactForm.message.replace(/\n/g, '<br>')}</p>
           `,
           machineId: machineId,
-          messageId: messageData.id
+          messageId: messageData?.id || null
         }
       });
 
