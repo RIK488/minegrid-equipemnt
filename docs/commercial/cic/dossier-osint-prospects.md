@@ -152,7 +152,7 @@ institutionnel en fin de campagne.
 - Côté MineGrid : HYPOTHÈSE — les deux. Client (renforts d'engins pour barrages, autoroute, NWM menés en parallèle) et
   fournisseur (cessions en fin de chantier, notamment à l'achèvement du barrage Targa Ou Madi, 42 mois depuis 2022, et
   de NWM, 18 mois depuis 2025).
-- Q10 : 1) dossier de cession avec encaissement par jalons et badge après inspection (vendre des engins de fin de
+- Q10 : 1) dossier de cession avec preuve d'état et badge après inspection (vendre des engins de fin de
   chantier de façon traçable, utile dans un contexte de gouvernance remaniée qui demande de la transparence) ;
   2) import Excel du parc + gestion du parc (Premium) pour un parc dispersé sur plusieurs chantiers ; 3) simulateur de
   financement / pré-demande bancaire pour des acquisitions liées aux nouveaux marchés.
@@ -307,7 +307,7 @@ institutionnel en fin de campagne.
   partenaires de MineGrid) ; secondairement **cédant** : un parc de ~150 grues et ~350 nacelles Genie achetées en
   2016-2020 arrive en âge de renouvellement, d'où des machines à céder. Client acheteur possible sur des grues
   d'occasion, mais il achète surtout du neuf directement aux constructeurs (Zoomlion, Genie).
-- **Q10** : (1) **dossier de cession** avec encaissement par jalons et import Excel du parc pour écouler les nacelles
+- **Q10** : (1) **dossier de cession** avec preuve d'état et import Excel du parc pour écouler les nacelles
   et grues anciennes vers l'Afrique de l'Ouest ; (2) **référencement comme partenaire levage/transport spécial**
   (service « transport » et « installation » de MineGrid) sur le corridor ; (3) radar d'opportunités / appels
   d'offres IA pour les grands chantiers (énergie, ports, Coupe du monde 2030, mines via Jorf Lasfar et Laâyoune).
@@ -315,7 +315,7 @@ institutionnel en fin de campagne.
   vitrine, badge après inspection et prix en devises africaines (XOF, MRU), plus un test du simulateur transport.
 - **Q12** : directeur général ou directeur commercial / développement Afrique ; ouverture : « vous préparez
   l'Afrique sous la marque Eurogrues Afrique et vous renouvelez votre parc Genie : MineGrid peut écouler vos machines
-  sortantes vers l'Afrique de l'Ouest avec paiement sécurisé par jalons, et vous apporter des demandes de levage et de
+  sortantes vers l'Afrique de l'Ouest avec une transaction tracée, et vous apporter des demandes de levage et de
   transport spécial ».
 - **Q13** : quel est le statut d'Eurogrues Afrique (filiale, marque, société en Afrique subsaharienne ?) et dans
   quels pays ; que deviennent les machines remplacées (reprise constructeur, export, Avito) ; volume annuel cédé ;
@@ -379,7 +379,7 @@ institutionnel en fin de campagne.
   malaxeurs, pelles) produit des machines à renouveler et des machines à céder en fin de chantier.
 - **Q10, services les plus utiles :**
   1. **Gestion du parc (Premium) et import Excel du parc**, pour un parc déjà structuré.
-  2. **Dossier de cession avec encaissement par jalons**, pour revendre pelles et malaxeurs en fin de chantier.
+  2. **Dossier de cession avec preuve d'état tracée**, pour revendre pelles et malaxeurs en fin de chantier.
   3. **Fiche machine avec position marché et simulateur de financement**, pour décider d'un renouvellement.
 - **Q11, pilote** : probabilité moyenne. Proposer l'import du parc de pelles et grues mobiles et une première cession
   test.
@@ -508,7 +508,7 @@ institutionnel en fin de campagne.
 - **Côté MineGrid** : les deux, avec un fort potentiel fournisseur. Avec plus de 2 000 engins et camions, le flux de
   rotation (cessions en fin de lot LGV et autoroute) est important, et il y a une activité de location.
 - **Q10, services les plus utiles :**
-  1. **Dossier de cession avec encaissement par jalons et vitrine fournisseur** (import Excel du parc), pour écouler
+  1. **Dossier de cession avec preuve d'état et vitrine fournisseur** (import Excel du parc), pour écouler
      les machines libérées en fin de lot LGV et autoroute, y compris vers l'Afrique de l'Ouest.
   2. **Radar d'opportunités et appels d'offres assistés par IA (Pro)**, pour suivre les appels d'offres ADM, ONCF et
      les marchés africains de routes.
@@ -517,7 +517,7 @@ institutionnel en fin de campagne.
   de chantier, avec inspection tierce et badge.
 - **Q12, qui rencontrer** : le directeur du matériel ou du parc, puis la direction générale du holding Abrar Invest
   pour le volet export. Argument d'ouverture : « transformer les engins libérés par la LGV et les autoroutes en
-  trésorerie, sur le corridor Maroc–Afrique de l'Ouest, avec paiement sécurisé par jalons ».
+  trésorerie, sur le corridor Maroc–Afrique de l'Ouest, avec une transaction tracée ».
 - **Q13, questions à poser :**
   - Combien de machines cédez-vous par an, et par quel canal (enchères, revendeurs, export) ?
   - Marques dominantes ?
@@ -640,7 +640,7 @@ institutionnel en fin de campagne.
 - **Q11** : probabilité **moyenne** ; pilote : vitrine Pro de 3 mois avec 10 machines neuves et d'occasion, prix
   en XOF/MRU et simulateur transport vers Dakar/Abidjan.
 - **Q12** : directeur général ou directeur commercial / export ; ouverture : « vos marques (Fiori, Turbosol) ont
-  une forte demande en Afrique de l'Ouest ; MineGrid vous y donne un canal de vente avec paiement par jalons ».
+  une forte demande en Afrique de l'Ouest ; MineGrid vous y donne un canal de vente avec une transaction tracée ».
 - **Q13** : son contrat d'agent couvre-t-il l'export hors Maroc (Fiori/Turbosol ont souvent des distributeurs par
   pays) ; reprises d'occasion et leur écoulement ; demandes reçues d'Afrique ; offre de financement actuelle ;
   services après-vente proposables comme partenaire maintenance.
@@ -738,12 +738,12 @@ institutionnel en fin de campagne.
      porte-engins entre deux chantiers.
   2. **Fiche machine avec position marché et simulateur de financement**, pour renouveler une pelle de la série 33x à
      bon prix (achat d'occasion vérifié par inspection).
-  3. **Dossier de cession par jalons**, pour revendre des bennes ou des pelles à l'export vers l'Afrique de l'Ouest.
+  3. **Dossier de cession tracé**, pour revendre des bennes ou des pelles à l'export vers l'Afrique de l'Ouest.
 - **Q11, pilote** : probabilité forte. La structure est petite et le dirigeant décide vite ; l'intérêt commercial est
   direct. Proposer un pilote Pro gratuit pendant 3 mois : vitrine, 3 annonces boostées et radar d'appels d'offres de
   terrassement.
 - **Q12, qui rencontrer** : le président ou gérant, puis le chef de parc. Argument d'ouverture : « louer et vendre vos
-  pelles CAT et vos bennes MAN au-delà de Casablanca, jusqu'en Afrique de l'Ouest, avec paiement sécurisé ».
+  pelles CAT et vos bennes MAN au-delà de Casablanca, jusqu'en Afrique de l'Ouest, avec une transaction tracée ».
 - **Q13, questions à poser :**
   - Taille exacte du parc (nombre de pelles, bennes, porte-engins) et âge moyen ?
   - Taux d'utilisation ?
@@ -829,12 +829,12 @@ institutionnel en fin de campagne.
 - **Côté MineGrid** : surtout **fournisseur/cédant** (parc ≈ 2 500 engins, deux parcs fusionnés TGCC + STAM-VIAS
   → doublons et engins de fin de chantier à céder) et **client secondaire** pour ses filiales d'Afrique de l'Ouest
   (transport et achat d'engins d'occasion vers Abidjan, Dakar, Conakry, Libreville). HYPOTHÈSE.
-- **Q10** : (1) **dossier de cession** avec inspection tierce et paiement par jalons (rationalisation du parc
+- **Q10** : (1) **dossier de cession** avec inspection tierce et journal horodaté (rationalisation du parc
   post-fusion) ; (2) **simulateur transport Maroc → Afrique de l'Ouest** pour équiper les filiales sans racheter
   localement ; (3) **gestion de parc / import Excel** (Enterprise) pour visualiser la valeur marché d'un parc de
   2 500 unités. HYPOTHÈSE.
 - **Q11** : probabilité **moyenne** (grand groupe coté, processus d'achat formalisé, direction achats structurée).
-  Pilote proposé : mise en vente d'un lot de 10 à 20 engins de fin de chantier (inspection + jalons), ou estimation
+  Pilote proposé : mise en vente d'un lot de 10 à 20 engins de fin de chantier (inspection tierce, dossier tracé), ou estimation
   de valeur marché d'un échantillon du parc. HYPOTHÈSE.
 - **Q12** : Directeur matériel / Directeur du parc, et Direction achats ; côté international, responsable des
   filiales Afrique. Ouverture : « vous avez doublé votre parc en un an et intégré STAM-VIAS ; nous vous aidons à
@@ -984,7 +984,7 @@ institutionnel en fin de campagne.
 - **Côté MineGrid** : **cédant** (engins routiers — niveleuses, compacteurs, finisseurs — redondants après
   intégration) et **client** pour des pointes d'activité. Décision probablement remontée au niveau STAM/TGCC.
   HYPOTHÈSE.
-- **Q10** : (1) **dossier de cession** (jalons, inspection) ; (2) **vitrine / import Excel du parc** ;
+- **Q10** : (1) **dossier de cession** (preuve d'état, inspection) ; (2) **vitrine / import Excel du parc** ;
   (3) **radar d'appels d'offres** (marchés ONDA, ADM, communes) — à présenter avec prudence (le groupe a ses
   propres équipes).
 - **Q11** : probabilité **faible à moyenne** en direct ; à coordonner avec l'approche TGCC (un seul pilote groupe).

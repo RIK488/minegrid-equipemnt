@@ -21,7 +21,7 @@ son activité.
 | Contact par téléphone, sans suivi | Demandes de devis structurées (machine, budget, message) et pipeline commercial |
 | Rien après la mise en relation | Espace pro : stock, locations, planning, maintenance, documents, équipe |
 | Prix dans une seule devise | Prix dans 10 devises (MAD, XOF, XAF, EUR, USD…) avec position par rapport au marché |
-| Transaction par téléphone, sans trace | Dossier de transaction : preuve d'état, paiements par étapes via un partenaire, journal horodaté |
+| Transaction par téléphone, sans trace | Dossier de transaction : preuve d'état, journal horodaté |
 | Saisie manuelle | Import Excel du parc et assistant IA pour les fiches techniques |
 
 ## 2. Cibles prioritaires

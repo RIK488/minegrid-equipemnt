@@ -12,7 +12,7 @@ l'intérêt pour MineGrid, gagneraient à être resserrées :
 
 | Constat sur le projet | Risque | Proposition |
 |---|---|---|
-| Q10 propose des services que MineGrid n'offre pas aujourd'hui (géolocalisation en temps réel, contrats signés 100 % en ligne, paiement « intégré ») | Le prospect choisit une promesse que la plateforme ne tient pas ; déception au premier rendez-vous | Ne proposer que ce qui existe ; mesurer les attentes non couvertes à part, sans promesse |
+| Q10 propose des services que MineGrid n'offre pas aujourd'hui (géolocalisation en temps réel, contrats signés 100 % en ligne, paiement « intégré » entre acheteur et vendeur) | Le prospect choisit une promesse que la plateforme ne tient pas ; déception au premier rendez-vous | Ne proposer que ce qui existe ; mesurer les attentes non couvertes à part, sans promesse |
 | Q10 est la même pour un demandeur (entreprise de BTP) et un offreur (loueur, revendeur) | Les réponses ne sont pas comparables : leurs besoins sont opposés | Deux listes, selon la réponse à Q1 |
 | Q10 est à cocher sans ordre | Tout le monde coche tout | Demander les trois premiers, classés |
 | Q11 parle du « lancement » de la plateforme | MineGrid est déjà en ligne (minegrid-equipement.com) | Proposer un pilote, avec un engagement mesurable |
@@ -30,11 +30,10 @@ l'intérêt pour MineGrid, gagneraient à être resserrées :
 > « ADS IDF Nord, groupe français, a lancé au Maroc MineGrid Équipement, une plateforme en ligne d'engins de BTP et de
 > mine, neufs et d'occasion, sur le corridor Maroc – Afrique de l'Ouest. Une entreprise qui cherche un engin y voit le
 > prix dans sa devise, sa position par rapport au marché, et peut simuler le financement ; chaque demande de devis
-> ouvre un dossier qui trace la transaction, avec une preuve de l'état de la machine et des paiements par étapes
-> via un partenaire de paiement. Un loueur ou un revendeur y publie tout son parc depuis un fichier Excel et le rend
+> ouvre un dossier qui trace la transaction, avec une preuve de l'état de la machine. Un loueur ou un revendeur y publie tout son parc depuis un fichier Excel et le rend
 > visible jusqu'en Afrique de l'Ouest. Consulter et publier sont gratuits. »
 
-Ce qu'il ne faut pas dire : que MineGrid détient les fonds (« séquestre »), garantit l'état d'une machine, fixe un
+Ce qu'il ne faut pas dire : que MineGrid propose un paiement sécurisé entre acheteur et vendeur, garantit l'état d'une machine, fixe un
 prix de transport ou de financement, ou a déjà tel client. En cas de question précise : « Je note votre question,
 ADS IDF vous répondra. »
 
@@ -49,7 +48,7 @@ ADS IDF vous répondra. »
 |---|---|
 | ☐ | Trouver un engin neuf ou d'occasion dans un catalogue multi-marques, avec prix comparé au marché |
 | ☐ | Connaître le coût complet avant de s'engager : financement simulé (mensualité), transport vers l'Afrique de l'Ouest |
-| ☐ | Dossier de transaction traçable : preuve d'état (vidéo du vendeur ou inspecteur tiers), paiements par étapes via un partenaire de paiement, journal consultable par l'audit interne |
+| ☐ | Dossier de transaction traçable : preuve d'état (vidéo du vendeur ou inspecteur tiers), journal consultable par l'audit interne |
 | ☐ | Revendre les engins en fin de chantier (publication du parc, dossier de cession) |
 | ☐ | Gérer son parc : équipements, maintenance, documents, par machine |
 | ☐ | Services sur demande : location courte ou longue durée, maintenance, transport, assurance, formation des opérateurs |
@@ -63,7 +62,7 @@ ADS IDF vous répondra. »
 | ☐ | Être visible des acheteurs d'Afrique de l'Ouest, prix affichés dans leur devise (dix devises) |
 | ☐ | Recevoir des demandes de devis structurées et les suivre dans un tableau de bord |
 | ☐ | Être alerté des besoins et appels d'offres correspondant à son stock, avec une aide à la réponse |
-| ☐ | Encaisser par étapes via un partenaire de paiement, avec un dossier de cession tracé |
+| ☐ | Vendre avec un dossier de cession tracé : preuve d'état, journal horodaté |
 | ☐ | Badge de confiance après inspection par un expert partenaire |
 | ☐ | Proposer financement et transport à ses acheteurs grâce aux partenaires de MineGrid |
 
