@@ -29,8 +29,8 @@ l'intérêt pour MineGrid, gagneraient à être resserrées :
 
 > « ADS IDF Nord, groupe français, a lancé au Maroc MineGrid Équipement, une plateforme en ligne d'engins de BTP et de
 > mine, neufs et d'occasion, sur le corridor Maroc – Afrique de l'Ouest. Une entreprise qui cherche un engin y voit le
-> prix dans sa devise, sa position par rapport au marché, et peut simuler le financement ; chaque demande de devis
-> ouvre un dossier qui trace la transaction, avec une preuve de l'état de la machine. Un loueur ou un revendeur y publie tout son parc depuis un fichier Excel et le rend
+> prix dans sa devise et peut simuler le financement et le transport ; chaque affaire a un dossier qui coordonne
+> l'inspection, le financement, le transport et la douane. Un loueur ou un revendeur y publie tout son parc depuis un fichier Excel et le rend
 > visible jusqu'en Afrique de l'Ouest. Consulter et publier sont gratuits. »
 
 Ce qu'il ne faut pas dire : que MineGrid propose un paiement sécurisé entre acheteur et vendeur, garantit l'état d'une machine, fixe un
@@ -46,9 +46,9 @@ ADS IDF vous répondra. »
 
 | Rang | Service disponible aujourd'hui |
 |---|---|
-| ☐ | Trouver un engin neuf ou d'occasion dans un catalogue multi-marques, avec prix comparé au marché |
+| ☐ | Trouver un engin neuf ou d'occasion dans un catalogue multi-marques |
 | ☐ | Connaître le coût complet avant de s'engager : financement simulé (mensualité), transport vers l'Afrique de l'Ouest |
-| ☐ | Dossier de transaction traçable : preuve d'état (vidéo du vendeur ou inspecteur tiers), journal consultable par l'audit interne |
+| ☐ | Dossier de transaction : inspection, financement, transport et douane coordonnés avec les partenaires, journal consultable par l'audit interne |
 | ☐ | Revendre les engins en fin de chantier (publication du parc, dossier de cession) |
 | ☐ | Gérer son parc : équipements, maintenance, documents, par machine |
 | ☐ | Services sur demande : location courte ou longue durée, maintenance, transport, assurance, formation des opérateurs |
@@ -62,8 +62,7 @@ ADS IDF vous répondra. »
 | ☐ | Être visible des acheteurs d'Afrique de l'Ouest, prix affichés dans leur devise (dix devises) |
 | ☐ | Recevoir des demandes de devis structurées et les suivre dans un tableau de bord |
 | ☐ | Être alerté des besoins et appels d'offres correspondant à son stock, avec une aide à la réponse |
-| ☐ | Vendre avec un dossier de cession tracé : preuve d'état, journal horodaté |
-| ☐ | Badge de confiance après inspection par un expert partenaire |
+| ☐ | Vendre avec un dossier de cession tracé, partenaires d'inspection et de transport compris |
 | ☐ | Proposer financement et transport à ses acheteurs grâce aux partenaires de MineGrid |
 
 **Pour tous** : « Qu'attendriez-vous d'une telle plateforme qui ne figure pas dans cette liste ? »
@@ -75,7 +74,8 @@ livraison au Maroc chiffrée en ligne. Réponse libre : ……………………
 
 ### Q11. Pilote
 
-« MineGrid propose à quelques entreprises marocaines un pilote accompagné. Seriez-vous prêt à y participer ? »
+« MineGrid propose à quelques entreprises marocaines un pilote accompagné : l'équipe publie votre parc, ouvre et
+suit vos dossiers avec vous, et vous donne accès aux outils des formules payantes. Seriez-vous prêt à y participer ? »
 
 - ☐ Oui, dans les trois mois
 - ☐ Oui, à étudier en interne (préciser qui décide : ……………………)

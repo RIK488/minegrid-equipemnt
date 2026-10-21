@@ -70,6 +70,9 @@ institutionnel en fin de campagne.
 
 # 4. Fiches détaillées
 
+> Les fonctions citées dans les hypothèses ne sont pas toutes en ligne : radar, appels d'offres assistés, dossier
+> complet et gestion du parc s'ouvrent dans le pilote accompagné. Voir `referentiel-solutions.md`.
+
 ## 1. AL OMRANE (Holding Al Omrane)
 
 ### Faits sourcés
@@ -152,7 +155,7 @@ institutionnel en fin de campagne.
 - Côté MineGrid : HYPOTHÈSE — les deux. Client (renforts d'engins pour barrages, autoroute, NWM menés en parallèle) et
   fournisseur (cessions en fin de chantier, notamment à l'achèvement du barrage Targa Ou Madi, 42 mois depuis 2022, et
   de NWM, 18 mois depuis 2025).
-- Q10 : 1) dossier de cession avec preuve d'état et badge après inspection (vendre des engins de fin de
+- Q10 : 1) dossier de cession avec inspection par un mécanicien partenaire (vendre des engins de fin de
   chantier de façon traçable, utile dans un contexte de gouvernance remaniée qui demande de la transparence) ;
   2) import Excel du parc + gestion du parc (Premium) pour un parc dispersé sur plusieurs chantiers ; 3) simulateur de
   financement / pré-demande bancaire pour des acquisitions liées aux nouveaux marchés.
@@ -207,7 +210,7 @@ institutionnel en fin de campagne.
 - Côté MineGrid : HYPOTHÈSE — fournisseur ponctuel (cession d'engins et d'équipements de chantier après la livraison
   de l'hôpital de Rabat, fin de gros travaux signalée par Bouygues au S1 2026), client secondaire (engins de carrière si
   la carrière CIC est confirmée). En bâtiment, l'essentiel du gros terrassement est souvent sous-traité.
-- Q10 : 1) dossier de cession avec badge après inspection et journal horodaté (conforme aux exigences de conformité d'un
+- Q10 : 1) dossier de cession avec inspection partenaire et journal de chaque action (conforme aux exigences de conformité d'un
   groupe coté) ; 2) simulateur transport vers l'Afrique de l'Ouest pour revendre à l'export ou transférer du matériel
   vers d'autres filiales Bouygues ; 3) gestion du parc (Premium) pour la carrière.
 - Q11 : probabilité faible à moyenne. Pilote : mise en vente encadrée d'un lot d'engins ou d'équipements libérés par la
@@ -252,7 +255,7 @@ institutionnel en fin de campagne.
   Entreprise moyenne : dépôt à Oujda qui suggère un parc propre, sans confirmation.
 - Q10 : 1) fiche machine avec position marché et mensualité indicative + simulateur de financement (achat d'occasion au
   juste prix pour une PME) ; 2) radar d'opportunités et appels d'offres assistés par IA (Pro) pour repérer les marchés
-  publics régionaux ; 3) preuve d'état par vidéo ou inspecteur tiers avant achat.
+  publics régionaux ; 3) inspection par un mécanicien partenaire avant achat.
 - Q11 : probabilité moyenne. Pilote : formule Pro (radar d'appels d'offres) sur 2-3 mois avec un ou deux achats ou
   ventes accompagnés.
 - Q12 : PDG ou directeur technique / responsable matériel (dépôt d'Oujda). Argument : acheter et revendre du matériel
@@ -307,12 +310,12 @@ institutionnel en fin de campagne.
   partenaires de MineGrid) ; secondairement **cédant** : un parc de ~150 grues et ~350 nacelles Genie achetées en
   2016-2020 arrive en âge de renouvellement, d'où des machines à céder. Client acheteur possible sur des grues
   d'occasion, mais il achète surtout du neuf directement aux constructeurs (Zoomlion, Genie).
-- **Q10** : (1) **dossier de cession** avec preuve d'état et import Excel du parc pour écouler les nacelles
+- **Q10** : (1) **dossier de cession** avec inspection partenaire et import Excel du parc pour écouler les nacelles
   et grues anciennes vers l'Afrique de l'Ouest ; (2) **référencement comme partenaire levage/transport spécial**
   (service « transport » et « installation » de MineGrid) sur le corridor ; (3) radar d'opportunités / appels
   d'offres IA pour les grands chantiers (énergie, ports, Coupe du monde 2030, mines via Jorf Lasfar et Laâyoune).
 - **Q11** : probabilité **moyenne** ; pilote proposé : mise en vente de 5 à 10 nacelles Genie 2016-2017 avec
-  vitrine, badge après inspection et prix en devises africaines (XOF, MRU), plus un test du simulateur transport.
+  vitrine, inspection partenaire et prix en devises africaines (XOF, MRU), plus un test du simulateur transport.
 - **Q12** : directeur général ou directeur commercial / développement Afrique ; ouverture : « vous préparez
   l'Afrique sous la marque Eurogrues Afrique et vous renouvelez votre parc Genie : MineGrid peut écouler vos machines
   sortantes vers l'Afrique de l'Ouest avec une transaction tracée, et vous apporter des demandes de levage et de
@@ -379,7 +382,7 @@ institutionnel en fin de campagne.
   malaxeurs, pelles) produit des machines à renouveler et des machines à céder en fin de chantier.
 - **Q10, services les plus utiles :**
   1. **Gestion du parc (Premium) et import Excel du parc**, pour un parc déjà structuré.
-  2. **Dossier de cession avec preuve d'état tracée**, pour revendre pelles et malaxeurs en fin de chantier.
+  2. **Dossier de cession tracé, avec inspection partenaire**, pour revendre pelles et malaxeurs en fin de chantier.
   3. **Fiche machine avec position marché et simulateur de financement**, pour décider d'un renouvellement.
 - **Q11, pilote** : probabilité moyenne. Proposer l'import du parc de pelles et grues mobiles et une première cession
   test.
@@ -508,13 +511,13 @@ institutionnel en fin de campagne.
 - **Côté MineGrid** : les deux, avec un fort potentiel fournisseur. Avec plus de 2 000 engins et camions, le flux de
   rotation (cessions en fin de lot LGV et autoroute) est important, et il y a une activité de location.
 - **Q10, services les plus utiles :**
-  1. **Dossier de cession avec preuve d'état et vitrine fournisseur** (import Excel du parc), pour écouler
+  1. **Dossier de cession avec inspection partenaire et vitrine fournisseur** (import Excel du parc), pour écouler
      les machines libérées en fin de lot LGV et autoroute, y compris vers l'Afrique de l'Ouest.
   2. **Radar d'opportunités et appels d'offres assistés par IA (Pro)**, pour suivre les appels d'offres ADM, ONCF et
      les marchés africains de routes.
   3. **Gestion du parc et pipeline commercial (Enterprise)**, pour l'activité de location d'engins.
 - **Q11, pilote** : probabilité moyenne. Proposer un pilote Enterprise : import d'un lot de machines à céder en fin
-  de chantier, avec inspection tierce et badge.
+  de chantier, avec inspection partenaire.
 - **Q12, qui rencontrer** : le directeur du matériel ou du parc, puis la direction générale du holding Abrar Invest
   pour le volet export. Argument d'ouverture : « transformer les engins libérés par la LGV et les autoroutes en
   trésorerie, sur le corridor Maroc–Afrique de l'Ouest, avec une transaction tracée ».
@@ -568,7 +571,7 @@ institutionnel en fin de campagne.
   (2) **achat d'occasion avec position marché et financement** (pré-demande bancaire) pour grossir le parc ;
   (3) service partenaire « location » (être référencé comme loueur pour les demandes MineGrid).
 - **Q11** : probabilité **moyenne à forte** (formule gratuite ou Premium à faible coût) ; pilote : import du parc
-  et 3 mois de Premium/boost offerts sur 10 annonces.
+  et un pilote accompagné (avantage à arrêter par la direction).
 - **Q12** : gérant / directeur commercial ; ouverture : « des acheteurs et preneurs en location de chantiers TP et
   miniers cherchent du matériel au Maroc et en Afrique de l'Ouest : votre parc peut y être visible sans coût fixe ».
 - **Q13** : marques du parc ; taux d'utilisation et machines sous-utilisées à céder ; intérêt pour louer ou vendre
@@ -740,7 +743,7 @@ institutionnel en fin de campagne.
      bon prix (achat d'occasion vérifié par inspection).
   3. **Dossier de cession tracé**, pour revendre des bennes ou des pelles à l'export vers l'Afrique de l'Ouest.
 - **Q11, pilote** : probabilité forte. La structure est petite et le dirigeant décide vite ; l'intérêt commercial est
-  direct. Proposer un pilote Pro gratuit pendant 3 mois : vitrine, 3 annonces boostées et radar d'appels d'offres de
+  direct. Proposer un pilote Pro gratuit pendant 3 mois : vitrine, publication du parc par l'équipe et radar d'appels d'offres (dès son ouverture) de
   terrassement.
 - **Q12, qui rencontrer** : le président ou gérant, puis le chef de parc. Argument d'ouverture : « louer et vendre vos
   pelles CAT et vos bennes MAN au-delà de Casablanca, jusqu'en Afrique de l'Ouest, avec une transaction tracée ».
@@ -937,7 +940,7 @@ institutionnel en fin de campagne.
 ### Lecture MineGrid (hypothèses)
 - **Côté MineGrid** : **client** (montée en charge : gare LGV, ponts, Errachidia → besoins de levage, terrassement,
   ouvrages d'art) ; cédant en fin de chantier. HYPOTHÈSE.
-- **Q10** : (1) **achat d'occasion avec preuve d'état** (inspection tierce) pour s'équiper vite sur la gare LGV ;
+- **Q10** : (1) **achat d'occasion avec inspection partenaire** pour s'équiper vite sur la gare LGV ;
   (2) **financement** ; (3) **location / levage** via partenaires.
 - **Q11** : probabilité **moyenne à forte** (période de forte activité, entreprise de taille intermédiaire, décision
   rapide) ; pilote : sourcing assisté de 1 à 3 engins pour la gare LGV ou les chantiers de ponts.
@@ -984,7 +987,7 @@ institutionnel en fin de campagne.
 - **Côté MineGrid** : **cédant** (engins routiers — niveleuses, compacteurs, finisseurs — redondants après
   intégration) et **client** pour des pointes d'activité. Décision probablement remontée au niveau STAM/TGCC.
   HYPOTHÈSE.
-- **Q10** : (1) **dossier de cession** (preuve d'état, inspection) ; (2) **vitrine / import Excel du parc** ;
+- **Q10** : (1) **dossier de cession** (inspection partenaire, transport) ; (2) **vitrine / import Excel du parc** ;
   (3) **radar d'appels d'offres** (marchés ONDA, ADM, communes) — à présenter avec prudence (le groupe a ses
   propres équipes).
 - **Q11** : probabilité **faible à moyenne** en direct ; à coordonner avec l'approche TGCC (un seul pilote groupe).

@@ -1,8 +1,9 @@
 # Argumentaire commercial Minegrid Équipement
 
 Kit de l'équipe commerciale : positionnement, cibles, arguments, objections, courriel de prospection et script d'appel.
-Fonctionnalités et tarifs alignés sur le site en ligne tel que relevé le 2 octobre 2026 (document « Valeurs ajoutées
-et pitch », fiche mémo IMC Morocco 2026). Pour les prospects du rapport CIC Aidexport, voir aussi `cic/`.
+Fonctionnalités et tarifs repris du code de la plateforme (dépôt `REKA157/minegrid-equipemnt`, 2 octobre 2026). Ce qui
+n'est pas encore en ligne est signalé « (pilote) » : à présenter dans un pilote accompagné, jamais en démonstration
+libre. État de chaque solution : `referentiel-solutions.md`. Prospects CIC Aidexport : `cic/`.
 
 ## 1. Positionnement
 
@@ -20,8 +21,8 @@ son activité.
 | Annonces mélangées avec tout le reste | Catalogue classé par secteur et par type d'engin |
 | Contact par téléphone, sans suivi | Demandes de devis structurées (machine, budget, message) et pipeline commercial |
 | Rien après la mise en relation | Espace pro : stock, locations, planning, maintenance, documents, équipe |
-| Prix dans une seule devise | Prix dans 10 devises (MAD, XOF, XAF, EUR, USD…) avec position par rapport au marché |
-| Transaction par téléphone, sans trace | Dossier de transaction : preuve d'état, journal horodaté |
+| Prix dans une seule devise | Prix dans 10 devises (MAD, XOF, XAF, EUR, USD…) |
+| Transaction par téléphone, sans trace | Dossier de transaction : inspection, financement, transport et douane coordonnés, journal de chaque action |
 | Saisie manuelle | Import Excel du parc et assistant IA pour les fiches techniques |
 
 ## 2. Cibles prioritaires
@@ -38,14 +39,14 @@ son activité.
 ## 3. Arguments par fonctionnalité
 
 - **Publication rapide** : une annonce en quelques minutes ; import Excel pour publier tout un parc.
-- **Assistant IA** : aide à la rédaction de l'annonce et pré-remplissage des caractéristiques techniques.
+- **Assistant IA** : aide à la rédaction de l'annonce et pré-remplissage des caractéristiques techniques (à vérifier en ligne avant démonstration).
 - **Vitrine personnalisée** : une page à vos couleurs avec toutes vos machines, à partager à vos clients.
 - **Boîte des demandes de devis** : chaque demande arrive avec la machine, le budget et le message ; statut nouvelle,
   contactée, qualifiée, conclue.
-- **Messagerie et notifications en temps réel** : aucune demande ne se perd.
-- **Tableau de bord par métier** : huit affichages (vendeur, loueur, mécanicien, transporteur, transitaire, logisticien,
+- **Messagerie et notifications** (pilote) : échanges avec les acheteurs dans l'espace.
+- **Tableau de bord par métier** (pilote) : huit affichages (vendeur, loueur, mécanicien, transporteur, transitaire, logisticien,
   investisseur, courtier), widgets configurables.
-- **Gestion du parc** : stock, disponibilités, locations, planning, maintenance préventive, documents, commandes.
+- **Gestion du parc** (pilote) : stock, disponibilités, locations, planning, maintenance préventive, documents, commandes.
 - **Multi-utilisateurs** (Enterprise, 5 sièges) : droits par collaborateur.
 - **Services** : demande de financement en ligne ; orientation transport, maintenance, location, formation, conseil.
 
@@ -66,7 +67,7 @@ Sans engagement de durée ; paiement des abonnements opéré par Paddle.
 |---|---|
 | « J'ai déjà mes clients. » | « Gardez-les : la vitrine et l'espace pro servent aussi à les suivre. Minegrid ajoute des demandes entrantes en plus. » |
 | « C'est trop cher. » | « Commencez en Gratuit. Une seule vente d'engin conclue grâce à la plateforme couvre plusieurs années d'abonnement Pro. » |
-| « Je n'ai pas le temps de saisir mon parc. » | « Envoyez-nous votre fichier Excel : l'import publie votre parc, l'assistant IA complète les fiches. » |
+| « Je n'ai pas le temps de saisir mon parc. » | « Envoyez-nous votre fichier Excel : notre équipe publie votre parc. » |
 | « Mes acheteurs ne sont pas sur Internet. » | « Les acheteurs professionnels comparent en ligne avant d'appeler. Votre vitrine se partage aussi par WhatsApp ou courriel. » |
 | « Je loue, je ne vends pas. » | « Le tableau de bord loueur suit disponibilités, contrats, planning et maintenance de votre parc. » |
 | « Et mes données ? » | « Chaque compte ne voit que ses propres données ; vous gérez vous-même les accès de vos collaborateurs. » |

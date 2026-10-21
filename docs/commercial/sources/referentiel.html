@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>R��f��rentiel des solutions</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="dossier.css" />
+</head>
+<body>
+<h1 id="référentiel-des-solutions-minegrid-équipement">Référentiel des
+solutions MineGrid Équipement</h1>
+<p><strong>Pour qui</strong> : direction ADS IDF, équipe commerciale,
+préparation de la campagne CIC Aidexport. Document interne.
+<strong>Date</strong> : 21 octobre 2026.</p>
+<h2 id="sources">Sources</h2>
+<p>Ce référentiel reprend les solutions depuis le dossier de la
+plateforme, pas depuis les plaquettes :</p>
+<ol type="1">
+<li><strong>Le code</strong> : dépôt
+<code>REKA157/minegrid-equipemnt</code>, branche
+<code>audit/production-2026-09-29</code>, dernier commit du 2 octobre
+2026. Grille tarifaire canonique dans <code>src/config/plans.ts</code>,
+dossier transactionnel dans
+<code>src/pages/TransactionCasePage.tsx</code>, simulateurs dans
+<code>src/components/LogisticsSimulator.tsx</code> et
+<code>FinancingSimulator.tsx</code>, couche « nextgen » (confiance,
+prix, inspection) dans <code>src/nextgen/</code>, radar dans
+<code>services/monitor-service/</code>.</li>
+<li><strong>L’audit complet du 10 septembre 2026</strong> (session «
+MineGrid audit complet ») : cartographie, et pour chaque fonction,
+l’écart entre le code et la production.</li>
+<li><strong>Le bilan en ligne du 1er octobre 2026</strong> (« Bilan
+MineGrid en ligne », 27 points sondés sur le site public) et le journal
+<code>docs/build/ETAT.md</code> du dépôt, mis à jour le 2 octobre.</li>
+</ol>
+<p>Rien n’a pu être revérifié en ligne le 21 octobre : le site n’est pas
+joignable depuis l’environnement de rédaction. <strong>Ce qui a été
+corrigé ou déployé après le 2 octobre n’apparaît pas ici.</strong> À
+mettre à jour par la direction.</p>
+<h2 id="lecture-des-états">Lecture des états</h2>
+<ul>
+<li><strong>En ligne</strong> : fonctionne sur le site public au dernier
+relevé ; peut se montrer à un prospect.</li>
+<li><strong>Limité</strong> : fonctionne en partie ; à montrer avec la
+limite dite d’emblée.</li>
+<li><strong>À activer</strong> : codé et testé dans le dépôt, mais
+absent ou cassé en production (migration non appliquée, fonction non
+déployée, paquet du 15 août toujours servi). À ne pas promettre en
+libre-service ; possible dans un pilote accompagné une fois activé.</li>
+<li><strong>Hors offre</strong> : non proposé.</li>
+</ul>
+<h2 id="côté-acheteur-entreprise-de-btp-exploitant">1. Côté acheteur
+(entreprise de BTP, exploitant)</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Solution</th>
+<th>Ce que fait le code</th>
+<th>État au 1er-2 octobre</th>
+<th>Ce qu’on peut dire</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Catalogue et recherche</td>
+<td>16 397 annonces en base ; recherche, marque, catégorie, secteur,
+état et année filtrés côté base</td>
+<td><strong>Limité</strong> : la version en ligne (paquet du 15 août) ne
+cherche que dans les 1 000 premières annonces ; la recherche complète
+est prête dans le paquet du 1er octobre</td>
+<td>« Catalogue multi-marques, neuf et occasion » ; ne pas faire de
+recherche en direct avant le téléversement</td>
+</tr>
+<tr class="even">
+<td>Origine des annonces</td>
+<td>Import d’annonces d’enchères internationales</td>
+<td><strong>Défaut</strong> : 13 717 annonces sur 16 397 (83,7 %)
+appartiennent à un compte vendeur fictif laissé par l’import ; 197
+photos sur 200 sont hébergées chez Ritchie Bros / IronPlanet</td>
+<td>Ne pas présenter ces annonces comme des vendeurs joignables ; un
+devis sur l’une d’elles n’a personne en face (voir § 5)</td>
+</tr>
+<tr class="odd">
+<td>Fiche machine</td>
+<td>Prix, caractéristiques, fiche technique, machines similaires,
+vitrine du vendeur</td>
+<td><strong>En ligne</strong></td>
+<td>Montrable</td>
+</tr>
+<tr class="even">
+<td>Prix dans la devise du visiteur</td>
+<td>10 devises (MAD, EUR, USD, XOF, XAF, NGN, ZAR, EGP, KES, GHS)</td>
+<td><strong>Limité</strong> : la détection du pays est bloquée (repli
+sur la langue du navigateur) et les taux sont figés en base (1 € = 10,85
+MAD)</td>
+<td>« Prix affichés dans votre devise », sans parler de taux du jour ;
+régler la devise à la main en démonstration</td>
+</tr>
+<tr class="odd">
+<td>Position par rapport au marché</td>
+<td>Estimation médiane sur observations de prix ; invisible sous 3
+observations</td>
+<td><strong>À activer</strong> : la table
+<code>price_observations</code> n’existe pas en production</td>
+<td>Ne pas la citer</td>
+</tr>
+<tr class="even">
+<td>Niveau de vérification du vendeur</td>
+<td>Badge de confiance calculé (<code>trust_profiles</code>)</td>
+<td><strong>À activer</strong> : tables de confiance absentes, tout
+vendeur apparaît « non vérifié »</td>
+<td>Ne pas citer le badge</td>
+</tr>
+<tr class="odd">
+<td>Simulateur de transport</td>
+<td>Départ Maroc (Casablanca, Tanger, Agadir) ou Europe (Marseille,
+Rotterdam, Hambourg, Anvers) vers 8 villes d’Afrique de l’Ouest et
+centrale ; pas de destination au Maroc</td>
+<td><strong>En ligne</strong> (calcul dans le navigateur)</td>
+<td>« Estimation indicative » ; livraison au Maroc sur devis</td>
+</tr>
+<tr class="even">
+<td>Simulateur de financement</td>
+<td>Mensualité indicative ; banques présentées : Bank of Africa,
+Attijariwafa bank, Saham Bank</td>
+<td><strong>En ligne</strong> pour la simulation ; la pré-demande dépend
+des tables de la chaîne transactionnelle</td>
+<td>« Mensualité indicative » ; pas de taux ni d’accord promis</td>
+</tr>
+<tr class="odd">
+<td>Demande de devis</td>
+<td>Formulaire sur la fiche, boîte des demandes côté vendeur</td>
+<td><strong>En ligne</strong> (enregistrée ; données privées bien
+protégées)</td>
+<td>Montrable, sur une annonce d’un vendeur réel</td>
+</tr>
+<tr class="even">
+<td>Dossier transactionnel</td>
+<td>Un dossier par affaire : participants (acheteur, vendeur),
+partenaires invités par rôle (mécanicien pour l’inspection, courtier
+pour le financement, transporteur, transitaire pour la douane,
+logisticien), étapes inspection, financement, transport, douane,
+clôture, journal</td>
+<td><strong>Limité</strong> : la création fonctionne ; au 10 septembre,
+participants jamais créés et aucune transition faute de migrations (p5,
+p29)</td>
+<td>Présenter comme « dossier qui coordonne inspection, financement,
+transport et douane » dans un pilote accompagné</td>
+</tr>
+<tr class="odd">
+<td>Paiement entre acheteur et vendeur</td>
+<td>Le code contient un séquestre (<code>escrowService</code>) et un
+bouton « Préparer le séquestre »</td>
+<td><strong>Hors offre</strong> (décision ADS IDF) ; aucun prestataire
+raccordé</td>
+<td>Ne jamais parler de paiement par jalons, de séquestre ni de paiement
+sécurisé</td>
+</tr>
+<tr class="even">
+<td>Gestion du parc (Premium)</td>
+<td>Équipements, commandes, maintenance, documents</td>
+<td><strong>À activer</strong> : 9 tables de l’espace Pro absentes,
+écran d’erreur</td>
+<td>Ne pas montrer</td>
+</tr>
+</tbody>
+</table>
+<h2 id="côté-fournisseur-concessionnaire-loueur-exploitant-qui-cède">2.
+Côté fournisseur (concessionnaire, loueur, exploitant qui cède)</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Solution</th>
+<th>Ce que fait le code</th>
+<th>État au 1er-2 octobre</th>
+<th>Ce qu’on peut dire</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Publication d’annonce</td>
+<td>Formulaire, jusqu’à 8 photos</td>
+<td><strong>Limité</strong> : aucun espace de stockage n’existe en
+production, donc publication <strong>sans photo</strong></td>
+<td>Proposer la publication accompagnée par l’équipe</td>
+</tr>
+<tr class="even">
+<td>Import Excel du parc</td>
+<td>Import par webhook n8n, brouillon ou en ligne</td>
+<td><strong>Limité</strong> : le jeton du webhook était exposé dans le
+paquet en ligne (correctif dans le dépôt, à révoquer côté n8n)</td>
+<td>Proposer « vous nous envoyez votre fichier, nous publions »</td>
+</tr>
+<tr class="odd">
+<td>Annonce rédigée avec l’IA</td>
+<td>Assistant n8n à partir de la marque et du modèle</td>
+<td>Non vérifié en ligne</td>
+<td>À démontrer seulement après vérification</td>
+</tr>
+<tr class="even">
+<td>Vitrine professionnelle</td>
+<td>Page de toutes les annonces d’un vendeur</td>
+<td><strong>En ligne</strong> (sans photo pour les nouvelles
+annonces)</td>
+<td>Montrable</td>
+</tr>
+<tr class="odd">
+<td>Boîte des demandes de devis</td>
+<td>Liste, statuts</td>
+<td><strong>En ligne</strong></td>
+<td>Montrable</td>
+</tr>
+<tr class="even">
+<td>Messagerie, notifications, offres</td>
+<td>Échanges acheteur-vendeur</td>
+<td><strong>À activer</strong> : tables <code>messages</code>,
+<code>notifications</code>, <code>offers</code> absentes</td>
+<td>Ne pas citer</td>
+</tr>
+<tr class="odd">
+<td>Radar d’opportunités et Global Monitor (Pro)</td>
+<td>Service FastAPI en ligne ; projets, alertes, opportunités de
+vente</td>
+<td><strong>À activer</strong> : le service répond, mais la politique de
+sécurité du site bloque ses appels ; corrigé dans le paquet du 1er
+octobre, pas en ligne</td>
+<td>Citer comme « en cours d’ouverture » ; démonstration seulement après
+téléversement</td>
+</tr>
+<tr class="even">
+<td>Appels d’offres assistés par IA (Pro)</td>
+<td>Analyse de DCE, go / no-go, mémoire technique</td>
+<td><strong>Limité</strong> : la fonction IA <code>tenders-ai</code>
+n’est pas déployée (simulation silencieuse) ; travail d’équipe coupé
+(table absente)</td>
+<td>Ne pas démontrer l’IA</td>
+</tr>
+<tr class="odd">
+<td>Cockpits par métier (Enterprise)</td>
+<td>Vendeur, loueur (locations à venir, retards), mécanicien,
+transporteur, transitaire, logisticien, investisseur, courtier,
+financier</td>
+<td><strong>Limité</strong> : mélange de tables présentes et de widgets
+alimentés par des données simulées</td>
+<td>Ne pas présenter de chiffres de widget comme réels</td>
+</tr>
+<tr class="even">
+<td>Pipeline commercial (Enterprise)</td>
+<td>Demandes et offres en Kanban</td>
+<td><strong>Limité</strong> (dépend des tables offres et messages)</td>
+<td>Pilote seulement</td>
+</tr>
+<tr class="odd">
+<td>Équipe et invitations</td>
+<td>5 sièges Enterprise, rôles</td>
+<td><strong>En ligne</strong> (RPC présentes) ; rôles d’appels d’offres
+non persistés</td>
+<td>Montrable sans les rôles AO</td>
+</tr>
+</tbody>
+</table>
+<h2 id="services-autour-de-la-machine">3. Services autour de la
+machine</h2>
+<p>Neuf services sur demande, réponse annoncée sous 24 heures ouvrées :
+financement, transport et livraison, maintenance et réparation, garantie
+et assurance, location (courte et longue durée, options d’achat),
+installation, formation, conseil, sécurité et conformité.</p>
+<p><strong>État</strong> : le formulaire de contact enregistre la
+demande, mais au 10 septembre <strong>personne ne pouvait la lire et
+aucun courriel n’était émis</strong> ; au 29 septembre, la fonction
+d’envoi en ligne répondait « ok » à un envoi vide. <strong>Avant la
+campagne CIC, s’assurer qu’une demande arrive bien à quelqu’un</strong>,
+sinon la promesse des 24 heures ne tient pas.</p>
+<p>La location n’est pas une place de marché avec calendrier de
+réservation : c’est un service sur demande, et un cockpit loueur pour
+gérer son propre parc.</p>
+<h2 id="formules-et-paiement">4. Formules et paiement</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Formule</th>
+<th>Prix</th>
+<th>Contenu (code <code>plans.ts</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Gratuit</td>
+<td>0</td>
+<td>Consulter, contacter, demander des devis, publier</td>
+</tr>
+<tr class="even">
+<td>Premium</td>
+<td>20 USD/mois</td>
+<td>Gestion du parc ; équipements, commandes, maintenance ; documents et
+messages</td>
+</tr>
+<tr class="odd">
+<td>Pro</td>
+<td>50 USD/mois</td>
+<td>Appels d’offres assistés par IA, assistant IA, radar d’opportunités,
+support prioritaire</td>
+</tr>
+<tr class="even">
+<td>Enterprise</td>
+<td>200 USD/mois</td>
+<td>Cockpit par métier, pipeline commercial, 5 utilisateurs, support
+24/7 et SLA</td>
+</tr>
+</tbody>
+</table>
+<p><strong>État</strong> : <strong>aucun abonnement payant ne peut
+s’activer en ligne au 2 octobre.</strong> La fonction
+<code>paddle-webhook</code> n’est pas déployée, et
+<code>paddle-upgrade</code> inversait les prix de Premium et Pro. Le
+code promo échoue lui aussi, faute d’index unique en base (correctif SQL
+prêt, à appliquer). Pour un pilote, l’accès se donne aujourd’hui à la
+main par la direction.</p>
+<h2 id="ce-que-cela-change-pour-la-campagne-cic">5. Ce que cela change
+pour la campagne CIC</h2>
+<p>Les prospects classés A (TGCC, Mojazine, SBTX, Eurogrues, SOSMAJED)
+s’intéressent surtout à la cession d’engins, au dossier transactionnel,
+au radar et aux appels d’offres. Ce sont précisément les solutions « à
+activer ». Deux conséquences :</p>
+<ol type="1">
+<li><strong>Proposer un pilote accompagné, pas une inscription en
+libre-service.</strong> L’équipe publie le parc du prospect, ouvre et
+suit ses dossiers, et lui donne l’accès aux formules à la main. C’est ce
+que disent désormais la fiche de l’enquêteur et le guide
+d’entretien.</li>
+<li><strong>Faire passer en production, avant les premiers rendez-vous,
+ce que le pilote utilisera.</strong> L’ordre vient du bilan du 1er
+octobre et de l’audit :</li>
+</ol>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Action (production, à la charge de la direction)</th>
+<th>Débloque</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>Couper ou protéger la fonction <code>renders-ai</code>, ouverte à
+tous ; révoquer le jeton n8n exposé</td>
+<td>Sécurité, avant toute communication</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>Téléverser le paquet du 1er octobre, <code>.htaccess</code> compris,
+puis <code>npm run verifier:deploiement</code></td>
+<td>Radar, Global Monitor, opportunités, recherche complète</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>Appliquer le correctif du code promo et déployer
+<code>paddle-webhook</code></td>
+<td>Accès des pilotes, puis abonnements</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>Créer les espaces de stockage avec leurs règles d’accès</td>
+<td>Photos des annonces publiées</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>Appliquer p5, p29 et p34</td>
+<td>Dossier transactionnel complet ; repérage des annonces au vendeur
+fictif</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>Vérifier que le formulaire de contact et les demandes de service
+arrivent à quelqu’un</td>
+<td>Promesse des 24 heures</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>Décider du sort des 13 717 annonces importées : les marquer «
+sourcing MineGrid » et router leurs devis vers l’équipe, ou les
+retirer</td>
+<td>Crédibilité du chiffre « plus de 16 000 annonces »</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>Créer en production les tables de messagerie, d’offres et de
+l’espace Pro, ou retirer ces écrans</td>
+<td>Premium et Enterprise</td>
+</tr>
+</tbody>
+</table>
+<h2 id="écarts-avec-les-documents-commerciaux">6. Écarts avec les
+documents commerciaux</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Affirmation des plaquettes</th>
+<th>Réalité au 2 octobre</th>
+<th>Traitement</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>« Plus de 16 000 annonces »</td>
+<td>Vrai en base, mais 83,7 % sans vendeur réel</td>
+<td>Garder seulement si l’action 7 est faite</td>
+</tr>
+<tr class="even">
+<td>Position par rapport au marché, niveau de vérification du vendeur,
+badge de confiance</td>
+<td>Tables absentes en production</td>
+<td>Retirées des documents remis aux prospects tant qu’elles ne sont pas
+activées</td>
+</tr>
+<tr class="odd">
+<td>Radar, appels d’offres assistés, pipeline</td>
+<td>Codés, bloqués ou partiels en ligne</td>
+<td>Présentés comme ouverts dans le pilote</td>
+</tr>
+<tr class="even">
+<td>Dossier transactionnel en quatre étapes</td>
+<td>Création seulement en ligne</td>
+<td>Présenté comme coordination de l’inspection, du financement, du
+transport et de la douane, dans le pilote</td>
+</tr>
+<tr class="odd">
+<td>Paiement par jalons</td>
+<td>Hors offre</td>
+<td>Retiré le 21 octobre</td>
+</tr>
+<tr class="even">
+<td>Paiement des abonnements par Paddle, sans engagement</td>
+<td>Activation non déployée</td>
+<td>Conservé (c’est le mode prévu), avec accès à la main pendant le
+pilote</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>
