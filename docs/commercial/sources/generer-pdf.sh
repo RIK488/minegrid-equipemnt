@@ -3,7 +3,7 @@
 set -euo pipefail
 ici="$(cd "$(dirname "$0")" && pwd)"
 chrome="${CHROME:-$(command -v chromium || command -v google-chrome || echo /opt/pw-browsers/chromium-1194/chrome-linux/chrome)}"
-for f in plaquette-generale plaquette-vendeurs-loueurs grille-tarifaire; do
+for f in plaquette-generale plaquette-vendeurs-loueurs grille-tarifaire fiche-enqueteur-cic; do
   "$chrome" --headless=new --no-sandbox --disable-gpu --no-pdf-header-footer \
-    --virtual-time-budget=8000 --print-to-pdf="$ici/../$f.pdf" "file://$ici/$f.html"
+    --virtual-time-budget=8000 --print-to-pdf="$ici/../$( [ $f = fiche-enqueteur-cic ] && echo cic/ )$f.pdf" "file://$ici/$f.html"
 done

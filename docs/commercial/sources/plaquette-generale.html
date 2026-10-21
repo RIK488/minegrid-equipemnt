@@ -2,43 +2,74 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Plaquette Minegrid Équipement</title>
+<title>Plaquette MineGrid Équipement</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  .chiffres { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin-top: 6mm; position: relative; z-index: 1; }
+  .chiffres div { border-left: .8mm solid var(--orange); padding-left: 3mm; }
+  .chiffres b { display: block; font-family: 'Montserrat'; font-size: 17pt; color: #fff; }
+  .chiffres span { font-size: 8.3pt; opacity: .85; }
+  .etapes-dossier { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2.5mm; }
+  .etapes-dossier div { background: var(--orange-pale); border: .3mm solid #fed7aa; border-radius: 2.5mm; padding: 3mm; font-size: 8.5pt; color: var(--gris); }
+  .etapes-dossier b { display: block; color: #9a3412; font-family: 'Montserrat'; font-size: 9.5pt; margin-bottom: 1mm; }
+</style>
 </head>
 <body>
 
-<!-- Page 1 : présentation -->
 <section class="page">
   <header class="couverture">
-    <div class="marque"><img src="img/logo.png" alt="Logo Minegrid Équipement"><span>Minegrid Équipement</span></div>
-    <div class="surtitre">Marketplace B2B · Mines · BTP · Industrie</div>
-    <h1>La plateforme africaine des professionnels de la construction et des mines</h1>
-    <p class="chapeau">Achetez, vendez et louez vos engins entre professionnels, pilotez votre activité depuis un espace pro dédié
-      et accédez aux services qui entourent la machine : financement, transport, maintenance.</p>
+    <div class="marque"><img src="img/logo.png" alt="Logo MineGrid Équipement"><span>MineGrid Équipement</span></div>
+    <div class="surtitre">Engins lourds · BTP · Mines · Corridor Maroc – Afrique de l'Ouest</div>
+    <h1>Trouver la machine, connaître son coût réel, tracer chaque transaction</h1>
+    <p class="chapeau">MineGrid est la plateforme transactionnelle des équipements lourds entre le Maroc et l'Afrique de l'Ouest :
+      catalogue multi-marques neuf et occasion, simulateurs de coût avant engagement, dossier de transaction auditable.</p>
+    <div class="chiffres">
+      <div><b>16 000+</b><span>annonces au catalogue</span></div>
+      <div><b>10</b><span>devises affichées (MAD, XOF, XAF, EUR, USD…)</span></div>
+      <div><b>4</b><span>implantations : Marrakech (siège), Dakar, Abidjan, Douala</span></div>
+      <div><b>9</b><span>services partenaires, du financement à la formation</span></div>
+    </div>
   </header>
   <div class="bande-orange"></div>
 
   <div class="contenu">
     <div class="section">
-      <h2>Une seule plateforme pour tout le cycle de vie de l'équipement</h2>
+      <h2>Trois raisons d'utiliser MineGrid</h2>
       <div class="grille-3">
-        <div class="carte accent">
-          <div class="pastille">1</div>
-          <h3>Trouver</h3>
-          <p>Un catalogue d'engins neufs et d'occasion classé par secteur et par type de machine, avec fiches techniques,
-            photos et prix affichés dans votre devise (MAD, XOF, EUR, USD…).</p>
+        <div class="carte accent"><div class="pastille">1</div><h3>Décider</h3>
+          <p>Sur une seule fiche : le prix dans votre devise, sa position par rapport au marché, une mensualité indicative
+            et le niveau de vérification du vendeur.</p></div>
+        <div class="carte accent"><div class="pastille">2</div><h3>Chiffrer</h3>
+          <p>Avant de vous engager, le transport (départ Maroc ou Europe vers 8 villes d'Afrique de l'Ouest et centrale),
+            la douane et le financement sont simulés. Estimations indicatives, signalées comme telles.</p></div>
+        <div class="carte accent"><div class="pastille">3</div><h3>Tracer</h3>
+          <p>Chaque devis ouvre un dossier : preuve d'état, paiements par étapes via un partenaire de paiement, journal
+            horodaté que personne ne peut modifier.</p></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Deux côtés, deux usages</h2>
+      <div class="grille-2">
+        <div class="carte pale">
+          <h3>Vous achetez ou louez des engins</h3>
+          <p style="margin-bottom:1.5mm">Exploitants miniers, entreprises de BTP : directions achats, matériel, finance.</p>
+          <ul>
+            <li>Fiche machine décisionnelle et comparaison chiffrée</li>
+            <li>Simulateurs de transport et de financement, pré-demande aux banques partenaires</li>
+            <li>Demande d'inspection, devis, dossier de transaction</li>
+            <li>Gestion du parc : équipements, maintenance, documents</li>
+          </ul>
         </div>
-        <div class="carte accent">
-          <div class="pastille">2</div>
-          <h3>Vendre et louer</h3>
-          <p>Publication rapide d'annonces, vitrine personnalisée à vos couleurs, demandes de devis reçues dans une boîte
-            commerciale dédiée et messagerie intégrée avec les acheteurs.</p>
-        </div>
-        <div class="carte accent">
-          <div class="pastille">3</div>
-          <h3>Piloter</h3>
-          <p>Tableau de bord par métier : stock, pipeline commercial, locations, planning, maintenance, documents,
-            commandes et équipe, au même endroit.</p>
+        <div class="carte pale">
+          <h3>Vous vendez, louez ou cédez des engins</h3>
+          <p style="margin-bottom:1.5mm">Concessionnaires, loueurs, importateurs, exploitants en fin de chantier.</p>
+          <ul>
+            <li>Import Excel de tout le parc, annonces rédigées avec l'aide de l'IA</li>
+            <li>Vitrine, boost, badge de confiance après inspection</li>
+            <li>Radar des besoins et appels d'offres correspondant à votre stock</li>
+            <li>Dossier de cession, encaissement par étapes</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -46,109 +77,71 @@
     <div class="section">
       <h2>Tous les engins de vos chantiers</h2>
       <div class="etiquettes">
-        <span>Transport &amp; camions</span><span>Terrassement &amp; excavation</span><span>Voirie &amp; compactage</span>
-        <span>Levage &amp; manutention</span><span>Concassage &amp; criblage</span><span>Forage</span>
-        <span>Outils &amp; pièces détachées</span>
-      </div>
-      <p style="margin-top:3mm;color:var(--gris);font-size:9.5pt">Camions bennes, porte-engins, pelles sur chenilles ou sur pneus,
-        niveleuses, compacteurs, grues mobiles, chariots télescopiques, cribles, foreuses…</p>
-    </div>
-
-    <div class="section">
-      <h2>Pensé pour chaque acteur de la filière</h2>
-      <div class="grille-4">
-        <div class="carte"><h3>Vendeurs</h3><p>Concessionnaires et revendeurs d'engins neufs ou d'occasion.</p></div>
-        <div class="carte"><h3>Loueurs</h3><p>Parc, disponibilités, contrats et planning de location.</p></div>
-        <div class="carte"><h3>Mécaniciens</h3><p>Interventions, maintenance préventive et suivi des réparations.</p></div>
-        <div class="carte"><h3>Transporteurs</h3><p>Acheminement des engins vers les sites.</p></div>
-        <div class="carte"><h3>Transitaires</h3><p>Import, export et formalités douanières.</p></div>
-        <div class="carte"><h3>Logisticiens</h3><p>Coordination des flux et des stocks.</p></div>
-        <div class="carte"><h3>Investisseurs</h3><p>Suivi des actifs et des projets.</p></div>
-        <div class="carte"><h3>Courtiers</h3><p>Mise en relation acheteurs et vendeurs.</p></div>
+        <span>Transport</span><span>Terrassement</span><span>Forage</span><span>Voirie</span><span>Maintenance &amp; levage</span>
+        <span>Construction</span><span>Mines</span><span>Outils &amp; accessoires</span>
       </div>
     </div>
   </div>
 
   <footer class="pied">
-    <div class="appel">Publiez votre première annonce gratuitement</div>
-    <div class="coord"><b>contact@minegrid.com</b><br>Abidjan, Côte d'Ivoire</div>
+    <div class="appel">Consulter, demander un devis, publier : gratuit</div>
+    <div class="coord"><b>minegrid-equipement.com</b><br>sales@minegrid.com</div>
   </footer>
 </section>
 
-<!-- Page 2 : espace pro, services, démarrage -->
 <section class="page">
   <div class="contenu">
     <div class="section">
-      <h2>L'Espace Pro : votre activité en un coup d'œil</h2>
-      <p class="intro">Chaque professionnel dispose d'un tableau de bord configurable, adapté à son métier. Les widgets se
-        déplacent et s'activent selon vos besoins.</p>
-      <div class="grille-2">
-        <div class="carte pale">
-          <h3>Commercial</h3>
-          <ul>
-            <li>Pipeline commercial et évolution des ventes</li>
-            <li>Boîte de réception des demandes de devis</li>
-            <li>Messagerie acheteurs et notifications en temps réel</li>
-            <li>Gestion des contacts clients</li>
-          </ul>
-        </div>
-        <div class="carte pale">
-          <h3>Parc et opérations</h3>
-          <ul>
-            <li>Stock et disponibilité des équipements</li>
-            <li>Planning, locations et contrats</li>
-            <li>Maintenance préventive et interventions</li>
-            <li>Documents techniques et commandes</li>
-          </ul>
-        </div>
-        <div class="carte pale">
-          <h3>Gain de temps</h3>
-          <ul>
-            <li>Import de votre parc depuis un fichier Excel</li>
-            <li>Assistant IA pour rédiger vos annonces et compléter les fiches techniques</li>
-            <li>Générateur de devis</li>
-          </ul>
-        </div>
-        <div class="carte pale">
-          <h3>Équipe et image de marque</h3>
-          <ul>
-            <li>Gestion multi-utilisateurs et droits d'accès</li>
-            <li>Vitrine personnalisée de votre entreprise</li>
-            <li>Statistiques de vos annonces</li>
-          </ul>
-        </div>
+      <h2>Le dossier de transaction : une vente d'engin que votre audit peut relire</h2>
+      <p class="intro">Une transaction d'engin d'occasion se fait souvent par téléphone et par courriel, sans trace. Sur MineGrid,
+        chaque demande de devis ouvre un dossier partagé entre l'acheteur et le vendeur, en cinq étapes.</p>
+      <div class="etapes-dossier">
+        <div><b>1. Devis</b>L'acheteur demande un devis ou fait une offre.</div>
+        <div><b>2. Dossier</b>Ouverture automatique ; acheteur et vendeur acceptés comme participants.</div>
+        <div><b>3. Preuve d'état</b>Vidéo du vendeur ou rapport d'un inspecteur tiers. Sans preuve, pas d'étape suivante.</div>
+        <div><b>4. Jalons</b>Paiements par étapes opérés par un partenaire de paiement, chaque versement vérifié.</div>
+        <div><b>5. Livraison</b>Transport, douane, réception, puis clôture du dossier.</div>
       </div>
+      <p style="margin-top:3mm;font-size:8.8pt;color:var(--gris)">Pas de saut d'étape, pas d'auto-inspection par le vendeur, pas
+        d'annulation tant que des fonds sont engagés. Chaque action est horodatée et attribuée. MineGrid structure le processus
+        et conserve la preuve ; elle ne détient pas les fonds.</p>
     </div>
 
     <div class="section">
-      <h2>Les services autour de la machine</h2>
-      <p class="intro">Sur demande, Minegrid vous oriente vers des solutions adaptées à votre projet.</p>
+      <h2>Neuf services autour de la machine</h2>
+      <p class="intro">Opérés avec des partenaires (banques, transporteurs, assureurs, ateliers, organismes de formation), sur
+        demande, avec une réponse annoncée sous 24 heures ouvrées.</p>
       <div class="grille-3">
-        <div class="carte"><h3>Financement</h3><p>Crédit-bail, leasing et demande de financement en ligne.</p></div>
-        <div class="carte"><h3>Transport &amp; livraison</h3><p>Transport national et international, documentation douanière.</p></div>
-        <div class="carte"><h3>Maintenance &amp; réparation</h3><p>Maintenance préventive, réparations d'urgence, diagnostics.</p></div>
-        <div class="carte"><h3>Location</h3><p>Courte ou longue durée, avec options d'achat.</p></div>
-        <div class="carte"><h3>Installation &amp; formation</h3><p>Mise en service sur site et formation des opérateurs.</p></div>
-        <div class="carte"><h3>Conseil</h3><p>Choix d'équipement et optimisation des coûts d'exploitation.</p></div>
+        <div class="carte"><h3>Financement</h3><p>Crédit-bail, leasing, pré-demande en ligne aux banques partenaires.</p></div>
+        <div class="carte"><h3>Transport &amp; livraison</h3><p>International et domestique, assurance transport, documents douaniers.</p></div>
+        <div class="carte"><h3>Location</h3><p>Courte et longue durée, options d'achat.</p></div>
+        <div class="carte"><h3>Maintenance &amp; réparation</h3><p>Préventive, urgences, diagnostics.</p></div>
+        <div class="carte"><h3>Garantie &amp; assurance</h3><p>Extensions de garantie, assurance tous risques.</p></div>
+        <div class="carte"><h3>Installation</h3><p>Mise en service sur site, configuration, tests.</p></div>
+        <div class="carte"><h3>Formation</h3><p>Opérateurs et techniciens, théorie et pratique.</p></div>
+        <div class="carte"><h3>Conseil</h3><p>Audit technique, optimisation des coûts, études de faisabilité.</p></div>
+        <div class="carte"><h3>Sécurité &amp; conformité</h3><p>Inspections, mise aux normes, protocoles.</p></div>
       </div>
     </div>
 
     <div class="section">
-      <h2>Démarrer en quatre étapes</h2>
-      <div class="etapes">
-        <div><strong>Créez votre compte</strong>Inscription gratuite en quelques minutes.</div>
-        <div><strong>Choisissez votre formule</strong>Gratuit, Premium, Pro ou Entreprise.</div>
-        <div><strong>Publiez vos engins</strong>Annonce par annonce ou import Excel de votre parc.</div>
-        <div><strong>Recevez vos demandes</strong>Devis et messages arrivent dans votre Espace Pro.</div>
-      </div>
+      <h2>Formules</h2>
+      <table class="comparatif">
+        <thead><tr><th></th><th>Gratuit</th><th>Premium</th><th>Pro</th><th>Enterprise</th></tr></thead>
+        <tbody>
+          <tr><td>Prix (USD/mois HT)</td><td><b>0</b></td><td><b>20</b></td><td><b>50</b></td><td><b>200</b></td></tr>
+          <tr><td>Vous achetez</td><td>Consulter, contacter, devis</td><td>Gestion du parc, suivi des dossiers</td><td>Assistant IA, support prioritaire</td><td>Cockpit exploitant, 5 utilisateurs</td></tr>
+          <tr><td>Vous vendez</td><td>Publier</td><td>Gestion du parc et des ventes</td><td>Radar, appels d'offres assistés par IA</td><td>Pipeline commercial, 5 utilisateurs</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <p class="mention">Les services d'accompagnement sont proposés sur demande et peuvent faire l'objet d'un devis séparé.
-    Document non contractuel.</p>
+  <p class="mention">Estimations de transport et de financement indicatives : les conditions finales viennent du transporteur et du
+    partenaire financier. Sans engagement de durée. Document non contractuel.</p>
   <footer class="pied">
-    <div class="appel">Formules à partir de 0 USD · voir la grille tarifaire</div>
-    <div class="coord"><b>contact@minegrid.com</b><br>Abidjan, Côte d'Ivoire</div>
+    <div class="appel">Un pilote sur l'un de vos sites ? Parlons-en.</div>
+    <div class="coord"><b>sales@minegrid.com</b><br>Siège : Marrakech · Dakar · Abidjan · Douala</div>
   </footer>
 </section>
 

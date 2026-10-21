@@ -1,8 +1,8 @@
 # Argumentaire commercial Minegrid Équipement
 
 Kit de l'équipe commerciale : positionnement, cibles, arguments, objections, courriel de prospection et script d'appel.
-Toutes les fonctionnalités citées existent dans la plateforme (branche `commit-changes`, avril 2026). Les tarifs sont
-ceux de la page d'inscription (`src/pages/Register.tsx`).
+Fonctionnalités et tarifs alignés sur le site en ligne tel que relevé le 2 octobre 2026 (document « Valeurs ajoutées
+et pitch », fiche mémo IMC Morocco 2026). Pour les prospects du rapport CIC Aidexport, voir aussi `cic/`.
 
 ## 1. Positionnement
 
@@ -20,7 +20,8 @@ son activité.
 | Annonces mélangées avec tout le reste | Catalogue classé par secteur et par type d'engin |
 | Contact par téléphone, sans suivi | Demandes de devis structurées (machine, budget, message) et pipeline commercial |
 | Rien après la mise en relation | Espace pro : stock, locations, planning, maintenance, documents, équipe |
-| Prix dans une seule devise | Affichage MAD, XOF, EUR, USD |
+| Prix dans une seule devise | Prix dans 10 devises (MAD, XOF, XAF, EUR, USD…) avec position par rapport au marché |
+| Transaction par téléphone, sans trace | Dossier de transaction : preuve d'état, paiements par étapes via un partenaire, journal horodaté |
 | Saisie manuelle | Import Excel du parc et assistant IA pour les fiches techniques |
 
 ## 2. Cibles prioritaires
@@ -28,11 +29,11 @@ son activité.
 | Cible | Douleur | Message clé | Formule à proposer |
 |---|---|---|---|
 | Concessionnaires et revendeurs d'occasion | Stock qui tourne lentement, contacts non suivis | « Vos engins devant des acheteurs qualifiés, et chaque demande suivie jusqu'à la vente. » | Pro |
-| Loueurs d'engins | Taux d'utilisation du parc, planning sur tableur | « Disponibilités, contrats, planning et maintenance de votre parc sur un seul écran. » | Pro, puis Entreprise |
+| Loueurs d'engins | Taux d'utilisation du parc, planning sur tableur | « Disponibilités, contrats, planning et maintenance de votre parc sur un seul écran. » | Pro, puis Enterprise |
 | Entreprises de BTP et exploitants miniers (acheteurs) | Trouver vite la bonne machine, comparer | « Le catalogue classé par secteur, avec demande de devis en un clic. » | Gratuit (acheteur) |
 | Ateliers et mécaniciens | Visibilité, planification des interventions | « Suivez interventions et maintenance préventive, et soyez visibles des propriétaires d'engins. » | Premium ou Pro |
 | Transporteurs et transitaires | Trouver les flux liés aux ventes d'engins | « Soyez présents là où les engins changent de main. » | Premium ou Pro |
-| Groupes, flottes multi-sites | Plusieurs sites, plusieurs utilisateurs, intégration SI | « Tableau de bord sur mesure, multi-utilisateurs, API et automatisations. » | Entreprise (sur devis) |
+| Groupes, flottes multi-sites | Plusieurs sites, plusieurs utilisateurs, intégration SI | « Tableau de bord sur mesure, multi-utilisateurs, API et automatisations. » | Enterprise (pilote d'abord) |
 
 ## 3. Arguments par fonctionnalité
 
@@ -45,17 +46,19 @@ son activité.
 - **Tableau de bord par métier** : huit affichages (vendeur, loueur, mécanicien, transporteur, transitaire, logisticien,
   investisseur, courtier), widgets configurables.
 - **Gestion du parc** : stock, disponibilités, locations, planning, maintenance préventive, documents, commandes.
-- **Multi-utilisateurs** (Entreprise) : droits par collaborateur.
+- **Multi-utilisateurs** (Enterprise, 5 sièges) : droits par collaborateur.
 - **Services** : demande de financement en ligne ; orientation transport, maintenance, location, formation, conseil.
 
 ## 4. Grille tarifaire (rappel)
 
 | Formule | Prix | Pour qui |
 |---|---|---|
-| Gratuit | 0 USD | Tester, publier ses premières annonces (3 images) |
-| Premium | 30 USD/mois | Visibilité renforcée, 10 images, badge, statistiques détaillées |
-| Pro | 70 USD/mois | Dashboard Pro, gestion commerciale, contacts clients, support dédié |
-| Entreprise | à partir de 200 USD/mois, sur devis | Multi-utilisateurs, API, workflows automatisés, IA dédiée, support 24/7 |
+| Gratuit | 0 | Acheter (consulter, contacter, devis) et publier |
+| Premium | 20 USD/mois HT | Gestion du parc, documents, messages, suivi des dossiers |
+| Pro | 50 USD/mois HT | Assistant IA, radar d'opportunités, appels d'offres assistés par IA, support prioritaire |
+| Enterprise | 200 USD/mois HT | Cockpit exploitant ou loueur, pipeline commercial, équipe de 5, support 24/7 et SLA |
+
+Sans engagement de durée ; paiement des abonnements opéré par Paddle.
 
 ## 5. Traitement des objections
 
@@ -84,7 +87,7 @@ son activité.
 > L'inscription est gratuite. Puis-je vous montrer la plateforme en 15 minutes cette semaine ?
 >
 > Bien cordialement,
-> [Nom] · [Téléphone] · contact@minegrid.com
+> [Nom] · [Téléphone] · sales@minegrid.com
 
 **Relance à J+5** : « Bonjour [Prénom], je me permets de revenir vers vous : je peux publier gratuitement trois de vos
 engins pour que vous jugiez sur pièce. Quel créneau vous convient ? »
