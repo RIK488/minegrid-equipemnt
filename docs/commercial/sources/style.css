@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --orange: #ea580c;
+  --orange-clair: #fb923c;
+  --orange-pale: #fff4ec;
+  --encre: #1f1f1f;
+  --gris: #5b5f66;
+  --gris-clair: #e7e5e4;
+  --fond-sombre: #1c1917;
+}
+
+@page { size: A4; margin: 0; }
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #d6d3d1;
+  color: var(--encre);
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.4;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.page {
+  width: 210mm;
+  height: 297mm;
+  margin: 10mm auto;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+  display: flex;
+  flex-direction: column;
+}
+.page:last-child { page-break-after: auto; }
+
+@media print {
+  html, body { background: #fff; }
+  .page { margin: 0; }
+}
+
+h1, h2, h3 { font-family: 'Montserrat', Arial, sans-serif; margin: 0; line-height: 1.15; }
+h1 { font-size: 21pt; font-weight: 800; }
+h2 { font-size: 13pt; font-weight: 800; color: var(--encre); margin-bottom: 3mm; }
+h3 { font-size: 11pt; font-weight: 700; margin-bottom: 1.5mm; }
+p { margin: 0 0 2.5mm; }
+ul { margin: 0; padding-left: 4.5mm; }
+li { margin-bottom: 1.2mm; }
+
+/* Bandeau de couverture */
+.couverture {
+  background: linear-gradient(135deg, var(--fond-sombre) 0%, #292524 55%, #431407 100%);
+  color: #fff;
+  padding: 10mm 14mm 9mm;
+  position: relative;
+}
+.couverture::after {
+  content: '';
+  position: absolute;
+  right: -30mm; top: -20mm;
+  width: 110mm; height: 110mm;
+  background: var(--orange);
+  opacity: .18;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+.couverture .marque { display: flex; align-items: center; gap: 4mm; margin-bottom: 6mm; }
+.couverture .marque img { width: 15mm; height: 15mm; background: #fff; border-radius: 4mm; padding: 1mm; }
+.couverture .marque span { font-family: 'Montserrat'; font-weight: 700; letter-spacing: .5mm; font-size: 10pt; text-transform: uppercase; opacity: .85; }
+.couverture .surtitre { color: var(--orange-clair); font-family: 'Montserrat'; font-weight: 700; text-transform: uppercase; letter-spacing: .6mm; font-size: 9pt; margin-bottom: 3mm; }
+.couverture h1 { max-width: 150mm; }
+.couverture .chapeau { font-size: 10.5pt; max-width: 160mm; margin-top: 3mm; margin-bottom: 0; opacity: .92; }
+
+.bande-orange { height: 3mm; background: linear-gradient(90deg, var(--orange), var(--orange-clair)); }
+
+.contenu { padding: 7mm 14mm 4mm; flex: 1; }
+
+.grille-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+.grille-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+.grille-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; }
+
+.carte {
+  border: 0.3mm solid var(--gris-clair);
+  border-radius: 3mm;
+  padding: 3.5mm;
+  background: #fff;
+}
+.carte.accent { border-top: 1.2mm solid var(--orange); }
+.carte.pale { background: var(--orange-pale); border-color: #fed7aa; }
+.carte p, .carte li { color: var(--gris); font-size: 8.8pt; }
+.carte p:last-child { margin-bottom: 0; }
+
+.pastille {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 7mm; height: 7mm; border-radius: 2.2mm;
+  background: var(--orange); color: #fff;
+  font-family: 'Montserrat'; font-weight: 800; font-size: 11pt;
+  margin-bottom: 2mm;
+}
+
+.section { margin-bottom: 5.5mm; }
+.intro { font-size: 10pt; color: var(--gris); max-width: 175mm; margin-bottom: 3.5mm; }
+
+.etapes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; counter-reset: etape; }
+.etapes div { position: relative; padding-top: 9.5mm; font-size: 8.8pt; color: var(--gris); }
+.etapes div::before {
+  counter-increment: etape; content: counter(etape);
+  position: absolute; top: 0; left: 0;
+  width: 8mm; height: 8mm; border-radius: 50%;
+  background: var(--encre); color: #fff;
+  font-family: 'Montserrat'; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.etapes strong { color: var(--encre); display: block; margin-bottom: 1mm; }
+
+.etiquettes { display: flex; flex-wrap: wrap; gap: 2mm; }
+.etiquettes span {
+  background: var(--orange-pale); color: #9a3412;
+  border: 0.3mm solid #fed7aa; border-radius: 10mm;
+  padding: 1mm 3.5mm; font-size: 9pt; font-weight: 600;
+}
+
+/* Tarifs */
+.tarifs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; align-items: stretch; }
+.tarif { border: 0.3mm solid var(--gris-clair); border-radius: 3mm; padding: 5mm 3.5mm 4mm; display: flex; flex-direction: column; }
+.tarif.vedette { border: 0.8mm solid var(--orange); box-shadow: 0 2mm 6mm rgba(234, 88, 12, .15); position: relative; }
+.tarif.vedette::before {
+  content: 'Recommandé'; position: absolute; top: -3.2mm; left: 50%; transform: translateX(-50%);
+  background: var(--orange); color: #fff; font-size: 7.5pt; font-weight: 700;
+  padding: .8mm 3mm; border-radius: 10mm; text-transform: uppercase; letter-spacing: .3mm;
+}
+.tarif h3 { font-size: 13pt; }
+.tarif .cible { font-size: 8.5pt; color: var(--gris); min-height: 10mm; }
+.tarif .prix { font-family: 'Montserrat'; font-weight: 800; font-size: 20pt; color: var(--orange); margin: 2mm 0 0; }
+.tarif .prix small { font-size: 8.5pt; color: var(--gris); font-weight: 500; }
+.tarif .apartir { font-size: 8pt; color: var(--gris); min-height: 4mm; }
+.tarif ul { margin-top: 3mm; padding-left: 0; list-style: none; }
+.tarif li { font-size: 8.6pt; color: var(--gris); padding-left: 4.5mm; position: relative; }
+.tarif li::before { content: '✓'; position: absolute; left: 0; color: var(--orange); font-weight: 700; }
+
+table.comparatif { width: 100%; border-collapse: collapse; font-size: 8.6pt; }
+table.comparatif th, table.comparatif td { border-bottom: 0.3mm solid var(--gris-clair); padding: 1.5mm 2mm; text-align: center; }
+table.comparatif th:first-child, table.comparatif td:first-child { text-align: left; }
+table.comparatif thead th { font-family: 'Montserrat'; background: var(--fond-sombre); color: #fff; }
+table.comparatif td.oui { color: var(--orange); font-weight: 700; }
+table.comparatif td.non { color: #a8a29e; }
+
+/* Pied de page */
+.pied {
+  background: var(--fond-sombre); color: #e7e5e4;
+  padding: 5mm 14mm; display: flex; justify-content: space-between; align-items: center;
+  font-size: 9pt;
+}
+.pied .appel { font-family: 'Montserrat'; font-weight: 700; color: #fff; font-size: 11pt; }
+.pied .coord { text-align: right; line-height: 1.6; }
+.pied .coord b { color: var(--orange-clair); }
+
+.mention { font-size: 7.5pt; color: #78716c; padding: 0 14mm 3mm; margin: 0; }
