@@ -1,9 +1,9 @@
 # Guide d'entretien CIC Aidexport : propositions d'amélioration
 
-**Destinataire** : CIC Aidexport, Bureau de représentation de Casablanca
-**Objet** : retour d'ADS IDF Nord sur le projet de guide d'entretien du rapport intermédiaire (octobre 2026), en
+- **Destinataire** : CIC Aidexport, Bureau de représentation de Casablanca
+- **Objet** : retour d'ADS IDF Nord sur le projet de guide d'entretien du rapport intermédiaire (octobre 2026), en
 particulier les questions 10 à 13
-**Statut** : proposition à valider par la direction d'ADS IDF avant envoi à CIC
+- **Statut** : proposition à valider par la direction d'ADS IDF avant envoi à CIC
 
 ## 1. Pourquoi amender le guide
 
